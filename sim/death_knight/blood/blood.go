@@ -46,6 +46,8 @@ func NewBloodDeathKnight(character *core.Character, options *proto.Player) *Bloo
 		}, options.TalentsString, 50034),
 	}
 
+	bdk.AddStatDependency(stats.Vengeance, stats.AttackPower, 1)
+
 	bdk.RuneWeapon = bdk.NewRuneWeapon()
 
 	bdk.Bloodworm = make([]*death_knight.BloodwormPet, 5)

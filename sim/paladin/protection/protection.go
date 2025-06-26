@@ -31,6 +31,8 @@ func NewProtectionPaladin(character *core.Character, options *proto.Player) *Pro
 		Paladin: paladin.NewPaladin(character, options.TalentsString, protOptions.Options.ClassOptions),
 	}
 
+	prot.AddStatDependency(stats.Vengeance, stats.AttackPower, 1)
+
 	return prot
 }
 

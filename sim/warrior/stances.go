@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
+	"github.com/wowsims/mop/sim/core/stats"
 )
 
 type Stance uint8
@@ -105,6 +106,8 @@ func (warrior *Warrior) registerDefensiveStanceAura() {
 		&warrior.PseudoStats.ThreatMultiplier, 7,
 	).AttachMultiplicativePseudoStatBuff(
 		&warrior.PseudoStats.DamageTakenMultiplier, 0.75,
+	).AttachStatDependency(
+		warrior.NewDynamicStatDependency(stats.Vengeance, stats.AttackPower, 1),
 	)
 
 	warrior.DefensiveStanceAura.NewExclusiveEffect(stanceEffectCategory, true, core.ExclusiveEffect{})

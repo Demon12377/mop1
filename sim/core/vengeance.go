@@ -21,7 +21,7 @@ func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura)
 			MaxStacks: math.MaxInt32,
 		},
 
-		BonusPerStack: stats.Stats{stats.AttackPower: 1},
+		BonusPerStack: stats.Stats{stats.Vengeance: 1},
 	})
 
 	// Then set up the proc trigger.

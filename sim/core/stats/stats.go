@@ -52,6 +52,7 @@ const (
 	PhysicalCritPercent
 	SpellCritPercent
 	BlockPercent
+	Vengeance
 	// DO NOT add new stats here without discussing it first; new stats come
 	// with a performance penalty.
 
@@ -159,6 +160,8 @@ func (s Stat) StatName() string {
 		return "SpellCritPercent"
 	case BlockPercent:
 		return "BlockPercent"
+	case Vengeance:
+		return "Vengeance"
 	}
 
 	return "none"

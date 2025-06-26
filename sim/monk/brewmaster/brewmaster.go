@@ -33,6 +33,7 @@ func NewBrewmasterMonk(character *core.Character, options *proto.Player) *Brewma
 
 	bm.AddStatDependency(stats.Strength, stats.AttackPower, 1)
 	bm.AddStatDependency(stats.Agility, stats.AttackPower, 2)
+	bm.AddStatDependency(stats.Vengeance, stats.AttackPower, 1)
 
 	// Brewmaster monks does a flat 85% of total damage as well as AP per DPS being 11 instead of 14
 	bm.PseudoStats.DamageDealtMultiplier *= 0.85

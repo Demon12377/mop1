@@ -47,6 +47,8 @@ func NewGuardianDruid(character *core.Character, options *proto.Player) *Guardia
 
 	bear.RegisterBearFormAura()
 
+	bear.BearFormAura.AttachStatDependency(bear.NewDynamicStatDependency(stats.Vengeance, stats.AttackPower, 1))
+
 	return bear
 }
 
