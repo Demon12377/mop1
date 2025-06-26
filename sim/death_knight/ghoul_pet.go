@@ -53,7 +53,7 @@ func (dk *DeathKnight) newGhoulPetInternal(name string, permanent bool, scalingC
 			Name:                            name,
 			Owner:                           &dk.Character,
 			BaseStats:                       stats.Stats{stats.AttackPower: -20},
-			NonHitExpStatInheritance:        ghoulStatInheritance(scalingCoef),
+			NonHitExpStatInheritance:        dk.ghoulStatInheritance(scalingCoef),
 			EnabledOnStart:                  permanent,
 			IsGuardian:                      !permanent,
 			HasDynamicMeleeSpeedInheritance: true,
@@ -116,11 +116,20 @@ func (ghoulPet *GhoulPet) ExecuteCustomRotation(sim *core.Simulation) {
 	}
 }
 
-func ghoulStatInheritance(apCoef float64) core.PetStatInheritance {
+func (dk *DeathKnight) ghoulStatInheritance(scalingCoef float64) core.PetStatInheritance {
 	return func(ownerStats stats.Stats) stats.Stats {
+		ap := ownerStats[stats.AttackPower] * scalingCoef
+
+		vengeance := ownerStats[stats.Vengeance]
+		if vengeance > 0 {
+			ap -= dk.ApplyStatDependencies(stats.Stats{stats.AttackPower: vengeance})[stats.AttackPower] * scalingCoef
+		} else if vengeance < 0 {
+			ap += dk.ApplyStatDependencies(stats.Stats{stats.AttackPower: -vengeance})[stats.AttackPower] * scalingCoef
+		}
+
 		return stats.Stats{
 			stats.Armor:               ownerStats[stats.Armor],
-			stats.AttackPower:         ownerStats[stats.AttackPower] * apCoef,
+			stats.AttackPower:         ap,
 			stats.HasteRating:         ownerStats[stats.HasteRating],
 			stats.Health:              ownerStats[stats.Health],
 			stats.PhysicalCritPercent: ownerStats[stats.PhysicalCritPercent],
