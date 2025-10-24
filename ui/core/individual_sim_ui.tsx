@@ -549,8 +549,6 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 						breakpointLimits: oldProto.breakpointLimits,
 					});
 
-					console.log(oldProto.reforgeSettings);
-
 					return oldProto;
 				},
 			],
