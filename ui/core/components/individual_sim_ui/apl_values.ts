@@ -48,6 +48,7 @@ import {
 	APLValueDotPercentIncrease,
 	APLValueDotRemainingTime,
 	APLValueDotTickFrequency,
+	APLValueCurrentSnapshot,
 	APLValueEnergyRegenPerSecond,
 	APLValueEnergyTimeToTarget,
 	APLValueFocusRegenPerSecond,
@@ -1458,6 +1459,17 @@ const valueKindFactories: { [f in ValidAPLValueKind]: ValueKindConfig<APLValueIm
 			AplHelpers.unitFieldConfig('targetUnit', 'targets'),
 			AplHelpers.actionIdFieldConfig('spellId', 'expected_dot_spells', ''),
 			AplHelpers.useDotBaseValueCheckbox(),
+		],
+	}),
+	dotCurrentSnapshot: inputBuilder({
+		label: i18n.t('rotation_tab.apl.values.dot_current_snapshot.label'),
+		submenu: ['dot'],
+		shortDescription: i18n.t('rotation_tab.apl.values.dot_current_snapshot.tooltip'),
+		newValue: APLValueCurrentSnapshot.create,
+		fields: [
+			AplHelpers.unitFieldConfig('targetUnit', 'targets'),
+			AplHelpers.actionIdFieldConfig('spellId', 'expected_dot_spells', ''),
+			AplHelpers.useDotIgnoreHasteCheckbox(),
 		],
 	}),
 	dotCritPercentIncrease: inputBuilder({

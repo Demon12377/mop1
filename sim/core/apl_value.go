@@ -287,6 +287,8 @@ func (rot *APLRotation) newAPLValueWithContext(config *proto.APLValue, groupVari
 		value = rot.newValueDotCritPercentIncrease(config.GetDotCritPercentIncrease(), config.Uuid)
 	case *proto.APLValue_DotTickRatePercentIncrease:
 		value = rot.newValueDotTickRatePercentIncrease(config.GetDotTickRatePercentIncrease(), config.Uuid)
+	case *proto.APLValue_DotCurrentSnapshot:
+		value = rot.newDotCurrentSnapshot(config.GetDotCurrentSnapshot(), config.Uuid)
 
 	// Sequences
 	case *proto.APLValue_SequenceIsComplete:

@@ -1242,7 +1242,13 @@ export function reactionTimeCheckbox(): APLPickerBuilderFieldConfig<any, any> {
 
 export function useDotBaseValueCheckbox(): APLPickerBuilderFieldConfig<any, any> {
 	return booleanFieldConfig('useBaseValue', 'Use base value', {
-		labelTooltip: 'If checked, will compare the current DoT to the the base value (on encounter start) of the DoT.',
+		labelTooltip: 'If checked, will compare the current DoT to the base value (on encounter start) of the DoT.',
+	});
+}
+
+export function useDotIgnoreHasteCheckbox(): APLPickerBuilderFieldConfig<any, any> {
+	return booleanFieldConfig('ignoreHaste', 'Ignore Haste', {
+		labelTooltip: 'If checked, will compare the current DoTs magnitude to the base value (on encounter start) of the DoT, ignoring haste effects.',
 	});
 }
 

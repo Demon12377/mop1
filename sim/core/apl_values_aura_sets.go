@@ -128,7 +128,14 @@ func (rot *APLRotation) newValueAnyTrinketStatProcsAvailable(config *proto.APLVa
 func (value *APLValueAnyItemStatProcsAvailable) Type() proto.APLValueType {
 	return proto.APLValueType_ValueTypeBool
 }
+
+// unsure if this works correctly based on a weird bug i observed...
+// this was seemingly returning true if no matching auras were found
+// need to debug further
 func (value *APLValueAnyItemStatProcsAvailable) GetBool(sim *Simulation) bool {
+	if len(value.matchingAuras) == 0 {
+		return false
+	}
 	for _, aura := range value.matchingAuras {
 		if !aura.IsActive() && aura.CanProc(sim) && aura.Icd != nil && aura.Icd.TimeToReady(sim) == 0 {
 			return true
@@ -162,6 +169,9 @@ func (value *APLValueItemProcsMinRemainingTime) GetDuration(sim *Simulation) tim
 	for _, aura := range value.matchingAuras {
 		if aura.IsActive() {
 			minRemainingTime = min(minRemainingTime, aura.RemainingDuration(sim))
+			// if sim.CurrentTime < 10*time.Second && aura.ActionID.SpellID == 138963 {
+			// 	fmt.Println(sim.CurrentTime, "trinket active", aura.ActionID, "remaining:", aura.RemainingDuration(sim))
+			// }
 		}
 	}
 
