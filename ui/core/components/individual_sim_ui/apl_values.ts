@@ -1472,10 +1472,10 @@ const valueKindFactories: { [f in ValidAPLValueKind]: ValueKindConfig<APLValueIm
 		submenu: ['dot'],
 		shortDescription: i18n.t('rotation_tab.apl.values.dot_current_snapshot.tooltip'),
 		newValue: APLValueCurrentSnapshot.create,
+		includeIf: (player: Player<any>, _isPrepull: boolean) => player.getSpec() == Spec.SpecAfflictionWarlock,
 		fields: [
 			AplHelpers.unitFieldConfig('targetUnit', 'targets'),
 			AplHelpers.actionIdFieldConfig('spellId', 'expected_dot_spells', ''),
-			AplHelpers.useDotIgnoreHasteCheckbox(),
 		],
 	}),
 	dotCritPercentIncrease: inputBuilder({

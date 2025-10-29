@@ -1,6 +1,8 @@
 package affliction
 
 import (
+	"fmt"
+	"math"
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
@@ -14,6 +16,8 @@ func (warlock *AfflictionWarlock) NewAPLValue(rot *core.APLRotation, config *pro
 			SpellId: core.Spell{ActionID: core.ActionID{SpellID: 48181}}.ToProto(),
 		}
 		return rot.NewValueSpellInFlight(&spellInFlight, nil)
+	case *proto.APLValue_DotCurrentSnapshot:
+		return warlock.newDotCurrentSnapshot(config.GetDotCurrentSnapshot(), config.Uuid)
 	default:
 		return warlock.Warlock.NewAPLValue(rot, config)
 	}
@@ -82,4 +86,96 @@ func (warlock *AfflictionWarlock) newActionNextExhaleTarget(config *proto.APLAct
 		warlock:        warlock,
 		lastExecutedAt: core.NeverExpires,
 	}
+}
+
+// modified snapshot tracker, designed to be affliction specific.
+// checks the snapshotted magnitude of existing dots relative to baseline.
+// ignores crit and haste factors, since malefic effect ignores these
+type APLValueCurrentSnapshot struct {
+	core.DefaultAPLValueImpl
+	warlock            *AfflictionWarlock
+	spell              *core.Spell
+	targetRef          core.UnitReference
+	baseValue          float64
+	baseValueDummyAura *core.Aura // Used to get the base value at encounter start
+}
+
+func (warlock *AfflictionWarlock) newDotCurrentSnapshot(config *proto.APLValueCurrentSnapshot, _ *proto.UUID) *APLValueCurrentSnapshot {
+	spell := warlock.GetSpell(core.ActionID{SpellID: config.SpellId.GetSpellId()})
+	if spell == nil {
+		return nil
+	}
+
+	//targetRef := core.NewUnitReference(config.TargetUnit, &warlock.Unit)
+	targetRef := warlock.Rotation.GetTargetUnit(config.TargetUnit)
+
+	baseValueDummyAura := core.MakePermanent(warlock.GetOrRegisterAura(core.Aura{
+		Label:    "Dummy Aura - APL Current Snapshot Base Value",
+		Duration: core.NeverExpires,
+	}))
+
+	return &APLValueCurrentSnapshot{
+		warlock:            warlock,
+		spell:              spell,
+		targetRef:          targetRef,
+		baseValueDummyAura: baseValueDummyAura,
+	}
+}
+
+func (value *APLValueCurrentSnapshot) Finalize(rot *core.APLRotation) {
+	if value.baseValueDummyAura != nil {
+		sbssDotRefs := []*core.Spell{value.warlock.GetSpell(core.ActionID{SpellID: 172}), value.warlock.GetSpell(core.ActionID{SpellID: 980}), value.warlock.GetSpell(core.ActionID{SpellID: 30108})}
+		value.baseValueDummyAura.ApplyOnInit(func(aura *core.Aura, sim *core.Simulation) {
+			// Soulburn: Soul Swap
+			if value.spell.ActionID.SpellID == 86121 && value.spell.ActionID.Tag == 1 {
+				total := 0.0
+				target := value.targetRef.Get()
+
+				for _, spellRef := range sbssDotRefs {
+					total += (spellRef.ExpectedTickDamage(sim, target) * spellRef.Dot(target).CalcTickPeriod().Seconds()) / (1 + (spellRef.SpellCritChance(target) * (spellRef.CritDamageMultiplier() - 1)))
+				}
+				value.baseValue = total
+
+			} else {
+				target := value.targetRef.Get()
+				fmt.Println("found target:", target)
+				value.baseValue = value.spell.ExpectedTickDamage(sim, target) * value.spell.Dot(target).CalcTickPeriod().Seconds()
+				value.baseValue /= (1 + (value.spell.SpellCritChance(target) * (value.spell.CritDamageMultiplier() - 1)))
+			}
+		})
+	}
+}
+
+func (value *APLValueCurrentSnapshot) Type() proto.APLValueType {
+	return proto.APLValueType_ValueTypeFloat
+}
+
+func (value *APLValueCurrentSnapshot) String() string {
+	return fmt.Sprintf("Current Snapshot on %s", value.spell.ActionID)
+}
+
+func (value *APLValueCurrentSnapshot) GetFloat(sim *core.Simulation) float64 {
+	target := value.targetRef.Get()
+	snapshotDamage := 0.0
+	//Soulburn: Soul Swap
+	if value.spell.ActionID.SpellID == 86121 && value.spell.ActionID.Tag == 1 {
+		sbssDotRefs := []*core.Spell{value.warlock.GetSpell(core.ActionID{SpellID: 172}), value.warlock.GetSpell(core.ActionID{SpellID: 980}), value.warlock.GetSpell(core.ActionID{SpellID: 30108})}
+		target := value.targetRef.Get()
+
+		for _, spellRef := range sbssDotRefs {
+			dot := spellRef.Dot(target)
+
+			snapshotDamage += (dot.Spell.ExpectedTickDamageFromCurrentSnapshot(sim, target) * dot.TickPeriod().Seconds()) / (1 + (dot.SnapshotCritChance * (dot.Spell.CritDamageMultiplier() - 1)))
+		}
+	} else {
+		dot := value.spell.Dot(target)
+		snapshotDamage = (value.spell.ExpectedTickDamageFromCurrentSnapshot(sim, target) * dot.TickPeriod().Seconds()) / (1 + (dot.SnapshotCritChance * (dot.Spell.CritDamageMultiplier() - 1)))
+	}
+
+	if snapshotDamage == 0 {
+		return -1
+	}
+
+	// Rounding this to effectively 3 decimal places as a percentage to avoid floating point errors
+	return math.Round((snapshotDamage/value.baseValue)*100000)/100000 - 1
 }

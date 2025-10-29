@@ -1477,6 +1477,10 @@
 					"label": "Dot Damage Increase %",
 					"tooltip": "How much stronger a new DoT would be compared to the old."
 				},
+				"dot_current_snapshot": {
+					"label": "Existing Raw Snapshot %",
+					"tooltip": "How much stronger your existing snapshot is relative to baseline. Ignores Haste and Crit. Not recommended to use unless you know what you're doing."
+				},
 				"sequence_is_complete": {
 					"label": "Sequence Is Complete",
 					"tooltip": "<b>True</b> if there are no more subactions left to execute in the sequence, otherwise <b>False</b>."

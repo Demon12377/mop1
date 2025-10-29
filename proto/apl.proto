@@ -808,7 +808,6 @@ message APLValueDotPercentIncrease {
 message APLValueCurrentSnapshot {
 	ActionID spell_id = 1;
 	UnitReference target_unit = 2;
-	bool ignore_haste = 3;
 }
 
 message APLActionGroupReference {

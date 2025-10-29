@@ -1477,6 +1477,10 @@
 					"label": "Augmentation de dégâts DoT %",
 					"tooltip": "À quel point un nouveau DoT serait plus fort comparé à l'ancien."
 				},
+				"dot_current_snapshot": {
+					"label": "Instantané brut existant %",
+					"tooltip": "Influence la puissance de votre snapshot actuel par rapport à la version de référence. Ignore la hâte et les coups critiques. À utiliser uniquement si vous savez ce que vous faites."
+				},
 				"sequence_is_complete": {
 					"label": "Séquence est complète",
 					"tooltip": "<b>Vrai</b> s'il n'y a plus de sous-actions à exécuter dans la séquence, sinon <b>Faux</b>."
