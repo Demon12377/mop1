@@ -49,7 +49,6 @@ jobs:
             - name: Commit updated version file
               run: |
                   git config --local user.name "GitHub Actions"
-                  git config --local user.email "actions@github.com"
                   if ! git diff --exit-code; then
                       git checkout -b github-actions
                       git add .deployedprotoversion
