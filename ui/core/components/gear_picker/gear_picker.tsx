@@ -263,7 +263,7 @@ export class ItemRenderer extends Component {
 		}
 
 		newItem.allSocketColors().forEach((socketColor, gemIdx) => {
-			const gemContainer = createGemContainer(socketColor, newItem.gems[gemIdx], gemIdx);
+			const gemContainer = createGemContainer(socketColor, newItem.gems[gemIdx]?.id, gemIdx);
 			if (gemIdx === newItem.numPossibleSockets - 1 && newItem.couldHaveExtraSocket()) {
 				const updateProfession = () => {
 					gemContainer.classList[this.player.isBlacksmithing() ? 'remove' : 'add']('hide');

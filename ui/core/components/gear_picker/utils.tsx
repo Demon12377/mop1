@@ -1,7 +1,6 @@
 import { ref } from 'tsx-vanilla';
 
 import { GemColor, ItemSlot } from '../../proto/common';
-import { UIGem as Gem } from '../../proto/ui';
 import { ActionId } from '../../proto_utils/action_id';
 import { getEmptyGemSocketIconUrl } from '../../proto_utils/gems';
 
@@ -31,18 +30,18 @@ export const createNameDescriptionLabel = (nameDesc: string) => {
 	return <small className="heroic-label">({nameDesc})</small>;
 };
 
-export const createGemContainer = (socketColor: GemColor, gem: Gem | null, index: number) => {
+export const createGemContainer = (socketColor: GemColor, gemId: number | null | undefined, index: number) => {
 	const gemIconElem = ref<HTMLImageElement>();
 	const gemContainerElem = ref<HTMLAnchorElement>();
 	const gemContainer = (
 		<a ref={gemContainerElem} className="gem-socket-container" href="javascript:void(0)" dataset={{ socketIdx: index }}>
-			<img ref={gemIconElem} className={`gem-icon ${!gem ? 'hide' : ''}`} />
+			<img ref={gemIconElem} className={`gem-icon ${!gemId ? 'hide' : ''}`} />
 			<img className="socket-icon" src={getEmptyGemSocketIconUrl(socketColor)} />
 		</a>
 	);
 
-	if (gem) {
-		ActionId.fromItemId(gem.id)
+	if (gemId) {
+		ActionId.fromItemId(gemId)
 			.fill()
 			.then(filledId => {
 				filledId.setWowheadHref(gemContainerElem.value!);

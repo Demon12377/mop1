@@ -2,12 +2,13 @@ import clsx from 'clsx';
 import tippy, { hideAll } from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 import { Constraint, greaterEq, lessEq, Model, Options, Solution, solve } from 'yalps';
+import hash from 'object-hash';
 
 import i18n from '../../i18n/config.js';
 import * as Mechanics from '../constants/mechanics.js';
 import { IndividualSimUI } from '../individual_sim_ui';
 import { Player } from '../player';
-import { Class, GemColor, ItemSlot, Profession, PseudoStat, Race, ReforgeStat, Spec, Stat, UnitStats } from '../proto/common';
+import { Class, EquipmentSpec, GemColor, ItemSlot, Profession, PseudoStat, Race, ReforgeStat, Spec, Stat } from '../proto/common';
 import { UIGem as Gem, IndividualSimSettings, ReforgeSettings, StatCapType } from '../proto/ui';
 import { isShaTouchedWeapon, isThroneOfThunderWeapon, ReforgeData } from '../proto_utils/equipped_item';
 import { Gear } from '../proto_utils/gear';
@@ -26,6 +27,7 @@ import { NumberPicker, NumberPickerConfig } from './pickers/number_picker';
 import { renderSavedEPWeights } from './saved_data_managers/ep_weights';
 import Toast from './toast';
 import { trackEvent, trackPageView } from '../../tracking/utils';
+import { PersistentCacheHandler } from '../cache_handler';
 
 type YalpsCoefficients = Map<string, number>;
 type YalpsVariables = Map<string, YalpsCoefficients>;
@@ -656,6 +658,10 @@ export class ReforgeOptimizer {
 		}
 	}
 
+	getIncludeTimeout() {
+		return this.includeTimeout;
+	}
+
 	buildContextMenu(button: HTMLButtonElement) {
 		const instance = tippy(button, {
 			interactive: true,
@@ -1212,56 +1218,80 @@ export class ReforgeOptimizer {
 		}
 		this.previousGear = this.player.getGear();
 		this.previousReforges = this.previousGear.getAllReforges();
+
 		let baseGear = this.previousGear.withoutReforges(this.player.canDualWield2H(), this.frozenItemSlots);
 
 		if (this.includeGems) {
 			baseGear = baseGear.withoutGems(this.player.canDualWield2H(), this.frozenItemSlots, true);
 		}
 
-		const baseStats = await this.updateGear(baseGear);
+		const reforgeCacheKey = reforgeCache.cacheKey({
+			processedStatCaps: this.processedStatCaps || new Stats(),
+			preCapEPs: this.preCapEPs || new Stats(),
+			relativeStatCapStat: this.relativeStatCapStat || null,
+			includeEOTBPSocket: this.includeEOTBPGemSocket,
+			includeTimeout: !!this.getIncludeTimeout(),
+			gear: baseGear,
+		});
+		const cachedReforge = await reforgeCache.store.get(reforgeCacheKey);
+		if (cachedReforge) {
+			const gear = this.simUI.sim.db.lookupEquipmentSpec(cachedReforge);
+			await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), gear);
+			this.currentReforges = gear.getAllReforges();
+			if (isDevMode()) console.log('Reforge loaded from cache!');
+			trackEvent({
+				action: 'settings',
+				category: 'reforging',
+				label: 'suggest_cache_hit',
+			});
+		} else {
+			const baseStats = await this.updateGear(baseGear);
 
-		// Compute effective stat caps for just the Reforge contribution
-		let reforgeCaps = baseStats.computeStatCapsDelta(this.processedStatCaps);
+			// Compute effective stat caps for just the Reforge contribution
+			let reforgeCaps = baseStats.computeStatCapsDelta(this.processedStatCaps);
 
-		if (this.player.getSpec() == Spec.SpecGuardianDruid) {
-			reforgeCaps = reforgeCaps.withPseudoStat(
-				PseudoStat.PseudoStatMeleeHastePercent,
-				reforgeCaps.getPseudoStat(PseudoStat.PseudoStatMeleeHastePercent) / 1.5,
+			if (this.player.getSpec() == Spec.SpecGuardianDruid) {
+				reforgeCaps = reforgeCaps.withPseudoStat(
+					PseudoStat.PseudoStatMeleeHastePercent,
+					reforgeCaps.getPseudoStat(PseudoStat.PseudoStatMeleeHastePercent) / 1.5,
+				);
+			}
+
+			if (isDevMode()) {
+				console.log('Stat caps for Reforge contribution:');
+				console.log(reforgeCaps);
+			}
+
+			// Do the same for any soft cap breakpoints that were configured
+			const reforgeSoftCaps = this.computeReforgeSoftCaps(baseStats);
+
+			// Perform any required processing on the pre-cap EPs to make them internally consistent with the
+			// configured hard caps and soft caps.
+			let validatedWeights = ReforgeOptimizer.checkWeights(this.preCapEPs, reforgeCaps, reforgeSoftCaps);
+
+			if (this.relativeStatCap) {
+				validatedWeights = this.relativeStatCap.updateWeights(validatedWeights);
+			}
+
+			// Set up YALPS model
+			const variables = this.buildYalpsVariables(baseGear, validatedWeights, reforgeCaps, reforgeSoftCaps);
+			const constraints = this.buildYalpsConstraints(baseGear, baseStats);
+
+			// Solve in multiple passes to enforce caps
+			await this.solveModel(
+				baseGear,
+				validatedWeights,
+				reforgeCaps,
+				reforgeSoftCaps,
+				variables,
+				constraints,
+				5000000,
+				(this.includeTimeout ? (this.relativeStatCap ? 120 : 30) : 3600) / (batchRun ? 4 : 1),
 			);
+			const updatedGear = this.player.getGear();
+			this.currentReforges = updatedGear.getAllReforges();
+			await reforgeCache.store.set(reforgeCacheKey, updatedGear.asSpec());
 		}
-
-		if (isDevMode()) {
-			console.log('Stat caps for Reforge contribution:');
-			console.log(reforgeCaps);
-		}
-
-		// Do the same for any soft cap breakpoints that were configured
-		const reforgeSoftCaps = this.computeReforgeSoftCaps(baseStats);
-
-		// Perform any required processing on the pre-cap EPs to make them internally consistent with the
-		// configured hard caps and soft caps.
-		let validatedWeights = ReforgeOptimizer.checkWeights(this.preCapEPs, reforgeCaps, reforgeSoftCaps);
-
-		if (this.relativeStatCap) {
-			validatedWeights = this.relativeStatCap.updateWeights(validatedWeights);
-		}
-
-		// Set up YALPS model
-		const variables = this.buildYalpsVariables(baseGear, validatedWeights, reforgeCaps, reforgeSoftCaps);
-		const constraints = this.buildYalpsConstraints(baseGear, baseStats);
-
-		// Solve in multiple passes to enforce caps
-		await this.solveModel(
-			baseGear,
-			validatedWeights,
-			reforgeCaps,
-			reforgeSoftCaps,
-			variables,
-			constraints,
-			5000000,
-			(this.includeTimeout ? (this.relativeStatCap ? 120 : 30) : 3600) / (batchRun ? 4 : 1),
-		);
-		this.currentReforges = this.player.getGear().getAllReforges();
 	}
 
 	async updateGear(gear: Gear): Promise<Stats> {
@@ -2154,3 +2184,24 @@ export class ReforgeOptimizer {
 		});
 	}
 }
+
+export type ReforgeCacheKeyOptions = {
+	gear: Gear;
+	processedStatCaps: Stats;
+	preCapEPs: Stats;
+	relativeStatCapStat: Stat | null;
+	includeEOTBPSocket: boolean;
+	includeTimeout: boolean;
+};
+export class ReforgeCache {
+	store = new PersistentCacheHandler<EquipmentSpec>({
+		databaseName: 'reforge-cache',
+		version: 1,
+		ttl: 60 * 60 * 24 * 30, // 30 days TTL
+	});
+	cacheKey(options: ReforgeCacheKeyOptions): string {
+		return hash(options);
+	}
+}
+
+export const reforgeCache = new ReforgeCache();

@@ -7,18 +7,18 @@ import { REPO_RELEASES_URL } from '../../constants/other';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import i18n from '../../../i18n/config';
 import { BulkSettings, DistributionMetrics, ProgressMetrics } from '../../proto/api';
-import { Class, GemColor, HandType, ItemRandomSuffix, ItemSlot, ItemSpec, RangedWeaponType, ReforgeStat, Spec } from '../../proto/common';
-import { ItemEffectRandPropPoints, SimDatabase, SimEnchant, SimGem, SimItem } from '../../proto/db';
-import { UIEnchant, UIGem, UIItem } from '../../proto/ui';
+import { Class, GemColor, HandType, ItemSlot, ItemSpec, RangedWeaponType, Spec } from '../../proto/common';
+import { SimGem } from '../../proto/db';
+import { UIGem } from '../../proto/ui';
 import { ActionId } from '../../proto_utils/action_id';
 import { EquippedItem } from '../../proto_utils/equipped_item';
 import { Gear } from '../../proto_utils/gear';
 import { getEmptyGemSocketIconUrl } from '../../proto_utils/gems';
 import { canEquipItem, getEligibleItemSlots, isSecondaryItemSlot } from '../../proto_utils/utils';
 import { RequestTypes } from '../../sim_signal_manager';
-import { RelativeStatCap } from '../suggest_reforges_action';
+import { ReforgeCacheKeyOptions, RelativeStatCap, reforgeCache } from '../suggest_reforges_action';
 import { TypedEvent } from '../../typed_event';
-import { getEnumValues, isExternal } from '../../utils';
+import { getEnumValues, isDevMode, isExternal } from '../../utils';
 import { ItemData } from '../gear_picker/item_list';
 import SelectorModal from '../gear_picker/selector_modal';
 import { ResultsViewer } from '../results_viewer';
@@ -40,7 +40,8 @@ import { BulkGearJsonImporter } from './importers';
 import { BooleanPicker } from '../pickers/boolean_picker';
 import { trackEvent } from '../../../tracking/utils';
 import { EnumPicker } from '../pickers/enum_picker';
-import { t } from 'i18next';
+import { Stats } from '../../proto_utils/stats';
+import { createGemContainer } from '../gear_picker/utils';
 
 const WEB_DEFAULT_ITERATIONS = 1000;
 const WEB_ITERATIONS_LIMIT = 50_000;
@@ -85,8 +86,9 @@ export class BulkTab extends SimTab {
 		[BulkSimItemSlot.ItemSlotFinger, null],
 		[BulkSimItemSlot.ItemSlotTrinket, null],
 	]);
+	socketContainer: HTMLElement | null = null;
 	defaultGems: SimGem[];
-	gemIconElements: HTMLImageElement[];
+	gemIconElements: HTMLAnchorElement[];
 
 	protected topGearResults: TopGearResult[] | null = null;
 	protected originalGear: Gear | null = null;
@@ -256,16 +258,7 @@ export class BulkTab extends SimTab {
 				SimGem.create({ id: settings.defaultPrismaticGem }),
 			);
 
-			this.defaultGems.forEach((gem, idx) => {
-				ActionId.fromItemId(gem.id)
-					.fill()
-					.then(filledId => {
-						if (gem.id) {
-							this.gemIconElements[idx].src = filledId.iconUrl;
-							this.gemIconElements[idx].classList.remove('hide');
-						}
-					});
-			});
+			this.buildGemSettings();
 		}
 	}
 
@@ -292,57 +285,6 @@ export class BulkTab extends SimTab {
 		if (isExternal()) return WEB_DEFAULT_ITERATIONS;
 
 		return this.simUI.sim.getIterations();
-	}
-
-	protected createBulkItemsDatabase(): SimDatabase {
-		const itemsDb = SimDatabase.create();
-		for (const is of this.items.values()) {
-			if (!is) continue;
-
-			const item = this.simUI.sim.db.lookupItemSpec(is);
-			if (!item) {
-				throw new Error(`item with ID ${is.id} not found in database`);
-			}
-			itemsDb.items.push(SimItem.fromJson(UIItem.toJson(item.item), { ignoreUnknownFields: true }));
-
-			const ieRpp = this.simUI.sim.db.getItemEffectRandPropPoints(item.ilvl);
-			if (ieRpp) {
-				itemsDb.itemEffectRandPropPoints.push(ItemEffectRandPropPoints.create(this.simUI.sim.db.getItemEffectRandPropPoints(item.ilvl)));
-			}
-
-			if (item.enchant) {
-				itemsDb.enchants.push(
-					SimEnchant.fromJson(UIEnchant.toJson(item.enchant), {
-						ignoreUnknownFields: true,
-					}),
-				);
-			}
-			if (item.randomSuffix) {
-				itemsDb.randomSuffixes.push(
-					ItemRandomSuffix.fromJson(ItemRandomSuffix.toJson(item.randomSuffix), {
-						ignoreUnknownFields: true,
-					}),
-				);
-			}
-			if (item.reforge) {
-				itemsDb.reforgeStats.push(
-					ReforgeStat.fromJson(ReforgeStat.toJson(item.reforge), {
-						ignoreUnknownFields: true,
-					}),
-				);
-			}
-			for (const gem of item.gems) {
-				if (gem) {
-					itemsDb.gems.push(SimGem.fromJson(UIGem.toJson(gem), { ignoreUnknownFields: true }));
-				}
-			}
-		}
-		for (const gem of this.defaultGems) {
-			if (gem.id > 0) {
-				itemsDb.gems.push(gem);
-			}
-		}
-		return itemsDb;
 	}
 
 	// Add an item to its eligible bulk sim item slot(s). Mainly used for importing and search
@@ -733,6 +675,8 @@ export class BulkTab extends SimTab {
 		this.isRunning = false;
 		this.bulkSimButton.addEventListener('click', async () => {
 			if (this.isRunning) return;
+			if (isDevMode()) console.log('Starting Batch Sim optimization...');
+			performance.mark('bulk-sim-start');
 			trackEvent({
 				action: 'sim',
 				category: 'simulate',
@@ -747,9 +691,17 @@ export class BulkTab extends SimTab {
 			let isAborted = false;
 			this.topGearResults = null;
 			this.originalGearResults = null;
-			const playerPhase = this.simUI.sim.getPhase() >= 2;
+			const includeEOTBPSocket = this.simUI.sim.getPhase() >= 2;
 			const challengeModeEnabled = this.simUI.player.getChallengeModeEnabled();
 			const hasBlacksmithing = this.simUI.player.isBlacksmithing();
+
+			const reforgeResultBaseCacheKey: Omit<ReforgeCacheKeyOptions, 'gear'> = {
+				processedStatCaps: this.simUI.reforger?.processedStatCaps || new Stats(),
+				preCapEPs: this.simUI.reforger?.preCapEPs || new Stats(),
+				relativeStatCapStat: this.simUI.reforger?.relativeStatCapStat || null,
+				includeEOTBPSocket,
+				includeTimeout: !!this.simUI.reforger?.getIncludeTimeout(),
+			};
 
 			try {
 				await this.simUI.sim.signalManager.abortType(RequestTypes.All);
@@ -832,23 +784,16 @@ export class BulkTab extends SimTab {
 
 					await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), updatedGear);
 
+					const reforgeCacheKey = reforgeCache.cacheKey({ ...reforgeResultBaseCacheKey, gear: updatedGear });
 					if (this.simUI.reforger) {
-						this.simUI.reforger.setIncludeGems(TypedEvent.nextEventID(), true);
-						this.simUI.reforger.setIncludeEOTBPGemSocket(TypedEvent.nextEventID(), playerPhase);
+						const cachedReforge = await reforgeCache.store.get(reforgeCacheKey);
+						if (cachedReforge) {
+							const gear = this.simUI.sim.db.lookupEquipmentSpec(cachedReforge);
+							await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), gear);
+						} else {
+							this.simUI.reforger.setIncludeGems(TypedEvent.nextEventID(), true);
+							this.simUI.reforger.setIncludeEOTBPGemSocket(TypedEvent.nextEventID(), includeEOTBPSocket);
 
-						if (RelativeStatCap.hasRoRo(this.simUI.player) && this.simUI.reforger.relativeStatCapStat !== -1) {
-							this.simUI.reforger.relativeStatCap = new RelativeStatCap(
-								this.simUI.reforger.relativeStatCapStat,
-								this.simUI.player,
-								this.simUI.player.getClass(),
-							);
-						}
-
-						try {
-							await this.simUI.reforger.optimizeReforges(true);
-						} catch (error) {
-							await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), updatedGear);
-							this.simUI.reforger.setIncludeGems(TypedEvent.nextEventID(), false);
 							if (RelativeStatCap.hasRoRo(this.simUI.player) && this.simUI.reforger.relativeStatCapStat !== -1) {
 								this.simUI.reforger.relativeStatCap = new RelativeStatCap(
 									this.simUI.reforger.relativeStatCapStat,
@@ -859,8 +804,24 @@ export class BulkTab extends SimTab {
 
 							try {
 								await this.simUI.reforger.optimizeReforges(true);
+								reforgeCache.store.set(reforgeCacheKey, updatedGear.asSpec());
 							} catch (error) {
-								continue;
+								await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), updatedGear);
+
+								this.simUI.reforger.setIncludeGems(TypedEvent.nextEventID(), false);
+								if (RelativeStatCap.hasRoRo(this.simUI.player) && this.simUI.reforger.relativeStatCapStat !== -1) {
+									this.simUI.reforger.relativeStatCap = new RelativeStatCap(
+										this.simUI.reforger.relativeStatCapStat,
+										this.simUI.player,
+										this.simUI.player.getClass(),
+									);
+								}
+
+								try {
+									await this.simUI.reforger.optimizeReforges(true);
+								} catch (error) {
+									continue;
+								}
 							}
 						}
 					}
@@ -878,6 +839,8 @@ export class BulkTab extends SimTab {
 					}
 
 					updatedGear = this.simUI.player.getGear();
+					await reforgeCache.store.set(reforgeCacheKey, updatedGear.asSpec());
+
 					const isOriginalGear = this.originalGear.equals(updatedGear);
 					if (!isOriginalGear)
 						topGearResults.push({
@@ -906,6 +869,10 @@ export class BulkTab extends SimTab {
 				console.error(error);
 				await this.simUI.player.setGearAsync(TypedEvent.nextEventID(), this.originalGear!);
 			} finally {
+				performance.mark('bulk-sim-end');
+				if (isDevMode())
+					console.log('Bulk Sim took:', `${performance.measure('bulk-sim-measure', 'bulk-sim-start', 'bulk-sim-end').duration.toFixed(2)}ms`);
+
 				this.isRunning = false;
 				if (!waitAbort) this.bulkSimButton.disabled = false;
 				if (isAborted) {
@@ -935,6 +902,8 @@ export class BulkTab extends SimTab {
 				<div ref={frozenTrinketDiv}></div>
 			</>,
 		);
+
+		this.socketContainer = socketsContainerRef.value!;
 
 		if (inheritUpgradesDiv.value)
 			new BooleanPicker<BulkTab>(inheritUpgradesDiv.value, this, {
@@ -1037,43 +1006,50 @@ export class BulkTab extends SimTab {
 				},
 			});
 
+		this.buildGemSettings();
+	}
+
+	private buildGemSettings() {
+		if (!this.socketContainer) return;
+		this.socketContainer.replaceChildren();
 		Array<GemColor>(GemColor.GemColorRed, GemColor.GemColorYellow, GemColor.GemColorBlue, GemColor.GemColorMeta, GemColor.GemColorPrismatic).forEach(
 			(socketColor, socketIndex) => {
-				const gemContainerRef = ref<HTMLDivElement>();
-				const gemIconRef = ref<HTMLImageElement>();
-				const socketIconRef = ref<HTMLImageElement>();
+				const gem = this.defaultGems[socketIndex];
+				const gemContainer = createGemContainer(socketColor, gem?.id, socketIndex);
+				const gemElem = gemContainer.querySelector<HTMLElement>('.gem-icon')!;
 
-				socketsContainerRef.value!.appendChild(
-					<div ref={gemContainerRef} className="gem-socket-container">
-						<img ref={gemIconRef} className="gem-icon hide" />
-						<img ref={socketIconRef} className="socket-icon" />
-					</div>,
-				);
+				this.socketContainer!.appendChild(gemContainer);
 
-				this.gemIconElements.push(gemIconRef.value!);
-				socketIconRef.value!.src = getEmptyGemSocketIconUrl(socketColor);
+				this.gemIconElements.push(gemContainer);
+				const emptySocketUrl = getEmptyGemSocketIconUrl(socketColor);
 
 				let selector: GemSelectorModal;
+
+				const updateGemIcon = (id?: number) => {
+					if (id) {
+						gemElem.classList.remove('hide');
+						ActionId.fromItemId(id)
+							.fill()
+							.then(filledId => {
+								gemElem.setAttribute('src', filledId.iconUrl);
+							});
+					} else {
+						gemElem.classList.add('hide');
+						gemElem.setAttribute('src', emptySocketUrl);
+					}
+				};
 
 				const onSelectHandler = (itemData: ItemData<UIGem>) => {
 					this.defaultGems[socketIndex] = itemData.item;
 					this.storeSettings();
-					ActionId.fromItemId(itemData.id)
-						.fill()
-						.then(filledId => {
-							if (itemData.id) {
-								this.gemIconElements[socketIndex].src = filledId.iconUrl;
-								this.gemIconElements[socketIndex].classList.remove('hide');
-							}
-						});
+					updateGemIcon(itemData.id);
 					selector.close();
 				};
 
 				const onRemoveHandler = () => {
 					this.defaultGems[socketIndex] = UIGem.create();
 					this.storeSettings();
-					this.gemIconElements[socketIndex].classList.add('hide');
-					this.gemIconElements[socketIndex].src = '';
+					updateGemIcon();
 					selector.close();
 				};
 
@@ -1082,8 +1058,11 @@ export class BulkTab extends SimTab {
 					selector.show();
 				};
 
-				this.gemIconElements[socketIndex].addEventListener('click', openGemSelector);
-				gemContainerRef.value?.addEventListener('click', openGemSelector);
+				updateGemIcon(gem.id);
+				gemContainer?.addEventListener('click', event => {
+					event?.preventDefault();
+					openGemSelector();
+				});
 			},
 		);
 	}
