@@ -2761,73 +2761,73 @@ dps_results: {
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 897022.25371
-  tps: 312119.70557
-  hps: 4951.63869
+  dps: 800798.49981
+  tps: 276467.89239
+  hps: 5887.73686
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 134139.73623
-  tps: 126747.53222
-  hps: 7088.47419
+  dps: 123138.46875
+  tps: 115805.92675
+  hps: 7122.3075
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 148881.08475
-  tps: 129433.56537
-  hps: 7065.98919
+  dps: 140977.5817
+  tps: 121599.01432
+  hps: 6962.8694
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.13508780593e+06
-  tps: 427277.54682
-  hps: 8072.23687
+  dps: 1.13742081341e+06
+  tps: 429082.77907
+  hps: 8110.12767
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 168275.59016
-  tps: 166152.66923
-  hps: 8502.99753
+  dps: 167351.73136
+  tps: 165228.81043
+  hps: 8517.9787
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 200227.61475
-  tps: 189613.01007
+  dps: 200333.15955
+  tps: 189718.55487
   hps: 8833.96457
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 876810.20963
-  tps: 329475.42989
-  hps: 6734.25253
+  dps: 881464.88055
+  tps: 331209.50142
+  hps: 6748.3937
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 125897.64139
-  tps: 125897.64139
-  hps: 7100.49668
+  dps: 117214.8253
+  tps: 117214.8253
+  hps: 7124.3917
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 130698.20807
-  tps: 130698.20807
-  hps: 6943.73889
+  dps: 121429.81927
+  tps: 121429.81927
+  hps: 7072.3256
  }
 }
 dps_results: {
@@ -2857,41 +2857,41 @@ dps_results: {
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.17647245218e+06
-  tps: 409654.36555
-  hps: 5704.47563
+  dps: 1.10773579853e+06
+  tps: 383597.87291
+  hps: 6364.3794
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 198188.0942
-  tps: 190377.1392
-  hps: 7586.635
+  dps: 192077.37464
+  tps: 184446.42513
+  hps: 7420.10589
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 213200.50281
-  tps: 193663.32347
-  hps: 7601.92372
+  dps: 213882.83591
+  tps: 194041.15869
+  hps: 7846.11421
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.6209391712e+06
-  tps: 606969.41446
-  hps: 8807.31008
+  dps: 1.62015576791e+06
+  tps: 604955.95114
+  hps: 8694.28908
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 251598.44516
-  tps: 249331.6249
-  hps: 8827.1026
+  dps: 251587.19771
+  tps: 249320.37745
+  hps: 8855.122
  }
 }
 dps_results: {
@@ -2905,25 +2905,25 @@ dps_results: {
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.28569070963e+06
-  tps: 482126.98694
-  hps: 7190.04247
+  dps: 1.3047679665e+06
+  tps: 486673.70329
+  hps: 7278.96021
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 192768.76918
-  tps: 192768.76918
-  hps: 7438.81918
+  dps: 184133.3198
+  tps: 184133.3198
+  hps: 7547.80371
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Orc-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 197982.00382
-  tps: 197982.00382
-  hps: 6773.51757
+  dps: 193841.29275
+  tps: 193841.29275
+  hps: 7020.17899
  }
 }
 dps_results: {
@@ -2953,73 +2953,73 @@ dps_results: {
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 892434.33895
-  tps: 310461.49932
-  hps: 5307.64653
+  dps: 802535.3779
+  tps: 277554.23813
+  hps: 5666.0397
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 135624.43572
-  tps: 128507.71702
-  hps: 6997.37861
+  dps: 124288.23419
+  tps: 117129.96327
+  hps: 6983.33493
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 149243.15141
-  tps: 130652.73945
-  hps: 6790.4059
+  dps: 143616.59567
+  tps: 125021.68581
+  hps: 6794.24188
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.14827339982e+06
-  tps: 435120.22899
-  hps: 7960.70975
+  dps: 1.15891433214e+06
+  tps: 438729.49582
+  hps: 7994.8555
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 169365.3472
-  tps: 166735.33014
-  hps: 8416.79773
+  dps: 170026.17142
+  tps: 167396.15437
+  hps: 8384.34362
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 208890.72497
-  tps: 195740.63969
+  dps: 209090.64281
+  tps: 195940.55752
   hps: 8491.20649
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 892967.79251
-  tps: 336898.47274
-  hps: 6806.24026
+  dps: 891859.06873
+  tps: 336646.28796
+  hps: 6741.30494
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 125842.46585
-  tps: 125842.46585
-  hps: 7009.65579
+  dps: 116561.17103
+  tps: 116561.17103
+  hps: 6991.97703
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p2_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 134977.24411
-  tps: 134977.24411
-  hps: 8161.71343
+  dps: 122285.00404
+  tps: 122285.00404
+  hps: 7818.0437
  }
 }
 dps_results: {
@@ -3049,73 +3049,73 @@ dps_results: {
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.17217692342e+06
-  tps: 407673.50523
-  hps: 5943.45057
+  dps: 1.1291853743e+06
+  tps: 392528.26039
+  hps: 6590.30897
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 200496.0897
-  tps: 192861.99039
-  hps: 7442.99323
+  dps: 194119.91232
+  tps: 186573.63317
+  hps: 7490.72176
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-DefaultTalents-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 218219.10162
-  tps: 199198.0362
-  hps: 7287.68643
+  dps: 210452.14772
+  tps: 191804.54248
+  hps: 7540.59833
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.61474888337e+06
-  tps: 603649.46185
-  hps: 8721.51509
+  dps: 1.6581107762e+06
+  tps: 621210.19684
+  hps: 8542.43425
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 252022.19264
-  tps: 249528.6645
-  hps: 8835.8888
+  dps: 253417.61961
+  tps: 250924.09146
+  hps: 8786.24969
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-FullBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 317598.89322
-  tps: 305131.25252
+  dps: 317986.89639
+  tps: 305519.25569
   hps: 9038.87875
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongMultiTarget"
  value: {
-  dps: 1.30803033229e+06
-  tps: 489470.81676
-  hps: 7209.5969
+  dps: 1.30310268736e+06
+  tps: 486022.43882
+  hps: 7223.04435
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-LongSingleTarget"
  value: {
-  dps: 193799.5992
-  tps: 193799.5992
-  hps: 7433.54777
+  dps: 181817.19443
+  tps: 181817.19443
+  hps: 7505.48055
  }
 }
 dps_results: {
  key: "TestWindwalker-Settings-Troll-p3_bis-RushingJadeWindTalent-Basic-default-NoBuffs-0.0yards-ShortSingleTarget"
  value: {
-  dps: 199372.93056
-  tps: 199372.93056
-  hps: 7559.0729
+  dps: 186783.73651
+  tps: 186783.73651
+  hps: 7336.88192
  }
 }
 dps_results: {
