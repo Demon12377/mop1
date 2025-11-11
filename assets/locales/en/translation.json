@@ -1543,6 +1543,10 @@
 					"label": "Damage Taken Last Global",
 					"tooltip": "Amount of damage taken in the last 1.5s."
 				},
+				"affliction_exhale_window": {
+					"label": "Exhale Window",
+					"tooltip": "Configured leeway for exhaling inhaled DoTs."
+				},
 				"aura_remaining_icd": {
 					"label": "Aura Remaining ICD",
 					"tooltip": "Time remaining before this aura's internal cooldown will be ready, or 0 if the ICD is ready now."
@@ -1823,6 +1827,14 @@
 					"thunderstorm_in_range": {
 						"label": "Thunderstorm In Range",
 						"tooltip": "When set to true, thunderstorm casts will cause damage."
+					}
+				}
+			},
+			"warlock": {
+				"affliction": {
+					"exhale_window": {
+						"label": "Soul Swap Exhale Window",
+						"tooltip": "How long before inhaled dots expire to exhale during multitarget encounters."
 					}
 				}
 			},

@@ -5917,7 +5917,7 @@
                     "full_description"
                   ]
                 },
-				"any_trinket_stat_procs_available": {
+                "any_trinket_stat_procs_available": {
                   "type": "object",
                   "properties": {
                     "label": {
@@ -6021,7 +6021,7 @@
                     "full_description"
                   ]
                 },
-				"any_stat_buff_cooldowns_min_duration": {
+                "any_stat_buff_cooldowns_min_duration": {
                   "type": "object",
                   "properties": {
                     "label": {
@@ -6149,7 +6149,7 @@
                     "tooltip"
                   ]
                 },
-				"dot_current_snapshot": {
+                "dot_current_snapshot": {
                   "type": "object",
                   "properties": {
                     "label": {
@@ -6357,6 +6357,22 @@
                     "tooltip"
                   ]
                 },
+				"affliction_exhale_window": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "tooltip": {
+                      "type": "string"
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "tooltip"
+                  ]
+                },
                 "aura_remaining_icd": {
                   "type": "object",
                   "properties": {
@@ -6538,7 +6554,8 @@
                 "aura_remaining_icd",
                 "aura_icd_is_ready",
                 "aura_icd_is_ready_with_reaction_time",
-                "overlap"
+                "overlap",
+                "affliction_exhale_window"
               ]
             },
             "operators": {
@@ -7654,6 +7671,32 @@
               "required": [
                 "elemental"
               ]
+            },
+            "warlock": {
+              "type": "object",
+              "properties": {
+                "affliction": {
+                  "type": "object",
+                  "properties": {
+                    "exhale_window": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        },
+                        "tooltip": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label",
+                        "tooltip"
+                      ]
+                    }
+                  }
+                }
+              }
             },
             "hunter": {
               "type": "object",

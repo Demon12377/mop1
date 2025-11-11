@@ -18,6 +18,8 @@ func (warlock *AfflictionWarlock) NewAPLValue(rot *core.APLRotation, config *pro
 		return rot.NewValueSpellInFlight(&spellInFlight, nil)
 	case *proto.APLValue_DotCurrentSnapshot:
 		return warlock.newDotCurrentSnapshot(rot, config.GetDotCurrentSnapshot(), config.Uuid)
+	case *proto.APLValue_AfflictionExhaleWindow:
+		return warlock.newValueExhaleWindow(config.GetAfflictionExhaleWindow(), config.Uuid)
 	default:
 		return warlock.Warlock.NewAPLValue(rot, config)
 	}
@@ -176,4 +178,24 @@ func (value *APLValueCurrentSnapshot) GetFloat(sim *core.Simulation) float64 {
 
 	// Rounding this to effectively 3 decimal places as a percentage to avoid floating point errors
 	return math.Round((snapshotDamage/value.baseValue)*100000)/100000 - 1
+}
+
+type APLValueExhaleWindow struct {
+	core.DefaultAPLValueImpl
+	aff *AfflictionWarlock
+}
+
+func (aff *AfflictionWarlock) newValueExhaleWindow(config *proto.APLValueAfflictionExhaleWindow, _ *proto.UUID) core.APLValue {
+	return &APLValueExhaleWindow{
+		aff: aff,
+	}
+}
+func (value *APLValueExhaleWindow) Type() proto.APLValueType {
+	return proto.APLValueType_ValueTypeDuration
+}
+func (value *APLValueExhaleWindow) GetDuration(sim *core.Simulation) time.Duration {
+	return time.Duration(value.aff.ExhaleWindow)
+}
+func (value *APLValueExhaleWindow) String() string {
+	return "Exhale Window()"
 }

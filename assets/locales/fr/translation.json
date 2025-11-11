@@ -1543,6 +1543,10 @@
 					"label": "Dégâts reçus dernier global",
 					"tooltip": "Quantité de dégâts reçus dans les dernières 1.5s."
 				},
+				"affliction_exhale_window": {
+					"label": "Fenêtre d'expiration",
+					"tooltip": "Marge de manœuvre configurée pour l'expiration des DoTs inhalés."
+				},
 				"aura_remaining_icd": {
 					"label": "Aura ICD restant",
 					"tooltip": "Temps restant avant que le temps de recharge interne de cette aura soit prêt, ou 0 si l'ICD est prêt maintenant."
@@ -1823,6 +1827,14 @@
 					"thunderstorm_in_range": {
 						"label": "Orage à portée",
 						"tooltip": "Quand défini à vrai, les lancers de Orage causeront des dégâts."
+					}
+				}
+			},
+			"warlock": {
+				"affliction": {
+					"exhale_window": {
+						"label": "Fenêtre d'expiration de l'échange d'âme",
+						"tooltip": "Combien de temps faut-il pour que les DoTs inhalés expirent lors de combats avec plusieurs cibles ?"
 					}
 				}
 			},
