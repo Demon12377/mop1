@@ -170,15 +170,14 @@ export class BeastMasteryHunterSimUI extends IndividualSimUI<Spec.SpecBeastMaste
 		this.reforger = new ReforgeOptimizer(this, {
 			updateSoftCaps: softCaps => {
 				// Implement stepped EP reduction for haste breakpoints
-				this.individualConfig.defaults.softCapBreakpoints!.forEach(softCap => {
-					const softCapToModify = softCaps.find(sc => sc.unitStat.equals(softCap.unitStat));
-					if (softCap.unitStat.equalsStat(Stat.StatHasteRating) && softCapToModify) {
-						// Set stepped EP values: 0.39 -> 0.36 -> 0.33 -> 0.30 -> 0.27
-						const baseEP = 0.35;
-						const reduction = 0.03;
-						softCapToModify.postCapEPs = softCap.breakpoints.map((_, index) => Math.max(0, baseEP - reduction * (index + 1)));
-					}
-				});
+				const hasteCap = softCaps.find(v => v.unitStat.equalsPseudoStat(PseudoStat.PseudoStatRangedHastePercent));
+				if (hasteCap) {
+					const hasteWeights = player.getEpWeights().getStat(Stat.StatHasteRating);
+					// Set stepped EP values: 0.27 -> 0.24 -> 0.21 -> 0.18 -> 0.15
+					const baseEP = hasteWeights * Mechanics.HASTE_RATING_PER_HASTE_PERCENT;
+					const reduction = 0.03 * Mechanics.HASTE_RATING_PER_HASTE_PERCENT;
+					hasteCap.postCapEPs = hasteCap.breakpoints.map((_, index) => Math.max(0, baseEP - reduction * (index + 1)));
+				}
 				return softCaps;
 			},
 		});
