@@ -85,46 +85,26 @@ func calculateEclipseMasteryBonus(masteryPoints float64, includeBasePoints bool)
 	return (core.Ternary(includeBasePoints, 15.0+(8.0*1.875), 0.0) + (masteryPoints * 1.875)) / 100
 }
 
-func (moonkin *BalanceDruid) RegisterSharedEclipseSpellMod() {
+func (moonkin *BalanceDruid) RegisterEclipseSpellMods() {
 	eclipseMasteryBonus := calculateEclipseMasteryBonus(moonkin.GetMasteryPoints(), true)
 
-	moonkin.EclipseSpellMod = moonkin.AddDynamicMod(core.SpellModConfig{
-		School:     core.SpellSchoolNone,
+	moonkin.SolarEclipseSpellMod = moonkin.AddDynamicMod(core.SpellModConfig{
+		School:     core.SpellSchoolNature,
 		Kind:       core.SpellMod_DamageDone_Pct,
 		FloatValue: eclipseMasteryBonus,
 	})
 
-	moonkin.AddOnMasteryStatChanged(func(sim *core.Simulation, oldMastery float64, newMastery float64) {
-		if !moonkin.IsInEclipse() {
-			return
-		}
-
-		masteryBonusDiff := core.MasteryRatingToMasteryPoints(newMastery - oldMastery)
-
-		if moonkin.EclipseSpellMod.IsActive {
-			moonkin.EclipseSpellMod.UpdateFloatValue(moonkin.EclipseSpellMod.GetFloatValue() + calculateEclipseMasteryBonus(masteryBonusDiff, false))
-		}
+	moonkin.LunarEclipseSpellMod = moonkin.AddDynamicMod(core.SpellModConfig{
+		School:     core.SpellSchoolArcane,
+		Kind:       core.SpellMod_DamageDone_Pct,
+		FloatValue: eclipseMasteryBonus,
 	})
-}
 
-func (moonkin *BalanceDruid) UpdateEclipseSpellMod(school core.SpellSchool, shouldActivate bool, sim *core.Simulation) {
-	if !shouldActivate {
-		moonkin.EclipseSpellMod.School = school
-		moonkin.EclipseSpellMod.Deactivate()
-		return
-	}
-
-	docEclipseMasteryBonus := 0.0
-	if moonkin.DreamOfCenarius.IsActive() {
-		docEclipseMasteryBonus = 0.25
-		moonkin.DreamOfCenarius.Deactivate(sim)
-	}
-
-	masteryBonus := docEclipseMasteryBonus + calculateEclipseMasteryBonus(moonkin.GetMasteryPoints(), true)
-
-	moonkin.EclipseSpellMod.UpdateFloatValue(masteryBonus)
-	moonkin.EclipseSpellMod.School = school
-	moonkin.EclipseSpellMod.Activate()
+	moonkin.CelestialAlignmentSpellMod = moonkin.AddDynamicMod(core.SpellModConfig{
+		School:     core.SpellSchoolArcane | core.SpellSchoolNature,
+		Kind:       core.SpellMod_DamageDone_Pct,
+		FloatValue: eclipseMasteryBonus,
+	})
 }
 
 func (moonkin *BalanceDruid) RegisterEclipseAuras() {
@@ -135,10 +115,18 @@ func (moonkin *BalanceDruid) RegisterEclipseAuras() {
 		Label:    "Eclipse (Lunar)",
 		Duration: core.NeverExpires,
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolArcane, true, sim)
+			eclipseMasteryBonus := calculateEclipseMasteryBonus(moonkin.GetMasteryPoints(), true)
+
+			if moonkin.DreamOfCenarius.IsActive() {
+				eclipseMasteryBonus += 0.25
+				moonkin.DreamOfCenarius.Deactivate(sim)
+			}
+
+			moonkin.LunarEclipseSpellMod.UpdateFloatValue(eclipseMasteryBonus)
+			moonkin.LunarEclipseSpellMod.Activate()
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolNone, false, sim)
+			moonkin.LunarEclipseSpellMod.Deactivate()
 		},
 	})
 
@@ -147,10 +135,18 @@ func (moonkin *BalanceDruid) RegisterEclipseAuras() {
 		Label:    "Eclipse (Solar)",
 		Duration: core.NeverExpires,
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolNature, true, sim)
+			eclipseMasteryBonus := calculateEclipseMasteryBonus(moonkin.GetMasteryPoints(), true)
+
+			if moonkin.DreamOfCenarius.IsActive() {
+				eclipseMasteryBonus += 0.25
+				moonkin.DreamOfCenarius.Deactivate(sim)
+			}
+
+			moonkin.SolarEclipseSpellMod.UpdateFloatValue(eclipseMasteryBonus)
+			moonkin.SolarEclipseSpellMod.Activate()
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolNone, false, sim)
+			moonkin.SolarEclipseSpellMod.Deactivate()
 		},
 	})
 
@@ -158,10 +154,6 @@ func (moonkin *BalanceDruid) RegisterEclipseAuras() {
 		if gained {
 			// Moonkins are energized for 50% maximum mana every time they enter eclipse.
 			moonkin.AddMana(sim, moonkin.MaxMana()*0.5, manaMetrics)
-		}
-
-		if moonkin.CelestialAlignment.RelatedSelfBuff.IsActive() {
-			return
 		}
 
 		if eclipse == LunarEclipse {

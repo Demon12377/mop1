@@ -56,7 +56,11 @@ type BalanceDruid struct {
 	Options *proto.BalanceDruid_Options
 
 	EclipseEnergyMap EclipseEnergyMap
-	EclipseSpellMod  *core.SpellMod
+
+	LunarEclipseSpellMod       *core.SpellMod
+	SolarEclipseSpellMod       *core.SpellMod
+	CelestialAlignmentSpellMod *core.SpellMod
+	IncarnationSpellMod        *core.SpellMod
 
 	AstralCommunion      *druid.DruidSpell
 	AstralStorm          *druid.DruidSpell
@@ -82,7 +86,7 @@ func (moonkin *BalanceDruid) Initialize() {
 	moonkin.Druid.Initialize()
 
 	moonkin.EnableEclipseBar()
-	moonkin.RegisterSharedEclipseSpellMod()
+	moonkin.RegisterEclipseSpellMods()
 	moonkin.RegisterEclipseAuras()
 	moonkin.RegisterEclipseEnergyGainAura()
 

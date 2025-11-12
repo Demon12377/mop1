@@ -9,6 +9,7 @@ import (
 
 func (moonkin *BalanceDruid) registerCelestialAlignmentSpell() {
 	actionID := core.ActionID{SpellID: 112071}
+	manaMetrics := moonkin.NewManaMetrics(core.ActionID{SpellID: 79577 /* Eclipse */})
 
 	celestialAlignmentAura := moonkin.RegisterAura(core.Aura{
 		Label:    "Celestial Alignment",
@@ -17,15 +18,26 @@ func (moonkin *BalanceDruid) registerCelestialAlignmentSpell() {
 		OnGain: func(_ *core.Aura, sim *core.Simulation) {
 			moonkin.SuspendEclipseBar()
 
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolArcane|core.SpellSchoolNature, true, sim)
-			moonkin.ActivateEclipse(LunarEclipse, sim)
-			moonkin.ActivateEclipse(SolarEclipse, sim)
+			moonkin.NaturesGrace.Activate(sim)
+			moonkin.Starfall.CD.Reset()
+			moonkin.AddMana(sim, moonkin.MaxMana()*0.5, manaMetrics)
+
+			eclipseMasteryBonus := calculateEclipseMasteryBonus(moonkin.GetMasteryPoints(), true)
+
+			if moonkin.DreamOfCenarius.IsActive() {
+				eclipseMasteryBonus += 0.25
+				moonkin.DreamOfCenarius.Deactivate(sim)
+			}
+
+			moonkin.CelestialAlignmentSpellMod.UpdateFloatValue(eclipseMasteryBonus)
+			moonkin.CelestialAlignmentSpellMod.Activate()
+
+			if moonkin.ChosenOfElune.RelatedSelfBuff.IsActive() {
+				moonkin.IncarnationSpellMod.Activate()
+			}
 		},
 		OnExpire: func(_ *core.Aura, sim *core.Simulation) {
-			moonkin.UpdateEclipseSpellMod(core.SpellSchoolNone, false, sim)
-			moonkin.DeactivateEclipse(LunarEclipse, sim)
-			moonkin.DeactivateEclipse(SolarEclipse, sim)
-
+			moonkin.CelestialAlignmentSpellMod.Deactivate()
 			// Restore previous eclipse gain mask
 			moonkin.RestoreEclipseBar()
 		},
