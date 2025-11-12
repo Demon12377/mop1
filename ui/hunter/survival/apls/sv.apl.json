@@ -24,7 +24,27 @@
 		{ "action": { "castSpell": { "spellId": { "spellId": 120697 } } } },
 		{
 			"action": {
-				"condition": { "cmp": { "op": "OpGe", "lhs": { "remainingTime": {} }, "rhs": { "const": { "val": "8s" } } } },
+				"condition": {
+					"and": {
+						"vals": [
+							{ "cmp": { "op": "OpGe", "lhs": { "remainingTime": {} }, "rhs": { "const": { "val": "8s" } } } },
+							{
+								"or": {
+									"vals": [
+										{ "not": { "val": { "dotIsActive": { "spellId": { "spellId": 3674 } } } } },
+										{
+											"cmp": {
+												"op": "OpLe",
+												"lhs": { "dotRemainingTime": { "spellId": { "spellId": 3674 } } },
+												"rhs": { "dotTickFrequency": { "spellId": { "spellId": 3674 } } }
+											}
+										}
+									]
+								}
+							}
+						]
+					}
+				},
 				"castSpell": { "spellId": { "spellId": 3674 } }
 			}
 		},
