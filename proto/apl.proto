@@ -125,7 +125,7 @@ message APLValue {
         // Boss values
         APLValueBossSpellTimeToReady boss_spell_time_to_ready = 64;
         APLValueBossSpellIsCasting boss_spell_is_casting = 65;
-        APLValueBossCurrentTarget boss_current_target = 124;
+        APLValueBossCurrentTarget boss_current_target = 120;
 
         // Resource values
         APLValueCurrentHealth current_health = 26;
@@ -205,13 +205,13 @@ message APLValue {
         // Aggregate Aura set values
         APLValueAllTrinketStatProcsActive all_trinket_stat_procs_active = 78; // TODO: Rename in MoP as it includes all item/effect procs
         APLValueAnyTrinketStatProcsActive any_trinket_stat_procs_active = 79; // TODO: Rename in MoP as it includes all item/effect procs
-		APLValueAnyTrinketStatProcsAvailable any_trinket_stat_procs_available = 120; // TODO: Rename in MoP as it includes all item/effect procs
+		APLValueAnyTrinketStatProcsAvailable any_trinket_stat_procs_available = 121; // TODO: Rename in MoP as it includes all item/effect procs
         APLValueTrinketProcsMinRemainingTime trinket_procs_min_remaining_time = 80; // TODO: Rename in MoP as it includes all item/effect procs
         APLValueTrinketProcsMaxRemainingICD trinket_procs_max_remaining_icd = 82; // TODO: Rename in MoP as it includes all item/effect procs
         APLValueNumEquippedStatProcTrinkets num_equipped_stat_proc_trinkets = 81; // TODO: Rename in MoP as it includes all item/effect procs
         APLValueNumStatBuffCooldowns num_stat_buff_cooldowns = 84;
         APLValueAnyStatBuffCooldownsActive any_stat_buff_cooldowns_active = 106;
-		APLValueAnyStatBuffCooldownsMinDuration any_stat_buff_cooldowns_min_duration = 121;
+		APLValueAnyStatBuffCooldownsMinDuration any_stat_buff_cooldowns_min_duration = 122;
 
         // Dot values
         APLValueDotIsActive dot_is_active = 6;
@@ -248,8 +248,8 @@ message APLValue {
 		APLValueMonkMaxChi monk_max_chi = 95;
 		APLValueBrewmasterMonkCurrentStaggerPercent brewmaster_monk_current_stagger_percent = 99;
 		APLValueProtectionPaladinDamageTakenLastGlobal protection_paladin_damage_taken_last_global = 100;
-		APLValueAfflictionCurrentSnapshot affliction_current_snapshot = 122;
-		APLValueAfflictionExhaleWindow affliction_exhale_window = 123;
+		APLValueAfflictionCurrentSnapshot affliction_current_snapshot = 123;
+		APLValueAfflictionExhaleWindow affliction_exhale_window = 124;
 
 		// Variable reference
 		APLValueVariableRef variable_ref = 111;
