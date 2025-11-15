@@ -13,10 +13,6 @@ import PreRaidGear from './gear_sets/preraid.gear.json';
 import AoeApl from './apls/aoe.apl.json';
 import Apl from './apls/mm.apl.json';
 
-// Preset options for this spec.
-// Eventually we will import these values for the raid sim too, so its good to
-// keep them in a separate file.
-
 export const PRERAID_PRESET_GEAR = PresetUtils.makePresetGear('Pre-raid', PreRaidGear);
 export const P2_PRESET_GEAR = PresetUtils.makePresetGear('P2', P2Gear);
 export const P3_PRESET_GEAR = PresetUtils.makePresetGear('P3 (WiP)', P3Gear);
@@ -34,7 +30,6 @@ export const DefaultTalents = {
 	}),
 };
 
-// Preset options for EP weights
 export const P2_EP_PRESET = PresetUtils.makePresetEpWeights(
 	'P2',
 	Stats.fromMap(
@@ -82,8 +77,6 @@ export const P3_PRESET = PresetUtils.makePresetBuildFromJSON('P3 (WiP)', Spec.Sp
 	epWeights: P3_EP_PRESET,
 	rotationType: APLRotationType.TypeAuto,
 });
-// Default talents. Uses the wowhead calculator format, make the talents on
-// https://wowhead.com/wotlk/talent-calc and copy the numbers in the url.
 
 export const MMDefaultOptions = HunterOptions.create({
 	classOptions: {

@@ -7,8 +7,7 @@ import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl';
 import { Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
-import { StatCapType } from '../../core/proto/ui';
-import { StatCap, Stats, UnitStat } from '../../core/proto_utils/stats';
+import { Stats, UnitStat } from '../../core/proto_utils/stats';
 import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as HunterInputs from '../inputs';
 import { sharedHunterDisplayStatsModifiers } from '../shared';
@@ -63,19 +62,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecMarksmanshipHunter, {
 				.withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5)
 				.withStat(Stat.StatExpertiseRating, 7.5 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION);
 		})(),
-		// // Default breakpoint limits - set 31.1% haste as default target
-		// breakpointLimits: (() => {
-		// 	return new Stats().withPseudoStat(PseudoStat.PseudoStatRangedHastePercent, 31.1);
-		// })(),
-		// softCapBreakpoints: (() => {
-		// 	return [
-		// 		StatCap.fromPseudoStat(PseudoStat.PseudoStatRangedHastePercent, {
-		// 			breakpoints: [31.1],
-		// 			capType: StatCapType.TypeSoftCap,
-		// 			postCapEPs: [0.35 * Mechanics.HASTE_RATING_PER_HASTE_PERCENT],
-		// 		}),
-		// 	];
-		// })(),
 		other: Presets.OtherDefaults,
 		// Default consumes settings.
 		consumables: Presets.DefaultConsumables,
@@ -169,16 +155,6 @@ export class MarksmanshipHunterSimUI extends IndividualSimUI<Spec.SpecMarksmansh
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecMarksmanshipHunter>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		this.reforger = new ReforgeOptimizer(this, {
-			updateSoftCaps: softCaps => {
-				const hasteCap = softCaps.find(v => v.unitStat.equalsPseudoStat(PseudoStat.PseudoStatRangedHastePercent));
-				if (hasteCap) {
-					const hasteWeights = player.getEpWeights().getStat(Stat.StatHasteRating);
-					const baseEP = hasteWeights * Mechanics.HASTE_RATING_PER_HASTE_PERCENT;
-					hasteCap.postCapEPs = [baseEP * (0.35 / 0.59)];
-				}
-				return softCaps;
-			},
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }
