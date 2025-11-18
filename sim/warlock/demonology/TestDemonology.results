@@ -2569,8 +2569,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-UnerringVisionofLeiShen-96930"
  value: {
-  dps: 113437.86867
-  tps: 67482.13476
+  dps: 109260.19062
+  tps: 63304.45671
   hps: 1259.45399
  }
 }
@@ -2649,8 +2649,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 103258.4871
-  tps: 62505.29527
+  dps: 99656.36678
+  tps: 58903.17496
   hps: 1258.33877
  }
 }

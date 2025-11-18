@@ -2569,9 +2569,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-UnerringVisionofLeiShen-96930"
  value: {
-  dps: 100534.91922
-  tps: 93139.90756
-  hps: 1667.54372
+  dps: 97889.20991
+  tps: 90545.29918
+  hps: 1630.4872
  }
 }
 dps_results: {
@@ -2649,9 +2649,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 97755.36363
-  tps: 91239.38567
-  hps: 1666.531
+  dps: 95156.05302
+  tps: 88675.42715
+  hps: 1629.49698
  }
 }
 dps_results: {

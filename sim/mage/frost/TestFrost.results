@@ -418,15 +418,15 @@ dps_results: {
 dps_results: {
  key: "TestFrost-AllItems-UnerringVisionofLeiShen-96930"
  value: {
-  dps: 166030.12945
-  tps: 121695.34088
+  dps: 156226.77462
+  tps: 113469.29175
  }
 }
 dps_results: {
  key: "TestFrost-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 165343.58608
-  tps: 121979.86042
+  dps: 155439.02967
+  tps: 113629.97474
  }
 }
 dps_results: {

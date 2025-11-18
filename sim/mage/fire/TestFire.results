@@ -2252,8 +2252,8 @@ dps_results: {
 dps_results: {
  key: "TestFire-AllItems-UnerringVisionofLeiShen-96930"
  value: {
-  dps: 171196.19855
-  tps: 166385.52405
+  dps: 154744.81401
+  tps: 149962.40085
  }
 }
 dps_results: {
@@ -2322,8 +2322,8 @@ dps_results: {
 dps_results: {
  key: "TestFire-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 162703.51489
-  tps: 158728.43812
+  dps: 142541.94404
+  tps: 138687.62183
  }
 }
 dps_results: {
