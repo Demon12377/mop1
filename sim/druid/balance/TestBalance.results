@@ -497,17 +497,17 @@ dps_results: {
 dps_results: {
  key: "TestBalance-AllItems-UnerringVisionofLeiShen-96930"
  value: {
-  dps: 93945.29632
-  tps: 95481.32225
-  hps: 14111.96182
+  dps: 106094.37894
+  tps: 107537.16846
+  hps: 15794.92015
  }
 }
 dps_results: {
  key: "TestBalance-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 86249.53949
-  tps: 87878.89766
-  hps: 13506.47127
+  dps: 97082.12872
+  tps: 98634.2299
+  hps: 15168.10728
  }
 }
 dps_results: {
