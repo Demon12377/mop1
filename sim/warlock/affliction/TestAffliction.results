@@ -1119,6 +1119,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAffliction-AllItems-Haromm'sTalisman-105527"
+ value: {
+  dps: 144013.1723
+  tps: 99958.54321
+  hps: 2221.47751
+ }
+}
+dps_results: {
  key: "TestAffliction-AllItems-Hawkmaster'sTalon-89082"
  value: {
   dps: 142323.90971
@@ -1324,6 +1332,14 @@ dps_results: {
   dps: 137668.63991
   tps: 93612.80811
   hps: 2221.47751
+ }
+}
+dps_results: {
+ key: "TestAffliction-AllItems-Kardris'ToxicTotem-105540"
+ value: {
+  dps: 173995.10827
+  tps: 120607.13497
+  hps: 2237.6614
  }
 }
 dps_results: {
@@ -1969,9 +1985,9 @@ dps_results: {
 dps_results: {
  key: "TestAffliction-AllItems-RuneofRe-Origination-96918"
  value: {
-  dps: 137668.63991
-  tps: 93612.80811
-  hps: 2221.47751
+  dps: 139643.85406
+  tps: 94795.72479
+  hps: 2291.92505
  }
 }
 dps_results: {
