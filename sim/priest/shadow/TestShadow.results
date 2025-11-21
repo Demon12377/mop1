@@ -1993,9 +1993,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-RuneofRe-Origination-96918"
  value: {
-  dps: 83192.31741
-  tps: 78256.39488
-  hps: 1630.32876
+  dps: 85604.08872
+  tps: 80674.68583
+  hps: 1667.58423
  }
 }
 dps_results: {
