@@ -1897,9 +1897,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-RegaliaoftheExorcist"
  value: {
-  dps: 102991.83033
-  tps: 95494.15085
-  hps: 2039.24995
+  dps: 100254.59333
+  tps: 92825.08125
+  hps: 1993.93328
  }
 }
 dps_results: {
@@ -1993,9 +1993,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-RuneofRe-Origination-96918"
  value: {
-  dps: 85604.08872
-  tps: 80674.68583
-  hps: 1667.58423
+  dps: 83310.74618
+  tps: 78408.42368
+  hps: 1630.5268
  }
 }
 dps_results: {

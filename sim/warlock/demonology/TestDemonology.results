@@ -1897,8 +1897,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-RegaliaoftheThousandfoldHells"
  value: {
-  dps: 107745.56177
-  tps: 65611.01413
+  dps: 104031.31622
+  tps: 61896.76857
   hps: 1525.72856
  }
 }
@@ -1985,8 +1985,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-RuneofRe-Origination-96918"
  value: {
-  dps: 90446.85071
-  tps: 55650.45859
+  dps: 87305.60982
+  tps: 52509.2177
   hps: 1258.71051
  }
 }
