@@ -53,6 +53,7 @@ func (dk *DeathKnight) registerDeathStrike() {
 			maxHealth := spell.Unit.MaxHealth()
 			// 2025-11-20: Changed from 0.0 to 0.05 AP scaling before max health cap
 			healing := min(max(maxHealth*0.07, damageTakenInFive*dk.deathStrikeHealingMultiplier)+spell.MeleeAttackPower()*0.05, maxHealth*0.35)
+			healing *= 1 + (float64(dk.ScentOfBloodAura.GetStacks()) * 0.2)
 			spell.CalcAndDealHealing(sim, target, healing, spell.OutcomeHealing)
 		},
 	})
