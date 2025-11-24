@@ -1897,9 +1897,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-RegaliaoftheExorcist"
  value: {
-  dps: 99679.14678
-  tps: 92249.6347
-  hps: 1993.93328
+  dps: 99146.27769
+  tps: 91733.33599
+  hps: 1992.96392
  }
 }
 dps_results: {
