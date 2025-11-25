@@ -34,7 +34,7 @@ func TestBlood(t *testing.T) {
 
 			Consumables: FullConsumesSpec,
 			SpecOptions: core.SpecOptionsCombo{Label: "Basic", SpecOptions: PlayerOptionsBlood},
-			Rotation:    core.GetAplRotation("../../../ui/death_knight/blood/apls", "defensive"),
+			Rotation:    core.GetAplRotation("../../../ui/death_knight/blood/apls", "sha"),
 			Profession1: proto.Profession_Engineering,
 			Profession2: proto.Profession_Blacksmithing,
 

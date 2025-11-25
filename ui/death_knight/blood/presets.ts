@@ -3,7 +3,8 @@ import { ConsumesSpec, Glyphs, Profession, PseudoStat, Spec, Stat } from '../../
 import { BloodDeathKnight_Options, DeathKnightMajorGlyph, DeathKnightMinorGlyph } from '../../core/proto/death_knight';
 import { SavedTalents } from '../../core/proto/ui.js';
 import { Stats } from '../../core/proto_utils/stats';
-import DefaultApl from './apls/defensive.apl.json';
+import ShaApl from './apls/sha.apl.json';
+import HorridonApl from './apls/horridon.apl.json';
 import P2BalancedBloodGear from './gear_sets/p2.gear.json';
 import P2OffensiveBloodGear from './gear_sets/p2_offensive.gear.json';
 import P3BalancedBloodGear from './gear_sets/p3.gear.json';
@@ -21,7 +22,8 @@ export const P3_PROG_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - Prog (Survi
 export const P3_BALANCED_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - BIS (Balanced)', P3BalancedBloodGear);
 export const P3_OFFENSIVE_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - BIS (Offensive)', P3OffensiveBloodGear);
 
-export const BLOOD_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetAPLRotation('Sha of Fear', DefaultApl);
+export const BLOOD_ROTATION_PRESET_SHA = PresetUtils.makePresetAPLRotation('Sha of Fear', ShaApl);
+export const BLOOD_ROTATION_PRESET_HORRIDON = PresetUtils.makePresetAPLRotation('Horridon', HorridonApl);
 
 // Preset options for EP weights
 export const P2_BALANCED_EP_PRESET = PresetUtils.makePresetEpWeights(

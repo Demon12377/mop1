@@ -154,7 +154,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBloodDeathKnight, {
 			Presets.P3_OFFENSIVE_EP_PRESET,
 		],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.BLOOD_ROTATION_PRESET_DEFAULT],
+		rotations: [Presets.BLOOD_ROTATION_PRESET_SHA, Presets.BLOOD_ROTATION_PRESET_HORRIDON],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.BloodTalents],
 		// Preset gear configurations that the user can quickly select.
@@ -169,7 +169,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBloodDeathKnight, {
 	},
 
 	autoRotation: (_player: Player<Spec.SpecBloodDeathKnight>): APLRotation => {
-		return Presets.BLOOD_ROTATION_PRESET_DEFAULT.rotation.rotation!;
+		return Presets.BLOOD_ROTATION_PRESET_SHA.rotation.rotation!;
 	},
 
 	raidSimPresets: [
