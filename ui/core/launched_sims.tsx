@@ -30,7 +30,7 @@ export const simLaunchStatuses: Record<Spec, SimStatus> = {
 	},
 	// Death Knight
 	[Spec.SpecBloodDeathKnight]: {
-		phase: Phase.Phase1,
+		phase: Phase.Phase3,
 		status: LaunchStatus.Beta,
 	},
 	[Spec.SpecFrostDeathKnight]: {
