@@ -87,12 +87,7 @@
 				{ "action": { "condition": { "spellIsKnown": { "spellId": { "spellId": 82726 } } }, "groupReference": { "groupName": "Fervor Opener" } } },
 				{ "action": { "sequence": { "name": "opener", "actions": [{ "castSpell": { "spellId": { "spellId": 117050 } } }] } } },
 				{ "action": { "sequence": { "name": "opener", "actions": [{ "castSpell": { "spellId": { "spellId": 109259 } } }] } } },
-				{
-					"action": {
-						"condition": { "auraIsActive": { "auraId": { "spellId": 120668, "tag": -1 }, "includeReactionTime": true } },
-						"sequence": { "name": "opener", "actions": [{ "castSpell": { "spellId": { "spellId": 120360 } } }] }
-					}
-				}
+				{ "action": { "sequence": { "name": "opener", "actions": [{ "castSpell": { "spellId": { "spellId": 120360 } } }] } } }
 			]
 		},
 		{
@@ -203,40 +198,6 @@
 		{
 			"name": "Second Pot",
 			"actions": [
-				{
-					"hide": true,
-					"action": {
-						"condition": {
-							"or": {
-								"vals": [
-									{ "isExecutePhase": { "threshold": "E20" } },
-									{ "dotIsActive": { "spellId": { "spellId": 131894 } } },
-									{
-										"and": {
-											"vals": [
-												{ "not": { "val": { "spellIsReady": { "spellId": { "spellId": 121818 } } } } },
-												{
-													"cmp": {
-														"op": "OpGe",
-														"lhs": { "spellTimeToReady": { "spellId": { "spellId": 121818 } } },
-														"rhs": {
-															"math": {
-																"op": "OpSub",
-																"lhs": { "spellFullCooldown": { "spellId": { "spellId": 121818 } } },
-																"rhs": { "const": { "val": "5s" } }
-															}
-														}
-													}
-												}
-											]
-										}
-									}
-								]
-							}
-						},
-						"castSpell": { "spellId": { "itemId": 76089 } }
-					}
-				},
 				{
 					"action": {
 						"condition": {
