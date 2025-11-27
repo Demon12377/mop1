@@ -71,46 +71,6 @@ func RegisterAllProcs() {
 	//       This can be ignored if the effect has already been implemented.
 	//       With next db run the item will be removed if implemented.
 	//
-	// Your attacks have a 0.1% chance to trigger Multistrike, which deals instant additional damage to your
-	// target equal to 33% of the original damage dealt.
-	// shared.NewProcStatBonusEffectWithVariants(shared.ProcStatBonusEffect{
-	//	Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
-	//	ProcMask:           core.ProcMaskMeleeMHAuto | core.ProcMaskMeleeOHAuto | core.ProcMaskMeleeMHSpecial | core.ProcMaskMeleeOHSpecial | core.ProcMaskRangedAuto | core.ProcMaskRangedSpecial | core.ProcMaskSpellDamage | core.ProcMaskMeleeProc | core.ProcMaskRangedProc | core.ProcMaskSpellDamageProc,
-	//	Outcome:            core.OutcomeLanded,
-	//	RequireDamageDealt: false,
-	// }, []shared.ItemVariant{
-	//	{ItemID: 102300, ItemName: "Kardris' Toxic Totem (N)"},
-	//	{ItemID: 104544, ItemName: "Kardris' Toxic Totem (H)"},
-	//	{ItemID: 104793, ItemName: "Kardris' Toxic Totem (Flexible)"},
-	//	{ItemID: 105042, ItemName: "Kardris' Toxic Totem (LFR) (Celestial)"},
-	//	{ItemID: 105291, ItemName: "Kardris' Toxic Totem (Warforged)"},
-	//	{ItemID: 105540, ItemName: "Kardris' Toxic Totem (Heroic Warforged)"},
-	// })
-	
-	// TODO: Manual implementation required
-	//       This can be ignored if the effect has already been implemented.
-	//       With next db run the item will be removed if implemented.
-	//
-	// Your attacks have a 0.1% chance to trigger Multistrike, which deals instant additional damage to your
-	// target equal to 33% of the original damage dealt.
-	// shared.NewProcStatBonusEffectWithVariants(shared.ProcStatBonusEffect{
-	//	Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
-	//	ProcMask:           core.ProcMaskMeleeMHAuto | core.ProcMaskMeleeOHAuto | core.ProcMaskMeleeMHSpecial | core.ProcMaskMeleeOHSpecial | core.ProcMaskRangedAuto | core.ProcMaskRangedSpecial | core.ProcMaskSpellDamage | core.ProcMaskMeleeProc | core.ProcMaskRangedProc | core.ProcMaskSpellDamageProc,
-	//	Outcome:            core.OutcomeLanded,
-	//	RequireDamageDealt: false,
-	// }, []shared.ItemVariant{
-	//	{ItemID: 102301, ItemName: "Haromm's Talisman (N)"},
-	//	{ItemID: 104531, ItemName: "Haromm's Talisman (H)"},
-	//	{ItemID: 104780, ItemName: "Haromm's Talisman (Flexible)"},
-	//	{ItemID: 105029, ItemName: "Haromm's Talisman (LFR) (Celestial)"},
-	//	{ItemID: 105278, ItemName: "Haromm's Talisman (Warforged)"},
-	//	{ItemID: 105527, ItemName: "Haromm's Talisman (Heroic Warforged)"},
-	// })
-	
-	// TODO: Manual implementation required
-	//       This can be ignored if the effect has already been implemented.
-	//       With next db run the item will be removed if implemented.
-	//
 	// Your attacks have a 0.01% chance to Cleave, dealing the same damage to up to 5 other nearby targets.
 	// shared.NewProcStatBonusEffectWithVariants(shared.ProcStatBonusEffect{
 	//	Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
