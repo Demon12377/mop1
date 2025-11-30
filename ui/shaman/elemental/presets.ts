@@ -46,6 +46,19 @@ export const EP_PRESET_P3 = PresetUtils.makePresetEpWeights(
 	}),
 );
 
+export const EP_PRESET_P2 = PresetUtils.makePresetEpWeights(
+	'P2',
+	Stats.fromMap({
+		[Stat.StatIntellect]: 1.0,
+		[Stat.StatSpellPower]: 0.82,
+		[Stat.StatCritRating]: 0.37,
+		[Stat.StatHasteRating]: 0.47,
+		[Stat.StatHitRating]: 1.1,
+		[Stat.StatSpirit]: 1.1,
+		[Stat.StatMasteryRating]: 0.44,
+	}),
+);
+
 export const EP_PRESET_AOE = PresetUtils.makePresetEpWeights(
 	'AoE (4+)',
 	Stats.fromMap({

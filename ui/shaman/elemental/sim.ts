@@ -95,7 +95,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecElementalShaman, {
 	},
 
 	presets: {
-		epWeights: [Presets.EP_PRESET_P3, Presets.EP_PRESET_AOE],
+		epWeights: [Presets.EP_PRESET_P3,Presets.EP_PRESET_P2, Presets.EP_PRESET_AOE],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.P3_TALENTS, Presets.TalentsAoE],
 		// Preset rotations that the user can quickly select.
@@ -143,6 +143,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecElementalShaman, {
 export class ElementalShamanSimUI extends IndividualSimUI<Spec.SpecElementalShaman> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecElementalShaman>) {
 		super(parentElem, player, SPEC_CONFIG);
-		this.reforger = new ReforgeOptimizer(this);
+		this.reforger = new ReforgeOptimizer(this, {
+			getEPDefaults: player => {
+				const avgIlvl = player.getGear().getAverageItemLevel(false);
+				if (avgIlvl >= 518) {
+					return Presets.EP_PRESET_P3.epWeights;
+				}
+				return Presets.EP_PRESET_P2.epWeights;
+			},
+		});
 	}
 }
