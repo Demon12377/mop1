@@ -604,7 +604,8 @@ func FullCharacterTestSuiteGenerator(configs []CharacterSuiteConfig) []TestGener
 				generator: &SingleCharacterStatsTestGenerator{
 					Name: "Default",
 					Request: &proto.ComputeStatsRequest{
-						Raid: defaultRaid,
+						Raid:      defaultRaid,
+						Encounter: Ternary(config.Encounter.Encounter != nil, config.Encounter.Encounter, nil),
 					},
 				},
 			})
@@ -634,7 +635,7 @@ func FullCharacterTestSuiteGenerator(configs []CharacterSuiteConfig) []TestGener
 				},
 				IsHealer:          config.IsHealer,
 				IsTank:            config.IsTank,
-				Encounters:        MakeDefaultEncounterCombos(),
+				Encounters:        Ternary(config.Encounter.Encounter != nil, []EncounterCombo{config.Encounter}, MakeDefaultEncounterCombos()),
 				SimOptions:        DefaultSimTestOptions,
 				Cooldowns:         config.Cooldowns,
 				StartingDistances: allStartingDistances,
