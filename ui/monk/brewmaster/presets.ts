@@ -13,7 +13,6 @@ import ShaBuild from './builds/sha_encounter_only.build.json';
 import HorridonBuild from './builds/horridon_encounter_only.build.json';
 import P1BISDWGear from './gear_sets/p1_bis_dw.gear.json';
 import P2BISDWGear from './gear_sets/p2_bis_dw.gear.json';
-import P3ProgDWGear from './gear_sets/p3_prog_dw.gear.json';
 import P3BISDWGear from './gear_sets/p3_bis_dw.gear.json';
 import P3OffensiveDWGear from './gear_sets/p3_bis_offensive_dw.gear.json';
 import P3OffensiveRoRoDWGear from './gear_sets/p3_bis_offensive_dw_roro.default.json';
@@ -28,7 +27,6 @@ export const P1_BIS_DW_GEAR_PRESET = PresetUtils.makePresetGear('P1 - BIS (Balan
 export const P2_BIS_DW_GEAR_PRESET = PresetUtils.makePresetGear('P2 - BIS (Balanced)', P2BISDWGear);
 export const P2_BIS_OFFENSIVE_DW_GEAR_PRESET = PresetUtils.makePresetGear('P2 - BIS (Offensive - 2PC)', P2BISOffensiveDWGear);
 export const P2_BIS_OFFENSIVE_TIERLESS_DW_GEAR_PRESET = PresetUtils.makePresetGear('P2 - BIS (Offensive - No Tier)', P2BISOffensiveTierlessDWGear);
-export const P3_PROG_DW_GEAR_PRESET = PresetUtils.makePresetGear('Tentative - P3 - Prog (Balanced)', P3ProgDWGear);
 export const P3_BIS_DW_GEAR_PRESET = PresetUtils.makePresetGear('Tentative - P3 - BIS (Balanced)', P3BISDWGear);
 export const P3_BIS_OFFENSIVE_DW_GEAR_PRESET = PresetUtils.makePresetGear('Tentative - P3 - BIS (Offensive)', P3OffensiveDWGear);
 export const P3_BIS_OFFENSIVE_DW_RORO_GEAR_PRESET = PresetUtils.makePresetGear('Tentative - P3 - BIS (Offensive - RoRo)', P3OffensiveRoRoDWGear);
