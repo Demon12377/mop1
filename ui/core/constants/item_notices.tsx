@@ -55,11 +55,8 @@ export const ITEM_NOTICES = new Map<number, ItemNoticeData>([
 			[Spec.SpecUnknown]: (
 				<>
 					<p>
-						The Agility proc on this trinket has been implemented, but the Voodoo Gnomes are <span className="fw-bold">not</span> currently
-						implemented!
+						The Agility proc on this trinket has been implemented, but the Voodoo Gnomes are <span className="fw-bold">not</span> implemented. The DPS gain of these is around ~40 DPS.
 					</p>
-					<p>PTR testing is required in order to fit out accurate damage parameters for the Voodoo Gnomes.</p>
-					<WantToHelpMessage />
 				</>
 			),
 		},
