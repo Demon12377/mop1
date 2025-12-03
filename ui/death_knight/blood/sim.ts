@@ -161,7 +161,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBloodDeathKnight, {
 		gear: [
 			Presets.P2_BALANCED_BLOOD_PRESET,
 			Presets.P2_OFFENSIVE_BLOOD_PRESET,
-			Presets.P3_PROG_BLOOD_PRESET,
 			Presets.P3_BALANCED_BLOOD_PRESET,
 			Presets.P3_OFFENSIVE_BLOOD_PRESET,
 		],

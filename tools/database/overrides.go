@@ -184,6 +184,85 @@ var ItemOverrides = []*proto.UIItem{
 	{Id: 72881, Phase: 4}, // Treads of the Past
 	{Id: 72884, Phase: 4}, // Writhing Wand
 }
+var ItemUpgradesDisallowList = map[int32]struct{}{
+	// MOP
+	// Shado-pan Assault items
+	94507: {}, // Steadfast Talisman of the Shado-Pan Assault
+	94508: {}, // Brutal Talisman of the Shado-Pan Assault
+	94509: {}, // Soothing Talisman of the Shado-Pan Assault
+	94510: {}, // Volatile Talisman of the Shado-Pan Assault
+	94511: {}, // Vicious Talisman of the Shado-Pan Assault
+	95074: {}, // Hauberk of Gleaming Fire
+	95075: {}, // Gianttooth Chestplate
+	95076: {}, // Breastplate of Brutal Strikes
+	95077: {}, // Roofstalker Shadowwrap
+	95078: {}, // Raiment of Silent Stars
+	95079: {}, // Carapace of Segmented Scale
+	95080: {}, // Skinsealer Tunic
+	95081: {}, // Fire Support Robes
+	95082: {}, // Robes of Misty Bindings
+	95083: {}, // Swordhook Slingbelt
+	95084: {}, // Reinforced Spiritplate Girdle
+	95085: {}, // Waistplate of Channeled Mending
+	95086: {}, // Nightflight Chain
+	95087: {}, // Cracklebite Links
+	95088: {}, // Darkfang Belt
+	95089: {}, // Martiean's Splitleaf Girdle
+	95090: {}, // Firestrike Cord
+	95091: {}, // Girdle of Glowing Light
+	95095: {}, // Targetblinder Spaulders
+	95096: {}, // Shoulders of Demonic Dreams
+	95097: {}, // Heartroot Shoulderguards
+	95098: {}, // Sightblinder Shoulderguards
+	95099: {}, // Lightning Strike Mantle
+	95100: {}, // Wallwalker Spaulders
+	95101: {}, // Halo-Graced Mantle
+	95102: {}, // Frost-Kissed Shoulderwraps
+	95103: {}, // Sparksmasher Pauldrons
+	95104: {}, // Shoulderguards of Potentiation
+	95105: {}, // Ghostbinder Grips
+	95106: {}, // Flameweaver Handwraps
+	95107: {}, // Gloves of Enduring Renewal
+	95108: {}, // Daggerfinger Clutches
+	95109: {}, // Gauntlets of the Longbow
+	95110: {}, // Stoneward Handguards
+	95111: {}, // Bloodstained Skullsqueezers
+	95112: {}, // Totemshaper Gloves
+	95113: {}, // Touch of Soothing Mists
+	95114: {}, // Spikeshard Greatcloak
+	95115: {}, // Many-Layered Scalecloak
+	95116: {}, // Longshot Forestcloak
+	95117: {}, // Shadowspike Cloak
+	95118: {}, // Dreamweaver Drape
+	95119: {}, // Thunderbreaker Legplates
+	95120: {}, // Legguards of Renewal
+	95121: {}, // Vaultbreaker Greaves
+	95122: {}, // Wisp-Weave Pantaloons
+	95123: {}, // Charfire Leggings
+	95124: {}, // Trousers of Waning Shadow
+	95125: {}, // Legguards of Hidden Knives
+	95126: {}, // Kilt of Rising Thunder
+	95127: {}, // Homeguard Leggings
+	95128: {}, // Bonecrusher Bracers
+	95129: {}, // Axebinder Wristguards
+	95130: {}, // Softscar Armplates
+	95131: {}, // Powderburn Bracers
+	95132: {}, // Spiritcaller Cuffs
+	95133: {}, // Willow-Weave Armbands
+	95134: {}, // Hearthfire Armwraps
+	95135: {}, // Bracers of Shielding Thought
+	95136: {}, // Troll-Burner Bracers
+	95137: {}, // Seal of the Shado-Pan Assault
+	95138: {}, // Signet of the Shado-Pan Assault
+	95139: {}, // Ring of the Shado-Pan Assault
+	95140: {}, // Band of the Shado-Pan Assault
+	95141: {}, // Loop of the Shado-Pan Assault
+	95142: {}, // Striker's Battletags
+	95143: {}, // Flanker's Battletags
+	95144: {}, // Vanguard's Battletags
+	95145: {}, // Mender's Battletags
+	95146: {}, // Destroyer's Battletags
+}
 
 // Keep these sorted by item ID.
 var ItemAllowList = map[int32]struct{}{
@@ -684,11 +763,60 @@ var ItemDenyList = map[int32]struct{}{
 	103050: {},
 
 	// MOP
+	// MSV / HOF / TOES
 	87080: {}, // HC Trash Jade Magistrate Figurine - 502
 	87079: {}, // HC Trash Jade Bandit Figurine - 502
 	87082: {}, // HC Trash Jade Charioteer Figurine - 502
 	87081: {}, // HC Trash Jade Courteasan Figurine - 502
 	87083: {}, // HC Trash Jade Warlord Figurine - 502
+
+	// TOT - Trash loot - Heroic (Thunderforged)
+	96702: {}, // Necklace of the Terra-Cotta Archer (Heroic)
+	96703: {}, // Spiderweb Tabi (Heroic)
+	96704: {}, // Scalehide Spurs (Heroic)
+	96705: {}, // Abandoned Zandalari Firecord (Heroic)
+	96706: {}, // Abandoned Zandalari Shadowgirdle (Heroic)
+	96707: {}, // Silentflame Sandals (Heroic)
+	96708: {}, // Necklace of the Terra-Cotta Invoker (Heroic)
+	96709: {}, // Home-Warding Slippers (Heroic)
+	96710: {}, // Deeproot Treads (Heroic)
+	96711: {}, // Spiritbound Boots (Heroic)
+	96712: {}, // Vaultwalker Sabatons (Heroic)
+	96713: {}, // Necklace of the Terra-Cotta Mender (Heroic)
+	96714: {}, // Abandoned Zandalari Silentbelt (Heroic)
+	96715: {}, // Abandoned Zandalari Moonstrap (Heroic)
+	96716: {}, // Abandoned Zandalari Arrowlinks (Heroic)
+	96717: {}, // Abandoned Zandalari Waterchain (Heroic)
+	96718: {}, // Abandoned Zandalari Greatbelt (Heroic)
+	96719: {}, // Abandoned Zandalari Goreplate (Heroic)
+	96720: {}, // Abandoned Zandalari Bucklebreaker (Heroic)
+	96721: {}, // Necklace of the Terra-Cotta Vanquisher (Heroic)
+	96722: {}, // Locksmasher Greaves (Heroic)
+	96723: {}, // Columnbreaker Stompers (Heroic)
+	96724: {}, // Necklace of the Terra-Cotta Protector (Heroic)
+	97074: {}, // Necklace of the Terra-Cotta Archer (Heroic Thunderforged)
+	97075: {}, // Spiderweb Tabi (Heroic Thunderforged)
+	97076: {}, // Scalehide Spurs (Heroic Thunderforged)
+	97077: {}, // Abandoned Zandalari Firecord (Heroic Thunderforged)
+	97078: {}, // Abandoned Zandalari Shadowgirdle (Heroic Thunderforged)
+	97079: {}, // Silentflame Sandals (Heroic Thunderforged)
+	97080: {}, // Necklace of the Terra-Cotta Invoker (Heroic Thunderforged)
+	97081: {}, // Home-Warding Slippers (Heroic Thunderforged)
+	97082: {}, // Deeproot Treads (Heroic Thunderforged)
+	97083: {}, // Spiritbound Boots (Heroic Thunderforged)
+	97084: {}, // Vaultwalker Sabatons (Heroic Thunderforged)
+	97085: {}, // Necklace of the Terra-Cotta Mender (Heroic Thunderforged)
+	97086: {}, // Abandoned Zandalari Silentbelt (Heroic Thunderforged)
+	97087: {}, // Abandoned Zandalari Moonstrap (Heroic Thunderforged)
+	97088: {}, // Abandoned Zandalari Arrowlinks (Heroic Thunderforged)
+	97089: {}, // Abandoned Zandalari Waterchain (Heroic Thunderforged)
+	97090: {}, // Abandoned Zandalari Greatbelt (Heroic Thunderforged)
+	97091: {}, // Abandoned Zandalari Goreplate (Heroic Thunderforged)
+	97092: {}, // Abandoned Zandalari Bucklebreaker (Heroic Thunderforged)
+	97093: {}, // Necklace of the Terra-Cotta Vanquisher (Heroic Thunderforged)
+	97094: {}, // Locksmasher Greaves (Heroic Thunderforged)
+	97095: {}, // Columnbreaker Stompers (Heroic Thunderforged)
+	97096: {}, // Necklace of the Terra-Cotta Protector (Heroic Thunderforged)
 
 	// MOP - Brewfest - Old items
 	87571:  {}, // Brawler's Statue
@@ -1082,32 +1210,6 @@ var GemAllowList = map[int32]struct{}{
 	//36766: {}, // Bright Dragon's Eye
 	//36767: {}, // Solid Dragon's Eye
 }
-var EnchantDenyListSpells = map[int32]struct{}{
-	141168: {},
-	141973: {},
-	142173: {},
-	142175: {},
-	141170: {},
-	141974: {},
-	142177: {},
-	141868: {},
-	141984: {},
-	141177: {},
-	141981: {},
-	141176: {},
-	141978: {},
-	141173: {},
-	141975: {},
-	141862: {},
-	141983: {},
-	141175: {},
-	141977: {},
-}
-var EnchantDenyListItems = map[int32]struct{}{
-	87583: {},
-	89717: {},
-	79061: {},
-}
 var GemDenyList = map[int32]struct{}{
 	// pvp non-unique gems not in game currently.
 	32735: {},
@@ -1168,6 +1270,33 @@ var GemDenyList = map[int32]struct{}{
 	77138: {},
 	77136: {},
 	76655: {},
+}
+
+var EnchantDenyListSpells = map[int32]struct{}{
+	141168: {},
+	141973: {},
+	142173: {},
+	142175: {},
+	141170: {},
+	141974: {},
+	142177: {},
+	141868: {},
+	141984: {},
+	141177: {},
+	141981: {},
+	141176: {},
+	141978: {},
+	141173: {},
+	141975: {},
+	141862: {},
+	141983: {},
+	141175: {},
+	141977: {},
+}
+var EnchantDenyListItems = map[int32]struct{}{
+	87583: {},
+	89717: {},
+	79061: {},
 }
 
 var EnchantDenyList = map[int32]struct{}{

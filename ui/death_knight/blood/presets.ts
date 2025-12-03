@@ -8,7 +8,6 @@ import HorridonApl from './apls/horridon.apl.json';
 import P2BalancedBloodGear from './gear_sets/p2.gear.json';
 import P2OffensiveBloodGear from './gear_sets/p2_offensive.gear.json';
 import P3BalancedBloodGear from './gear_sets/p3.gear.json';
-import P3ProgBloodGear from './gear_sets/p3_prog_survival.gear.json';
 import P3OffensiveBloodGear from './gear_sets/p3_offensive.gear.json';
 import DefaultBuild from './builds/sha_default.build.json';
 import ShaBuild from './builds/sha_encounter_only.build.json';
@@ -18,7 +17,6 @@ import HorridonBuild from './builds/horridon_encounter_only.build.json';
 // export const PRERAID_BLOOD_PRESET = PresetUtils.makePresetGear('Pre-Raid', PreRaidBloodGear);
 export const P2_BALANCED_BLOOD_PRESET = PresetUtils.makePresetGear('P2 - BIS (Balanced)', P2BalancedBloodGear);
 export const P2_OFFENSIVE_BLOOD_PRESET = PresetUtils.makePresetGear('P2 - BIS (Offensive)', P2OffensiveBloodGear);
-export const P3_PROG_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - Prog (Survival)', P3ProgBloodGear);
 export const P3_BALANCED_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - BIS (Balanced)', P3BalancedBloodGear);
 export const P3_OFFENSIVE_BLOOD_PRESET = PresetUtils.makePresetGear('P3 - BIS (Offensive)', P3OffensiveBloodGear);
 

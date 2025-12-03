@@ -152,8 +152,8 @@ dps_results: {
 dps_results: {
  key: "TestMarksmanship-AllItems-CapacitivePrimalDiamond"
  value: {
-  dps: 178052.20569
-  tps: 147107.25763
+  dps: 180344.44318
+  tps: 149399.49512
  }
 }
 dps_results: {
