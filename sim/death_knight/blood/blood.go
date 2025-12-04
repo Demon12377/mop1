@@ -82,7 +82,6 @@ func (bdk *BloodDeathKnight) Initialize() {
 	bdk.registerScarletFever()
 	bdk.registerScentOfBlood()
 	bdk.registerVampiricBlood()
-	bdk.registerVeteranOfTheThirdWar()
 	bdk.registerWillOfTheNecropolis()
 
 	bdk.RuneWeapon.AddCopySpell(HeartStrikeActionID, bdk.registerDrwHeartStrike())
@@ -90,6 +89,8 @@ func (bdk *BloodDeathKnight) Initialize() {
 }
 
 func (bdk *BloodDeathKnight) ApplyTalents() {
+	bdk.registerVeteranOfTheThirdWar()
+
 	bdk.DeathKnight.ApplyTalents()
 	bdk.ApplyArmorSpecializationEffect(stats.Stamina, proto.ArmorType_ArmorTypePlate, 86537)
 

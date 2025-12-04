@@ -12,8 +12,8 @@ import { StatCap, Stats, UnitStat } from '../../core/proto_utils/stats';
 import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as Presets from './presets';
 
-const ExpertiseBreakpoints = [0.56, 0];
-const OffensiveExpertiseBreakpoints = [0.65, 0];
+const ExpertiseBreakpoints = [0.53, 0];
+const OffensiveExpertiseBreakpoints = [0.68, 0];
 
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecBloodDeathKnight, {
 	cssClass: 'blood-death-knight-sim-ui',
@@ -161,6 +161,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBloodDeathKnight, {
 		gear: [
 			Presets.P2_BALANCED_BLOOD_PRESET,
 			Presets.P2_OFFENSIVE_BLOOD_PRESET,
+			Presets.P3_PROG_BLOOD_PRESET,
 			Presets.P3_BALANCED_BLOOD_PRESET,
 			Presets.P3_OFFENSIVE_BLOOD_PRESET,
 		],
