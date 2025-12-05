@@ -204,10 +204,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-CapacitivePrimalDiamond"
  value: {
-  dps: 223048.90634
-  tps: 1.14994345335e+06
-  dtps: 66145.78932
-  hps: 77885.57709
+  dps: 223687.45356
+  tps: 1.15266008112e+06
+  dtps: 66046.4099
+  hps: 77673.72617
  }
 }
 dps_results: {
@@ -782,8 +782,8 @@ dps_results: {
  value: {
   dps: 210025.14367
   tps: 1.07291924698e+06
-  dtps: 66600.39082
-  hps: 73276.5697
+  dtps: 66629.50487
+  hps: 73292.30249
  }
 }
 dps_results: {
@@ -798,8 +798,8 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-EnchantWeapon-ElementalForce-4443"
  value: {
-  dps: 211113.20024
-  tps: 1.08061783182e+06
+  dps: 211304.16661
+  tps: 1.08038967138e+06
   dtps: 67463.0086
   hps: 73395.26068
  }
@@ -816,10 +816,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-EnchantWeapon-River'sSong-4446"
  value: {
-  dps: 211179.29938
-  tps: 1.07629599882e+06
+  dps: 211025.64907
+  tps: 1.07521758134e+06
   dtps: 66457.22186
-  hps: 73189.32027
+  hps: 73221.15228
  }
 }
 dps_results: {
@@ -924,10 +924,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-Fen-Yu,FuryofXuen-102248"
  value: {
-  dps: 227934.43161
-  tps: 1.18199770226e+06
+  dps: 230242.2777
+  tps: 1.19377988475e+06
   dtps: 67812.02022
-  hps: 83157.74419
+  hps: 83191.45622
  }
 }
 dps_results: {
@@ -1041,10 +1041,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-Gong-Lu,StrengthofXuen-102249"
  value: {
-  dps: 240030.81031
-  tps: 1.24811487097e+06
+  dps: 239530.53858
+  tps: 1.24431485032e+06
   dtps: 65027.3979
-  hps: 81535.60317
+  hps: 81523.79899
  }
 }
 dps_results: {
@@ -1401,10 +1401,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-InscribedBagofHydra-Spawn-96828"
  value: {
-  dps: 215837.78265
-  tps: 1.0936710152e+06
-  dtps: 64086.43302
-  hps: 75096.46111
+  dps: 215597.7664
+  tps: 1.09171733821e+06
+  dtps: 64168.00549
+  hps: 74912.56975
  }
 }
 dps_results: {
@@ -3111,8 +3111,8 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 213830.38972
-  tps: 1.08558706502e+06
+  dps: 213846.33161
+  tps: 1.08569398657e+06
   dtps: 67813.38211
   hps: 83796.77159
  }

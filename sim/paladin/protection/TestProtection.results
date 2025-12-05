@@ -195,10 +195,10 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-CapacitivePrimalDiamond"
  value: {
-  dps: 249168.73118
-  tps: 1.57636920557e+06
-  dtps: 30976.87319
-  hps: 37016.66713
+  dps: 246809.26502
+  tps: 1.56065625098e+06
+  dtps: 32150.93579
+  hps: 37082.43734
  }
 }
 dps_results: {
@@ -782,15 +782,15 @@ dps_results: {
  value: {
   dps: 234429.98098
   tps: 1.47546532705e+06
-  dtps: 34135.3687
+  dtps: 34189.09967
   hps: 36819.19398
  }
 }
 dps_results: {
  key: "TestProtection-AllItems-EnchantWeapon-ElementalForce-4443"
  value: {
-  dps: 236326.17242
-  tps: 1.49000474998e+06
+  dps: 235939.25983
+  tps: 1.49000915839e+06
   dtps: 35312.64456
   hps: 36812.04009
  }
@@ -807,8 +807,8 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-EnchantWeapon-River'sSong-4446"
  value: {
-  dps: 233897.59158
-  tps: 1.47246629814e+06
+  dps: 233887.73312
+  tps: 1.47239728891e+06
   dtps: 34162.2764
   hps: 36701.4856
  }
@@ -915,10 +915,10 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-Fen-Yu,FuryofXuen-102248"
  value: {
-  dps: 238551.01651
-  tps: 1.50338563961e+06
-  dtps: 35563.19385
-  hps: 37664.31998
+  dps: 232454.56047
+  tps: 1.4619080672e+06
+  dtps: 34676.16177
+  hps: 37609.96879
  }
 }
 dps_results: {
@@ -1032,10 +1032,10 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-Gong-Lu,StrengthofXuen-102249"
  value: {
-  dps: 241035.59618
-  tps: 1.51592863266e+06
-  dtps: 34913.10213
-  hps: 38321.23439
+  dps: 239403.61756
+  tps: 1.50503008425e+06
+  dtps: 34289.83163
+  hps: 38278.46962
  }
 }
 dps_results: {
@@ -3057,8 +3057,8 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 253381.78193
-  tps: 1.60380937728e+06
+  dps: 252412.64352
+  tps: 1.59702540844e+06
   dtps: 35318.55286
   hps: 36954.7631
  }

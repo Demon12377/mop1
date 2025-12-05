@@ -689,8 +689,8 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-EnchantWeapon-ElementalForce-4443"
  value: {
-  dps: 83862.69912
-  tps: 78922.00623
+  dps: 83731.17511
+  tps: 78798.49142
   hps: 1629.49698
  }
 }
@@ -1194,7 +1194,7 @@ dps_results: {
  key: "TestShadow-AllItems-Horridon'sLastGasp-96757"
  value: {
   dps: 90075.34241
-  tps: 84624.39697
+  tps: 84622.41297
   hps: 1621.2584
  }
 }
@@ -2673,9 +2673,9 @@ dps_results: {
 dps_results: {
  key: "TestShadow-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 108821.7044
-  tps: 103458.91406
-  hps: 1763.55026
+  dps: 107846.01358
+  tps: 102482.21059
+  hps: 1754.67031
  }
 }
 dps_results: {
