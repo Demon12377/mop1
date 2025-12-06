@@ -1,58 +1,45 @@
 import * as PresetUtils from '../../core/preset_utils';
-import { APLRotation_Type as APLRotationType } from '../../core/proto/apl';
-import { ConsumesSpec, Glyphs, Profession, PseudoStat, Stat } from '../../core/proto/common';
+import { APLRotation_Type } from '../../core/proto/apl';
+import { ConsumesSpec, Glyphs, Profession, PseudoStat, Race, Spec, Stat } from '../../core/proto/common';
 import { DeathKnightMajorGlyph, DeathKnightMinorGlyph, FrostDeathKnight_Options } from '../../core/proto/death_knight';
 import { SavedTalents } from '../../core/proto/ui';
 import { Stats } from '../../core/proto_utils/stats';
 import MasterFrostAPL from '../../death_knight/frost/apls/masterfrost.apl.json';
 import ObliterateAPL from '../../death_knight/frost/apls/obliterate.apl.json';
-import P12HObliterateGear from '../../death_knight/frost/gear_sets/p1.2h-obliterate.gear.json';
-// import P1DWObliterateGear from '../../death_knight/frost/gear_sets/p1.dw-obliterate.gear.json';
-import P1MasterfrostGear from '../../death_knight/frost/gear_sets/p1.masterfrost.gear.json';
-// import PreBISGear from '../../death_knight/frost/gear_sets/prebis.gear.json';
+import P22hObliterateBuild from '../../death_knight/frost/builds/p2.2h-obliterate.build.json';
+import P2MasterfrostBuild from '../../death_knight/frost/builds/p2.masterfrost.build.json';
+import P32hObliterateBuild from '../../death_knight/frost/builds/p3.2h-obliterate.build.json';
+import P3MasterfrostBuild from '../../death_knight/frost/builds/p3.masterfrost.build.json';
+import PrebisMasterfrostBuild from '../../death_knight/frost/builds/prebis.masterfrost.build.json';
+import Prebis2hObliterateBuild from '../../death_knight/frost/builds/prebis.2h-obliterate.build.json';
+import P22HObliterateGear from '../../death_knight/frost/gear_sets/p2.2h-obliterate.gear.json';
+import P2MasterfrostGear from '../../death_knight/frost/gear_sets/p2.masterfrost.gear.json';
+import P32HObliterateGear from '../../death_knight/frost/gear_sets/p3.2h-obliterate.gear.json';
+import P3MasterfrostGear from '../../death_knight/frost/gear_sets/p3.masterfrost.gear.json';
+import PrebisMasterfrostGear from '../../death_knight/frost/gear_sets/prebis.masterfrost.gear.json';
+import Prebis2HObliterateGear from '../../death_knight/frost/gear_sets/prebis.2h-obliterate.gear.json';
 
-// export const P1_DW_OBLITERATE_GEAR_PRESET = PresetUtils.makePresetGear('P1 DW Obliterate', P1DWObliterateGear);
-export const P1_2H_OBLITERATE_GEAR_PRESET = PresetUtils.makePresetGear('P1 2h Obliterate', P12HObliterateGear);
-export const P1_MASTERFROST_GEAR_PRESET = PresetUtils.makePresetGear('P1 Masterfrost', P1MasterfrostGear);
-// export const PREBIS_MASTERFROST_GEAR_PRESET = PresetUtils.makePresetGear('Pre-bis Masterfrost', PreBISGear);
+export const P2_2H_OBLITERATE_GEAR_PRESET = PresetUtils.makePresetGear('P2 - 2h Obliterate', P22HObliterateGear);
+export const P2_MASTERFROST_GEAR_PRESET = PresetUtils.makePresetGear('P2 - Masterfrost', P2MasterfrostGear);
+export const P3_2H_OBLITERATE_GEAR_PRESET = PresetUtils.makePresetGear('P3 - 2h Obliterate', P32HObliterateGear);
+export const P3_MASTERFROST_GEAR_PRESET = PresetUtils.makePresetGear('P3 - Masterfrost', P3MasterfrostGear);
+export const PREBIS_MASTERFROST_GEAR_PRESET = PresetUtils.makePresetGear('Prebis - Masterfrost', PrebisMasterfrostGear);
+export const PREBIS_2H_OBLITERATE_GEAR_PRESET = PresetUtils.makePresetGear('Prebis - 2h Obliterate', Prebis2HObliterateGear);
 
 export const OBLITERATE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetAPLRotation('Obliterate', ObliterateAPL);
 export const MASTERFROST_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetAPLRotation('Masterfrost', MasterFrostAPL);
 
-// // Preset options for EP weights
-// export const P1_DUAL_WIELD_OBLITERATE_EP_PRESET = PresetUtils.makePresetEpWeights(
-// 	'P1 DW Obliterate',
-// 	Stats.fromMap(
-// 		{
-// 			[Stat.StatStrength]: 2.92,
-// 			[Stat.StatArmor]: 0.03,
-// 			[Stat.StatAttackPower]: 1,
-// 			[Stat.StatExpertiseRating]: 0.56,
-// 			[Stat.StatHasteRating]: 1.3,
-// 			[Stat.StatHitRating]: 1.22,
-// 			[Stat.StatCritRating]: 1.06,
-// 			[Stat.StatMasteryRating]: 1.11,
-// 		},
-// 		{
-// 			[PseudoStat.PseudoStatMainHandDps]: 6.05,
-// 			[PseudoStat.PseudoStatOffHandDps]: 3.85,
-// 			[PseudoStat.PseudoStatPhysicalHitPercent]: 146.53,
-// 			[PseudoStat.PseudoStatSpellHitPercent]: 41.91,
-// 		},
-// 	),
-// );
-
-export const P1_2H_OBLITERATE_EP_PRESET = PresetUtils.makePresetEpWeights(
-	'P1 2h Obliterate',
+export const TWOHAND_OBLITERATE_EP_PRESET = PresetUtils.makePresetEpWeights(
+	'2h Obliterate',
 	Stats.fromMap(
 		{
 			[Stat.StatStrength]: 1.0,
-			[Stat.StatHitRating]: 0.87,
-			[Stat.StatExpertiseRating]: 0.87,
-			[Stat.StatMasteryRating]: 0.35,
+			[Stat.StatHitRating]: 0.82,
+			[Stat.StatExpertiseRating]: 0.82,
+			[Stat.StatHasteRating]: 0.45,
 			[Stat.StatCritRating]: 0.44,
-			[Stat.StatHasteRating]: 0.39,
-			[Stat.StatAttackPower]: 0.37,
+			[Stat.StatAttackPower]: 0.36,
+			[Stat.StatMasteryRating]: 0.35,
 		},
 		{
 			[PseudoStat.PseudoStatMainHandDps]: 2.95,
@@ -60,21 +47,21 @@ export const P1_2H_OBLITERATE_EP_PRESET = PresetUtils.makePresetEpWeights(
 	),
 );
 
-export const P1_MASTERFROST_EP_PRESET = PresetUtils.makePresetEpWeights(
-	'P1 Masterfrost',
+export const MASTERFROST_EP_PRESET = PresetUtils.makePresetEpWeights(
+	'Masterfrost',
 	Stats.fromMap(
 		{
 			[Stat.StatStrength]: 1.0,
-			[Stat.StatHitRating]: 0.8,
-			[Stat.StatExpertiseRating]: 0.8,
-			[Stat.StatMasteryRating]: 0.48,
-			[Stat.StatHasteRating]: 0.38,
+			[Stat.StatHitRating]: 0.84,
+			[Stat.StatExpertiseRating]: 0.83,
+			[Stat.StatMasteryRating]: 0.53,
+			[Stat.StatHasteRating]: 0.37,
 			[Stat.StatAttackPower]: 0.37,
-			[Stat.StatCritRating]: 0.35,
+			[Stat.StatCritRating]: 0.36,
 		},
 		{
-			[PseudoStat.PseudoStatMainHandDps]: 1.47,
-			[PseudoStat.PseudoStatOffHandDps]: 0.7,
+			[PseudoStat.PseudoStatMainHandDps]: 1.58,
+			[PseudoStat.PseudoStatOffHandDps]: 0.76,
 		},
 	),
 );
@@ -87,26 +74,24 @@ export const DefaultTalents = {
 	data: SavedTalents.create({
 		talentsString: '221111',
 		glyphs: Glyphs.create({
-			major1: DeathKnightMajorGlyph.GlyphOfAntiMagicShell,
+			major1: DeathKnightMajorGlyph.GlyphOfDarkSuccor,
 			major2: DeathKnightMajorGlyph.GlyphOfPestilence,
-			major3: DeathKnightMajorGlyph.GlyphOfLoudHorn,
-			minor1: DeathKnightMinorGlyph.GlyphOfArmyOfTheDead,
+			minor1: DeathKnightMinorGlyph.GlyphOfResilientGrip,
 			minor2: DeathKnightMinorGlyph.GlyphOfTranquilGrip,
-			minor3: DeathKnightMinorGlyph.GlyphOfDeathGate,
 		}),
 	}),
 };
 
 export const DefaultOptions = FrostDeathKnight_Options.create({
-	classOptions: {
-		startingRunicPower: 0,
-	},
+	classOptions: {},
 });
 
 export const OtherDefaults = {
 	profession1: Profession.Engineering,
 	profession2: Profession.Blacksmithing,
 	distanceFromTarget: 5,
+	race: Race.RaceTroll,
+	iterationCount: 25000,
 };
 
 export const DefaultConsumables = ConsumesSpec.create({
@@ -116,34 +101,32 @@ export const DefaultConsumables = ConsumesSpec.create({
 	prepotId: 76095, // Potion of Mogu Power
 });
 
-// export const PRESET_BUILD_DW_OBLITERATE = PresetUtils.makePresetBuild('P1 DW Obliterate', {
-// 	gear: P1_DW_OBLITERATE_GEAR_PRESET,
-// 	talents: DefaultTalents,
-// 	rotationType: APLRotationType.TypeAPL,
-// 	rotation: OBLITERATE_ROTATION_PRESET_DEFAULT,
-// 	epWeights: P1_DW_OBLITERATE_EP_PRESET,
-// });
-
-export const PRESET_BUILD_2H_OBLITERATE = PresetUtils.makePresetBuild('P1 2h Obliterate', {
-	gear: P1_2H_OBLITERATE_GEAR_PRESET,
-	talents: DefaultTalents,
-	rotationType: APLRotationType.TypeAuto,
-	rotation: OBLITERATE_ROTATION_PRESET_DEFAULT,
-	epWeights: P1_2H_OBLITERATE_EP_PRESET,
+export const PRESET_BUILD_P2_2H_OBLITERATE = PresetUtils.makePresetBuildFromJSON('P2 - 2h Obliterate', Spec.SpecFrostDeathKnight, P22hObliterateBuild, {
+	epWeights: TWOHAND_OBLITERATE_EP_PRESET,
+	rotationType: APLRotation_Type.TypeAuto,
 });
-
-export const PRESET_BUILD_MASTERFROST = PresetUtils.makePresetBuild('P1 Masterfrost', {
-	gear: P1_MASTERFROST_GEAR_PRESET,
-	talents: DefaultTalents,
-	rotationType: APLRotationType.TypeAuto,
-	rotation: MASTERFROST_ROTATION_PRESET_DEFAULT,
-	epWeights: P1_MASTERFROST_EP_PRESET,
+export const PRESET_BUILD_P2_MASTERFROST = PresetUtils.makePresetBuildFromJSON('P2 - Masterfrost', Spec.SpecFrostDeathKnight, P2MasterfrostBuild, {
+	epWeights: MASTERFROST_EP_PRESET,
+	rotationType: APLRotation_Type.TypeAuto,
 });
-
-// export const PRESET_BUILD_PREBIS = PresetUtils.makePresetBuild('P1 - Pre-bis', {
-// 	gear: PREBIS_MASTERFROST_GEAR_PRESET,
-// 	talents: DefaultTalents,
-// 	rotationType: APLRotationType.TypeAPL,
-// 	rotation: MASTERFROST_ROTATION_PRESET_DEFAULT,
-// 	epWeights: P1_MASTERFROST_EP_PRESET,
-// });
+export const PRESET_BUILD_P3_2H_OBLITERATE = PresetUtils.makePresetBuildFromJSON('P3 - 2h Obliterate', Spec.SpecFrostDeathKnight, P32hObliterateBuild, {
+	epWeights: TWOHAND_OBLITERATE_EP_PRESET,
+	rotationType: APLRotation_Type.TypeAuto,
+});
+export const PRESET_BUILD_P3_MASTERFROST = PresetUtils.makePresetBuildFromJSON('P3 - Masterfrost', Spec.SpecFrostDeathKnight, P3MasterfrostBuild, {
+	epWeights: MASTERFROST_EP_PRESET,
+	rotationType: APLRotation_Type.TypeAuto,
+});
+export const PRESET_BUILD_PREBIS_MASTERFROST = PresetUtils.makePresetBuildFromJSON('Prebis - Masterfrost', Spec.SpecFrostDeathKnight, PrebisMasterfrostBuild, {
+	epWeights: MASTERFROST_EP_PRESET,
+	rotationType: APLRotation_Type.TypeAuto,
+});
+export const PRESET_BUILD_PREBIS_2H_OBLITERATE = PresetUtils.makePresetBuildFromJSON(
+	'Prebis - 2h Obliterate',
+	Spec.SpecFrostDeathKnight,
+	Prebis2hObliterateBuild,
+	{
+		epWeights: TWOHAND_OBLITERATE_EP_PRESET,
+		rotationType: APLRotation_Type.TypeAuto,
+	},
+);

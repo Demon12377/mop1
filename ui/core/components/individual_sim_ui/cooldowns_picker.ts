@@ -1,5 +1,6 @@
 import tippy from 'tippy.js';
 
+import i18n from '../../../i18n/config';
 import { Player } from '../../player.js';
 import { ActionID as ActionIdProto, Cooldown } from '../../proto/common.js';
 import { ActionId } from '../../proto_utils/action_id.js';
@@ -69,7 +70,7 @@ export class CooldownsPicker extends Component {
 				</button>
 			`;
 			const deleteButton = deleteButtonFragment.children[0] as HTMLElement;
-			const deleteButtonTooltip = tippy(deleteButton, { content: 'Delete Cooldown' });
+			const deleteButtonTooltip = tippy(deleteButton, { content: i18n.t('rotation_tab.cooldowns.delete_tooltip') });
 			deleteButton.addEventListener('click', () => {
 				const newCooldowns = this.player.getSimpleCooldowns();
 				newCooldowns.cooldowns.splice(i, 1);
@@ -130,7 +131,7 @@ export class CooldownsPicker extends Component {
 		const actionPicker = new NumberListPicker(parentElem, this.player, {
 			id: `cooldown-timings-${cooldownIndex}`,
 			extraCssClasses: ['cooldown-timings-picker'],
-			placeholder: '20, 40, ...',
+			placeholder: i18n.t('rotation_tab.cooldowns.timings_placeholder'),
 			changedEvent: (player: Player<any>) => player.rotationChangeEmitter,
 			getValue: (player: Player<any>) => {
 				return player.getSimpleCooldowns().cooldowns[cooldownIndex]?.timings || [];

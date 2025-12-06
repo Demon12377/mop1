@@ -1,9 +1,8 @@
 import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
-
 import { CacheHandler } from '../../../cache_handler';
-import { TOOLTIP_METRIC_LABELS } from '../../../constants/tooltips';
 import { ActionId } from '../../../proto_utils/action_id';
+import i18n from '../../../../i18n/config';
 import { ActionMetrics, AuraMetrics, ResourceMetrics, UnitMetrics } from '../../../proto_utils/sim_result';
 import { TypedEvent } from '../../../typed_event';
 import { ResultComponent, ResultComponentConfig, SimResultData } from '../result_component';
@@ -59,7 +58,7 @@ export abstract class MetricsTable<T extends ActionMetrics | AuraMetrics | UnitM
 		const headerRowElem = this.rootElem.querySelector<HTMLTableRowElement>('.metrics-table-header-row')!;
 		this.columnConfigs.forEach(columnConfig => {
 			const headerCell = document.createElement('th');
-			const tooltipContent = columnConfig.tooltip || TOOLTIP_METRIC_LABELS[columnConfig.name as keyof typeof TOOLTIP_METRIC_LABELS];
+			const tooltipContent = columnConfig.tooltip;
 			headerCell.classList.add('metrics-table-header-cell');
 			if (columnConfig.columnClass) {
 				headerCell.classList.add(...columnConfig.columnClass.split(' '));
@@ -211,7 +210,7 @@ export abstract class MetricsTable<T extends ActionMetrics | AuraMetrics | UnitM
 		} & Pick<MetricsColumnConfig<T>, 'columnClass' | 'headerCellClass'>,
 	): MetricsColumnConfig<T> {
 		return {
-			name: 'Name',
+			name: i18n.t('results_tab.details.columns.name'),
 			fillCell: (metric: T, cellElem: HTMLElement, rowElem: HTMLElement) => {
 				const data = getData(metric);
 				const actionIdAsString = data.actionId.toString();
@@ -238,7 +237,7 @@ export abstract class MetricsTable<T extends ActionMetrics | AuraMetrics | UnitM
 
 	static playerNameCellConfig(): MetricsColumnConfig<UnitMetrics> {
 		return {
-			name: 'Name',
+			name: i18n.t('results_tab.details.columns.name'),
 			columnClass: 'name-cell',
 			fillCell: (player: UnitMetrics, cellElem: HTMLElement, rowElem: HTMLElement) => {
 				cellElem.appendChild(

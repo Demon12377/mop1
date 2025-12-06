@@ -1,5 +1,5 @@
-import { TOOLTIP_METRIC_LABELS } from '../../constants/tooltips';
 import { ActionMetrics } from '../../proto_utils/sim_result.js';
+import i18n from '../../../i18n/config';
 import { formatToCompactNumber, formatToNumber, formatToPercent } from '../../utils.js';
 import { MetricsCombinedTooltipTable } from './metrics_table/metrics_combined_tooltip_table';
 import { ColumnSortType, MetricsTable } from './metrics_table/metrics_table.jsx';
@@ -27,7 +27,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 				};
 			}),
 			{
-				name: 'Healing done',
+				name: i18n.t('results_tab.details.columns.healing_done'),
 				headerCellClass: 'text-center metrics-table-cell--primary-metric',
 				columnClass: 'metrics-table-cell--primary-metric',
 				getValue: (metric: ActionMetrics) => metric.avgHealing,
@@ -53,13 +53,13 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									totalPercentage: 100,
 									data: [
 										{
-											name: 'Hit',
+											name: i18n.t('results_tab.details.attack_types.hit'),
 											value: metric.avgHealing - metric.avgCritHealing,
 											percentage: metric.healingPercent,
 											average: (metric.avgHealing - metric.avgCritHealing) / (metric.hits || metric.ticks),
 										},
 										{
-											name: `Critical Hit`,
+											name: i18n.t('results_tab.details.attack_types.critical_hit'),
 											value: metric.avgCritHealing,
 											percentage: metric.healingCritPercent,
 											average: metric.avgCritHealing / (metric.crits || metric.critTicks),
@@ -72,23 +72,23 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 				},
 			},
 			{
-				name: 'Casts',
+				name: i18n.t('results_tab.details.columns.casts'),
 				getValue: (metric: ActionMetrics) => metric.casts,
 				getDisplayString: (metric: ActionMetrics) => formatToNumber(metric.casts, { fallbackString: '-' }),
 			},
 			{
-				name: 'CPM',
+				name: i18n.t('results_tab.details.columns.cpm'),
 				getValue: (metric: ActionMetrics) => metric.castsPerMinute,
 				getDisplayString: (metric: ActionMetrics) => formatToNumber(metric.castsPerMinute, { fallbackString: '-' }),
 			},
 			{
-				name: 'Cast Time',
+				name: i18n.t('results_tab.details.columns.cast_time'),
 				getValue: (metric: ActionMetrics) => metric.avgCastTimeMs,
 				getDisplayString: (metric: ActionMetrics) => formatToNumber(metric.avgCastTimeMs / 1000, { minimumFractionDigits: 2, fallbackString: '-' }),
 			},
 			{
-				name: 'Avg Cast',
-				tooltip: TOOLTIP_METRIC_LABELS['Healing Avg Cast'],
+				name: i18n.t('results_tab.details.columns.avg_cast'),
+				tooltip: i18n.t('results_tab.details.tooltips.healing_avg_cast_tooltip'),
 				getValue: (metric: ActionMetrics) => metric.avgCastHealing,
 				fillCell: (metric: ActionMetrics, cellElem: HTMLElement) => {
 					cellElem.appendChild(<>{formatToCompactNumber(metric.avgCastHealing, { fallbackString: '-' })}</>);
@@ -103,7 +103,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									if (hideThreatMetrics) return false;
 								},
 							}}
-							headerValues={[, 'Amount']}
+							headerValues={[, i18n.t('results_tab.details.tooltip_table.amount')]}
 							groups={[
 								{
 									spellSchool: metric.spellSchool,
@@ -111,7 +111,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									totalPercentage: 100,
 									data: [
 										{
-											name: 'Threat',
+											name: i18n.t('results_tab.details.attack_types.threat'),
 											value: metric.avgCastThreat,
 											percentage: 100,
 										},
@@ -123,8 +123,8 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 				},
 			},
 			{
-				name: 'Hits',
-				tooltip: TOOLTIP_METRIC_LABELS['Healing Hits'],
+				name: i18n.t('results_tab.details.columns.hits'),
+				tooltip: i18n.t('results_tab.details.tooltips.healing_hits_tooltip'),
 				getValue: (metric: ActionMetrics) => metric.landedHits,
 				fillCell: (metric: ActionMetrics, cellElem: HTMLElement) => {
 					cellElem.appendChild(
@@ -154,27 +154,27 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									name: 'Hits',
 									data: [
 										{
-											name: 'Hit',
+											name: i18n.t('results_tab.details.attack_types.hit'),
 											value: metric.hits,
 											percentage: relativeHitPercent,
 										},
 										{
-											name: `Critical Hit`,
+											name: i18n.t('results_tab.details.attack_types.critical_hit'),
 											value: metric.crits,
 											percentage: relativeCritPercent,
 										},
 										{
-											name: 'Glancing Blow',
+											name: i18n.t('results_tab.details.attack_types.glancing_blow'),
 											value: metric.glances,
 											percentage: relativeGlancePercent,
 										},
 										{
-											name: 'Blocked Hit',
+											name: i18n.t('results_tab.details.attack_types.blocked_hit'),
 											value: metric.blocks,
 											percentage: relativeBlockPercent,
 										},
 										{
-											name: 'Blocked Critical Hit',
+											name: i18n.t('results_tab.details.attack_types.blocked_critical_hit'),
 											value: metric.critBlocks,
 											percentage: relativeCritBlockPercent,
 										},
@@ -187,12 +187,12 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									name: 'Ticks',
 									data: [
 										{
-											name: 'Tick',
+											name: i18n.t('results_tab.details.attack_types.tick'),
 											value: metric.ticks,
 											percentage: relativeTickPercent,
 										},
 										{
-											name: `Critical Tick`,
+											name: i18n.t('results_tab.details.attack_types.critical_tick'),
 											value: metric.critTicks,
 											percentage: relativeCritTickPercent,
 										},
@@ -204,8 +204,8 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 				},
 			},
 			{
-				name: 'Avg Hit',
-				tooltip: TOOLTIP_METRIC_LABELS['Healing Avg Hit'],
+				name: i18n.t('results_tab.details.columns.avg_hit'),
+				tooltip: i18n.t('results_tab.details.tooltips.healing_avg_hit_tooltip'),
 				getValue: (metric: ActionMetrics) => metric.avgHitHealing,
 				fillCell: (metric: ActionMetrics, cellElem: HTMLElement) => {
 					cellElem.appendChild(<>{formatToCompactNumber(metric.avgHitHealing, { fallbackString: '-' })}</>);
@@ -220,7 +220,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									if (hideThreatMetrics) return false;
 								},
 							}}
-							headerValues={[, 'Amount']}
+							headerValues={[, i18n.t('results_tab.details.tooltip_table.amount')]}
 							groups={[
 								{
 									spellSchool: metric.spellSchool,
@@ -228,7 +228,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									totalPercentage: 100,
 									data: [
 										{
-											name: 'Threat',
+											name: i18n.t('results_tab.details.attack_types.threat'),
 											value: metric.avgHitThreat,
 											percentage: 100,
 										},
@@ -240,23 +240,23 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 				},
 			},
 			{
-				name: 'HPM',
+				name: i18n.t('results_tab.details.columns.hpm'),
 				getValue: (metric: ActionMetrics) => metric.hpm,
 				getDisplayString: (metric: ActionMetrics) => formatToCompactNumber(metric.hpm, { fallbackString: '-' }),
 			},
 
 			{
-				name: 'Crit %',
+				name: i18n.t('results_tab.details.columns.crit_percent'),
 				getValue: (metric: ActionMetrics) => metric.critPercent || metric.critTickPercent,
 				getDisplayString: (metric: ActionMetrics) => formatToPercent(metric.critPercent || metric.critTickPercent, { fallbackString: '-' }),
 			},
 			{
-				name: 'HPET',
+				name: i18n.t('results_tab.details.columns.hpet'),
 				getValue: (metric: ActionMetrics) => metric.healingThroughput,
 				getDisplayString: (metric: ActionMetrics) => formatToCompactNumber(metric.healingThroughput, { fallbackString: '-' }),
 			},
 			{
-				name: 'HPS',
+				name: i18n.t('results_tab.details.columns.hps'),
 				sort: ColumnSortType.Descending,
 				headerCellClass: 'text-body',
 				columnClass: 'text-success',
@@ -273,7 +273,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									if (hideThreatMetrics) return false;
 								},
 							}}
-							headerValues={[, 'Amount']}
+							headerValues={[, i18n.t('results_tab.details.tooltip_table.amount')]}
 							groups={[
 								{
 									spellSchool: metric.spellSchool,
@@ -281,7 +281,7 @@ export class HealingMetricsTable extends MetricsTable<ActionMetrics> {
 									totalPercentage: 100,
 									data: [
 										{
-											name: 'Threat',
+											name: i18n.t('results_tab.details.attack_types.threat'),
 											value: metric.tps,
 											percentage: 100,
 										},

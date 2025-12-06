@@ -55,7 +55,7 @@ func (bear *GuardianDruid) registerToothAndClawPassive() {
 	}
 
 	// Next, register the personal buff that empowers Maul.
-	bear.ToothAndClawBuff = bear.RegisterAura(core.Aura{
+	bear.ToothAndClawBuff = core.BlockPrepull(bear.RegisterAura(core.Aura{
 		Label:    "Tooth and Claw",
 		ActionID: core.ActionID{SpellID: 135286},
 		Duration: time.Second * 10,
@@ -69,16 +69,16 @@ func (bear *GuardianDruid) registerToothAndClawPassive() {
 				aura.Deactivate(sim)
 			}
 		},
-	})
+	}))
 
 	// Finally, register the trigger for the personal buff.
-	core.MakeProcTriggerAura(&bear.Unit, core.ProcTrigger{
-		Name:       "Tooth and Claw Trigger",
-		Callback:   core.CallbackOnSpellHitDealt,
-		ProcMask:   core.ProcMaskWhiteHit,
-		Outcome:    core.OutcomeLanded,
-		Harmful:    true,
-		ProcChance: 0.4,
+	bear.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Tooth and Claw Trigger",
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcMask:           core.ProcMaskWhiteHit,
+		Outcome:            core.OutcomeLanded,
+		RequireDamageDealt: true,
+		ProcChance:         0.4,
 
 		Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
 			if bear.InForm(druid.Bear) {

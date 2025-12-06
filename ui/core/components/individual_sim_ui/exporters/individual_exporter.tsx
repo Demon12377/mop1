@@ -6,6 +6,7 @@ import { getEnumValues } from '../../../utils';
 import { Exporter, ExporterOptions } from '../../exporter';
 import { BooleanPicker } from '../../pickers/boolean_picker';
 import { IndividualImporter } from '../importers/individual_importer';
+import i18n from '../../../../i18n/config';
 
 interface IndividualExporterOptions extends ExporterOptions {
 	selectCategories?: boolean;
@@ -19,38 +20,38 @@ export abstract class IndividualExporter<SpecType extends Spec> extends Exporter
 	}> = [
 		{
 			category: SimSettingCategories.Gear,
-			label: 'Gear',
-			labelTooltip: 'Also includes bonus stats and weapon swaps.',
+			label: i18n.t('export.categories.gear.label'),
+			labelTooltip: i18n.t('export.categories.gear.tooltip'),
 		},
 		{
 			category: SimSettingCategories.Talents,
-			label: 'Talents',
-			labelTooltip: 'Talents and Glyphs.',
+			label: i18n.t('export.categories.talents.label'),
+			labelTooltip: i18n.t('export.categories.talents.tooltip'),
 		},
 		{
 			category: SimSettingCategories.Rotation,
-			label: 'Rotation',
-			labelTooltip: 'Includes everything found in the Rotation tab.',
+			label: i18n.t('export.categories.rotation.label'),
+			labelTooltip: i18n.t('export.categories.rotation.tooltip'),
 		},
 		{
 			category: SimSettingCategories.Consumes,
-			label: 'Consumes',
-			labelTooltip: 'Flask, pots, food, etc.',
+			label: i18n.t('export.categories.consumes.label'),
+			labelTooltip: i18n.t('export.categories.consumes.tooltip'),
 		},
 		{
 			category: SimSettingCategories.External,
-			label: 'Buffs & Debuffs',
-			labelTooltip: 'All settings which are applied by other raid members.',
+			label: i18n.t('export.categories.external.label'),
+			labelTooltip: i18n.t('export.categories.external.tooltip'),
 		},
 		{
 			category: SimSettingCategories.Miscellaneous,
-			label: 'Misc',
-			labelTooltip: 'Spec-specific settings, front/back of target, distance from target, etc.',
+			label: i18n.t('export.categories.miscellaneous.label'),
+			labelTooltip: i18n.t('export.categories.miscellaneous.tooltip'),
 		},
 		{
 			category: SimSettingCategories.Encounter,
-			label: 'Encounter',
-			labelTooltip: 'Fight-related settings.',
+			label: i18n.t('export.categories.encounter.label'),
+			labelTooltip: i18n.t('export.categories.encounter.tooltip'),
 		},
 		// Intentionally exclude UISettings category here, because users almost
 		// never intend to export them and it messes with other users' settings.

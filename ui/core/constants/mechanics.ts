@@ -13,6 +13,8 @@ export const DODGE_RATING_PER_DODGE_PERCENT = 885.0;
 export const PARRY_RATING_PER_PARRY_PERCENT = 885.0;
 export const MASTERY_RATING_PER_MASTERY_POINT = 600.0;
 
+export const RAID_BUFF_MASTERY_RATING = 3000;
+
 // TODO: Adjust for MoP values
 // Mastery Ratings have various increments based on spec.
 export const masteryPercentPerPoint: Map<Spec, number> = new Map([
@@ -23,7 +25,7 @@ export const masteryPercentPerPoint: Map<Spec, number> = new Map([
 	[Spec.SpecFrostDeathKnight, 2.0],
 	[Spec.SpecUnholyDeathKnight, 2.5],
 	[Spec.SpecBalanceDruid, 1.875],
-	[Spec.SpecFeralDruid, 3.125],
+	[Spec.SpecFeralDruid, 3.13], // TODO: We expect 3.125, possibly bugged?
 	[Spec.SpecGuardianDruid, 2.0],
 	[Spec.SpecRestorationDruid, 1.25],
 	[Spec.SpecHolyPaladin, 1.5],

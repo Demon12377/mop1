@@ -2,6 +2,7 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import { setItemQualityCssClass } from '../../../css_utils';
+import i18n from '../../../../i18n/config';
 import { IndividualSimUI } from '../../../individual_sim_ui';
 import { ItemLevelState, ItemSpec } from '../../../proto/common';
 import { UIItem, UIItem_FactionRestriction } from '../../../proto/ui';
@@ -11,9 +12,9 @@ import { EventID, TypedEvent } from '../../../typed_event';
 import { ContentBlock } from '../../content_block';
 import { createNameDescriptionLabel } from '../../gear_picker/utils';
 import { NumberPicker } from '../../pickers/number_picker';
-import Toast from '../../toast';
 import { BulkTab } from '../bulk_tab';
-import { bulkSimSlotNames, itemSlotToBulkSimItemSlot } from './utils';
+import { translateBulkSlotName } from '../../../../i18n/localization';
+import { itemSlotToBulkSimItemSlot } from './utils';
 
 const MAX_SEARCH_RESULTS = 21;
 
@@ -39,7 +40,7 @@ export default class BulkItemSearch extends ContentBlock {
 	private maxIlvl = 0;
 
 	constructor(parent: HTMLElement, simUI: IndividualSimUI<any>, bulkUI: BulkTab) {
-		super(parent, 'bulk-item-search-root', { header: { title: 'Item Search' } });
+		super(parent, 'bulk-item-search-root', { header: { title: i18n.t('bulk_tab.search.title') } });
 
 		this.simUI = simUI;
 		this.bulkUI = bulkUI;
@@ -55,10 +56,10 @@ export default class BulkItemSearch extends ContentBlock {
 			<div className="bulk-gear-search-container" ref={searchContainerRef}>
 				<div className="d-flex flex-column">
 					<label className="form-label" htmlFor="bulkGearSearch">
-						Name
+						{i18n.t('common.name')}
 					</label>
 					<div className="input-group">
-						<input id="bulkGearSearch" className="form-control" type="text" placeholder="Search..." ref={searchInputRef} />
+						<input id="bulkGearSearch" className="form-control" type="text" placeholder={i18n.t('common.search')} ref={searchInputRef} />
 						<button className="btn btn-link cancel-bulk-gear-search-btn hide" ref={cancelSearchElemRef} type="button">
 							<i className="fas fa-times" />
 						</button>
@@ -73,14 +74,14 @@ export default class BulkItemSearch extends ContentBlock {
 		this.cancelSearchElem = cancelSearchElemRef.value!;
 		this.searchResultElem = searchResultsRef.value!;
 
-		tippy(this.cancelSearchElem, { content: 'Clear search' });
+		tippy(this.cancelSearchElem, { content: i18n.t('bulk_tab.search.clear_search') });
 		this.cancelSearchElem.addEventListener('click', () => {
 			this.searchString = '';
 		});
 
 		new NumberPicker(ilvlFiltersContainerRef.value!, this, {
 			id: 'bulkGearSearchMinIlvl',
-			label: 'Min ILvl',
+			label: i18n.t('bulk_tab.search.min_ilvl'),
 			showZeroes: false,
 			changedEvent: _ => this.filtersChangeEmitter,
 			getValue: _ => this.minIlvl,
@@ -94,7 +95,7 @@ export default class BulkItemSearch extends ContentBlock {
 
 		new NumberPicker(ilvlFiltersContainerRef.value!, this, {
 			id: 'bulkGearSearchMaxIlvl',
-			label: 'Max ILvl',
+			label: i18n.t('bulk_tab.search.max_ilvl'),
 			showZeroes: false,
 			changedEvent: _ => this.filtersChangeEmitter,
 			getValue: _ => this.maxIlvl,
@@ -178,14 +179,14 @@ export default class BulkItemSearch extends ContentBlock {
 								<span className="item-picker-ilvl">{ilvl}</span>
 								<div className="bulk-item-search-item-icon" ref={iconRef} />
 							</div>
-							<div className="d-flex flex-column ps-2">
-								<div className="d-flex">
+							<div className="d-flex flex-column gap-1 ps-2">
+								<div className="d-flex flex-wrap flex-column flex-xxl-row column-gap-1">
 									<span ref={itemNameRef}>{item.name}</span>
 									{item.nameDescription && createNameDescriptionLabel(item.nameDescription)}
 									{item.factionRestriction === UIItem_FactionRestriction.HORDE_ONLY && <span className="faction-horde">(H)</span>}
 									{item.factionRestriction === UIItem_FactionRestriction.ALLIANCE_ONLY && <span className="faction-alliance">(A)</span>}
 								</div>
-								<small>{bulkSimSlotNames.get(itemSlotToBulkSimItemSlot.get(getEligibleItemSlots(item)[0])!)}</small>
+								<small>{translateBulkSlotName(itemSlotToBulkSimItemSlot.get(getEligibleItemSlots(item)[0])!)}</small>
 							</div>
 						</a>
 					</li>,
@@ -204,16 +205,6 @@ export default class BulkItemSearch extends ContentBlock {
 					event => {
 						event.preventDefault();
 						this.bulkUI.addItem(ItemSpec.create({ id: item.id }));
-
-						new Toast({
-							delay: 1000,
-							variant: 'success',
-							body: (
-								<>
-									<strong>{item.name}</strong> was added to the batch.
-								</>
-							),
-						});
 					},
 					{ signal: this.signal },
 				);
@@ -225,10 +216,10 @@ export default class BulkItemSearch extends ContentBlock {
 				{items}
 				{matchCount > MAX_SEARCH_RESULTS && (
 					<li className="bulk-item-search-item bulk-item-search-results-note">
-						Showing {MAX_SEARCH_RESULTS} of {matchCount} total results.
+						{i18n.t('bulk_tab.search.showing_results', { max: MAX_SEARCH_RESULTS, total: matchCount })}
 					</li>
 				)}
-				{matchCount === 0 && <li className="bulk-item-search-item bulk-item-search-results-note">No results found.</li>}
+				{matchCount === 0 && <li className="bulk-item-search-item bulk-item-search-results-note">{i18n.t('bulk_tab.search.no_results')}</li>}
 			</>,
 		);
 

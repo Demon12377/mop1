@@ -24,6 +24,7 @@ func (mage *Mage) ApplyTalents() {
 	// Level 90
 	mage.registerRuneOfPower()
 	mage.registerInvocation()
+	mage.registerIncantersWard()
 
 }
 
@@ -50,9 +51,6 @@ func (mage *Mage) registerPresenceOfMind() {
 				Timer:    mage.NewTimer(),
 				Duration: time.Second * 90,
 			},
-		},
-		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return mage.GCD.IsReady(sim)
 		},
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
 			mage.PresenceOfMindAura.Activate(sim)
@@ -172,7 +170,6 @@ func (mage *Mage) registerInvocation() {
 			mage.MultiplyManaRegenSpeed(sim, 1/0.5)
 		},
 	}).AttachSpellMod(core.SpellModConfig{
-		ClassMask:  MageSpellsAllDamaging,
 		FloatValue: 0.15,
 		Kind:       core.SpellMod_DamageDone_Pct,
 	})
@@ -197,7 +194,6 @@ func (mage *Mage) registerRuneOfPower() {
 	}).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
 		FloatValue: 0.15,
-		ClassMask:  MageSpellsAllDamaging,
 	})
 
 	mage.RegisterSpell(core.SpellConfig{
@@ -210,11 +206,28 @@ func (mage *Mage) registerRuneOfPower() {
 				CastTime: time.Millisecond * 1500,
 			},
 		},
-		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return mage.GCD.IsReady(sim)
-		},
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
 			mage.RuneOfPowerAura.Activate(sim)
 		},
 	})
+}
+
+func (mage *Mage) registerIncantersWard() {
+	if !mage.Talents.IncantersWard {
+		return
+	}
+
+	core.MakePermanent(mage.RegisterAura(core.Aura{
+		Label:    "Incanter's Ward Passive",
+		ActionID: core.ActionID{SpellID: 1463},
+		OnGain: func(aura *core.Aura, sim *core.Simulation) {
+			mage.MultiplyManaRegenSpeed(sim, 1.65)
+		},
+		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
+			mage.MultiplyManaRegenSpeed(sim, 1/1.65)
+		},
+	}).AttachSpellMod(core.SpellModConfig{
+		Kind:       core.SpellMod_DamageDone_Pct,
+		FloatValue: 0.06,
+	}))
 }

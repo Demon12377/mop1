@@ -1,7 +1,9 @@
+import i18n from '../../i18n/config.js';
+import { translateSpellSchool, translateStat, translateTargetInputLabel, translateTargetInputTooltip, translateMobType } from '../../i18n/localization.js';
+import { TrackEventProps, trackEvent } from '../../tracking/utils';
 import { Encounter } from '../encounter.js';
 import { IndividualSimUI } from '../individual_sim_ui.js';
-import { InputType, MobType, SpellSchool, Stat, Target, Target as TargetProto, TargetInput } from '../proto/common.js';
-import { getStatName } from '../proto_utils/names.js';
+import { InputType, MobType, Spec, SpellSchool, Stat, Target, Target as TargetProto, TargetInput } from '../proto/common.js';
 import { Stats } from '../proto_utils/stats.js';
 import { Raid } from '../raid.js';
 import { SimUI } from '../sim_ui.js';
@@ -53,10 +55,10 @@ export class EncounterPicker extends Component {
 			const presetEncounters = modEncounter.sim.db.getAllPresetEncounters();
 			new EnumPicker<Encounter>(this.rootElem, modEncounter, {
 				id: 'encounter-preset-encouter',
-				label: 'Encounter',
+				label: i18n.t('settings_tab.encounter.encounter_preset.label'),
 				//extraCssClasses: ['encounter-picker', 'mb-0', 'pe-2', 'order-first'],
 				extraCssClasses: ['damage-metrics', 'npc-picker'],
-				values: [{ name: 'Custom', value: -1 }].concat(
+				values: [{ name: i18n.t('common.custom'), value: -1 }].concat(
 					presetEncounters.map((pe, i) => {
 						return {
 							name: pe.path,
@@ -117,8 +119,8 @@ export class EncounterPicker extends Component {
 				const player = (simUI as IndividualSimUI<any>).player;
 				new NumberPicker(this.rootElem, simUI.sim.raid, {
 					id: 'encounter-num-allies',
-					label: 'Num Allies',
-					labelTooltip: 'Number of allied players in the raid.',
+					label: i18n.t('settings_tab.encounter.num_allies.label'),
+					labelTooltip: i18n.t('settings_tab.encounter.num_allies.tooltip'),
 					changedEvent: (raid: Raid) => TypedEvent.onAny([raid.targetDummiesChangeEmitter, player.itemSwapSettings.changeEmitter]),
 					getValue: (raid: Raid) => raid.getTargetDummies(),
 					setValue: (eventID: EventID, raid: Raid, newValue: number) => {
@@ -126,6 +128,9 @@ export class EncounterPicker extends Component {
 					},
 					showWhen: (raid: Raid) => {
 						const shouldEnable = player.shouldEnableTargetDummies();
+						if ([Spec.SpecBrewmasterMonk, Spec.SpecWindwalkerMonk].includes(player.getSpec())) {
+							return false;
+						}
 
 						if (!shouldEnable) {
 							raid.setTargetDummies(TypedEvent.nextEventID(), 0);
@@ -139,8 +144,8 @@ export class EncounterPicker extends Component {
 			if (simUI.isIndividualSim() && (simUI as IndividualSimUI<any>).player.getPlayerSpec().isTankSpec) {
 				new NumberPicker(this.rootElem, modEncounter, {
 					id: 'encounter-min-base-damage',
-					label: 'Min Base Damage',
-					labelTooltip: 'Base damage for auto attacks, i.e. lowest roll with 0 AP against a 0-armor Player.',
+					label: i18n.t('settings_tab.encounter.min_base_damage.label'),
+					labelTooltip: i18n.t('settings_tab.encounter.min_base_damage.tooltip'),
 					changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 					getValue: (encounter: Encounter) => encounter.primaryTarget.minBaseDamage,
 					setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
@@ -166,7 +171,7 @@ export class EncounterPicker extends Component {
 			const advancedModal = new AdvancedEncounterModal(simUI.rootElem, simUI, modEncounter);
 			const advancedButton = document.createElement('button');
 			advancedButton.classList.add('advanced-button', 'btn', 'btn-primary');
-			advancedButton.textContent = 'Advanced';
+			advancedButton.textContent = i18n.t('settings_tab.encounter.advanced');
 			advancedButton.addEventListener('click', () => advancedModal.open());
 			this.rootElem.appendChild(advancedButton);
 		});
@@ -194,8 +199,8 @@ class AdvancedEncounterModal extends BaseModal {
 		if (!simUI.isIndividualSim()) {
 			new BooleanPicker<Encounter>(header, encounter, {
 				id: 'aem-use-health',
-				label: 'Use Health',
-				labelTooltip: 'Uses a damage limit in place of a duration limit. Damage limit is equal to sum of all targets health.',
+				label: i18n.t('settings_tab.encounter.use_health.label'),
+				labelTooltip: i18n.t('settings_tab.encounter.use_health.tooltip'),
 				inline: true,
 				changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 				getValue: (encounter: Encounter) => encounter.getUseHealth(),
@@ -206,10 +211,15 @@ class AdvancedEncounterModal extends BaseModal {
 		}
 		new ListPicker<Encounter, TargetProto>(targetsElem, this.encounter, {
 			extraCssClasses: ['targets-picker', 'mb-0'],
-			itemLabel: 'Target',
+			itemLabel: i18n.t('settings_tab.encounter.target'),
 			changedEvent: (encounter: Encounter) => encounter.targetsChangeEmitter,
 			getValue: (encounter: Encounter) => encounter.targets,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: Array<TargetProto>) => {
+				trackEvent({
+					action: 'settings',
+					category: 'encounter',
+					label: newValue.length > encounter.targets.length ? 'add-target' : 'remove-target',
+				});
 				encounter.targets = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
@@ -230,7 +240,7 @@ class AdvancedEncounterModal extends BaseModal {
 
 		new EnumPicker<Encounter>(this.header as HTMLElement, this.encounter, {
 			id: 'aem-encounter-picker',
-			label: 'Encounter',
+			label: i18n.t('settings_tab.encounter.encounter_preset.label'),
 			extraCssClasses: ['encounter-picker', 'mb-0', 'pe-2', 'order-first'],
 			values: [{ name: 'Custom', value: -1 }].concat(
 				presetEncounters.map((pe, i) => {
@@ -244,7 +254,14 @@ class AdvancedEncounterModal extends BaseModal {
 			getValue: (encounter: Encounter) => presetEncounters.findIndex(pe => encounter.matchesPreset(pe)),
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
 				if (newValue != -1) {
-					encounter.applyPreset(eventID, presetEncounters[newValue]);
+					const preset = presetEncounters[newValue];
+					trackEvent({
+						action: 'settings',
+						category: 'encounter',
+						label: 'preset',
+						value: preset.path,
+					});
+					encounter.applyPreset(eventID, preset);
 				}
 			},
 		});
@@ -291,9 +308,9 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 		new EnumPicker<null>(section1, null, {
 			id: 'target-picker-npc',
 			extraCssClasses: ['npc-picker'],
-			label: 'NPC',
-			labelTooltip: 'Selects a preset NPC configuration.',
-			values: [{ name: 'Custom', value: -1 }].concat(
+			label: i18n.t('settings_tab.encounter.npc.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.npc.tooltip'),
+			values: [{ name: i18n.t('common.custom'), value: -1 }].concat(
 				presetTargets.map((pe, i) => {
 					return {
 						name: pe.path,
@@ -305,7 +322,14 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 			getValue: () => presetTargets.findIndex(pe => equalTargetsIgnoreInputs(this.getTarget(), pe.target)),
 			setValue: (eventID: EventID, _: null, newValue: number) => {
 				if (newValue != -1) {
-					encounter.applyPresetTarget(eventID, presetTargets[newValue], this.targetIndex);
+					const preset = presetTargets[newValue];
+					trackEvent({
+						action: 'settings',
+						category: 'targets',
+						label: 'preset',
+						value: preset.target?.name || preset.path,
+					});
+					encounter.applyPresetTarget(eventID, preset, this.targetIndex);
 					encounter.targetsChangeEmitter.emit(eventID);
 				}
 			},
@@ -314,12 +338,9 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 		this.aiPicker = new EnumPicker<null>(section1, null, {
 			id: 'target-picker-ai',
 			extraCssClasses: ['ai-picker'],
-			label: 'AI',
-			labelTooltip: `
-				<p>Determines the target\'s ability rotation.</p>
-				<p>Note that most rotations are not yet implemented.</p>
-			`,
-			values: [{ name: 'None', value: 0 }].concat(
+			label: i18n.t('settings_tab.encounter.ai.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.ai.tooltip'),
+			values: [{ name: i18n.t('common.none'), value: 0 }].concat(
 				presetTargets.map(pe => {
 					return {
 						name: pe.path,
@@ -332,39 +353,55 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 			setValue: (eventID: EventID, _: null, newValue: number) => {
 				const target = this.getTarget();
 				target.id = newValue;
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'ai',
+					value: target.name,
+				});
 
 				// Transfer Target Inputs from the AI of the selected target
 				target.targetInputs = (presetTargets.find(pe => target.id == pe.target?.id)?.target?.targetInputs || []).map(ti => TargetInput.clone(ti));
-
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 
 		this.levelPicker = new EnumPicker<null>(section1, null, {
 			id: 'target-picker-level',
-			label: 'Level',
+			label: i18n.t('settings_tab.encounter.level'),
 			values: [
 				{ name: '93', value: 93 },
 				{ name: '92', value: 92 },
 				{ name: '91', value: 91 },
 				{ name: '90', value: 90 },
 				{ name: '88', value: 88 },
-
 			],
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().level,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'level',
+					value: newValue,
+				});
 				this.getTarget().level = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.mobTypePicker = new EnumPicker(section1, null, {
 			id: 'target-picker-mob-type',
-			label: 'Mob Type',
+			label: i18n.t('settings_tab.encounter.mob_type'),
 			values: mobTypeEnumValues,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().mobType,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'mob_type',
+					value: newValue,
+				});
 				this.getTarget().mobType = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
@@ -372,19 +409,24 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 		this.tankIndexPicker = new EnumPicker<null>(section1, null, {
 			id: 'target-picker-tanked-by',
 			extraCssClasses: ['threat-metrics'],
-			label: 'Tanked By',
-			labelTooltip:
-				'Determines which player in the raid this enemy will attack. If no player is assigned to the specified tank slot, this enemy will not attack.',
+			label: i18n.t('settings_tab.encounter.tanked_by.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.tanked_by.tooltip'),
 			values: [
-				{ name: 'None', value: -1 },
-				{ name: 'Main Tank', value: 0 },
-				{ name: 'Tank 2', value: 1 },
-				{ name: 'Tank 3', value: 2 },
-				{ name: 'Tank 4', value: 3 },
+				{ name: i18n.t('common.none'), value: -1 },
+				{ name: i18n.t('common.tanks.main_tank'), value: 0 },
+				{ name: i18n.t('common.tanks.tank_2'), value: 1 },
+				{ name: i18n.t('common.tanks.tank_3'), value: 2 },
+				{ name: i18n.t('common.tanks.tank_4'), value: 3 },
 			],
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().tankIndex,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'tank_index',
+					value: newValue,
+				});
 				this.getTarget().tankIndex = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
@@ -398,7 +440,7 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 				id: `target-${this.targetIndex}-picker-stats-${statData.stat}`,
 				inline: true,
 				extraCssClasses: statData.extraCssClasses,
-				label: getStatName(stat),
+				label: translateStat(stat),
 				labelTooltip: statData.tooltip,
 				changedEvent: () => encounter.targetsChangeEmitter,
 				getValue: () => this.getTarget().stats[stat],
@@ -411,62 +453,91 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 
 		this.swingSpeedPicker = new NumberPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-swing-speed`,
-			label: 'Swing Speed',
-			labelTooltip: 'Time in seconds between auto attacks. Set to 0 to disable auto attacks.',
+			label: i18n.t('settings_tab.encounter.swing_speed.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.swing_speed.tooltip'),
 			float: true,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().swingSpeed,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'swing_speed',
+					value: newValue,
+				});
 				this.getTarget().swingSpeed = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.minBaseDamagePicker = new NumberPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-min-base-damage`,
-			label: 'Min Base Damage',
-			labelTooltip: 'Base damage for auto attacks, i.e. lowest roll with 0 AP against a 0-armor Player.',
+			label: i18n.t('settings_tab.encounter.min_base_damage.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.min_base_damage.tooltip'),
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().minBaseDamage,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'min_base_damage',
+					value: newValue,
+				});
 				this.getTarget().minBaseDamage = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.damageSpreadPicker = new NumberPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-damage-spread`,
-			label: 'Damage Spread',
-			labelTooltip: 'Fractional spread between the minimum and maximum auto-attack damage from this enemy at 0 Attack Power.',
+			label: i18n.t('settings_tab.encounter.damage_spread.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.damage_spread.tooltip'),
 			float: true,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().damageSpread,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'damage_spread',
+					value: newValue,
+				});
 				this.getTarget().damageSpread = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.dualWieldPicker = new BooleanPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-dual-wield`,
-			label: 'Dual Wield',
-			labelTooltip: 'Uses 2 separate weapons to attack.',
+			label: i18n.t('settings_tab.encounter.dual_wield.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.dual_wield.tooltip'),
 			inline: true,
 			reverse: true,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().dualWield,
 			setValue: (eventID: EventID, _: null, newValue: boolean) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'dual_wield',
+					value: newValue,
+				});
 				this.getTarget().dualWield = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.dwMissPenaltyPicker = new BooleanPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-dw-miss-penalty`,
-			label: 'DW Miss Penalty',
-			labelTooltip:
-				'Enables the Dual Wield Miss Penalty (+19% chance to miss) if dual wielding. Bosses in Hyjal/BT/SWP usually have this disabled to stop tanks from avoidance stacking.',
+			label: i18n.t('settings_tab.encounter.dual_wield_penalty.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.dual_wield_penalty.tooltip'),
 			inline: true,
 			reverse: true,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().dualWieldPenalty,
 			setValue: (eventID: EventID, _: null, newValue: boolean) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'dual_wield_penalty',
+					value: newValue,
+				});
 				this.getTarget().dualWieldPenalty = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
@@ -474,33 +545,45 @@ class TargetPicker extends Input<Encounter, TargetProto> {
 		});
 		this.parryHastePicker = new BooleanPicker(section3, null, {
 			id: `target-${this.targetIndex}-picker-parry-haste`,
-			label: 'Parry Haste',
-			labelTooltip: 'Whether this enemy will gain parry haste when parrying attacks.',
+			label: i18n.t('settings_tab.encounter.parry_haste.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.parry_haste.tooltip'),
 			inline: true,
 			reverse: true,
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().parryHaste,
 			setValue: (eventID: EventID, _: null, newValue: boolean) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'parry_haste',
+					value: newValue,
+				});
 				this.getTarget().parryHaste = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
 		});
 		this.spellSchoolPicker = new EnumPicker<null>(section3, null, {
 			id: `target-${this.targetIndex}-picker-spell-school`,
-			label: 'Spell School',
-			labelTooltip: 'Type of damage caused by auto attacks. This is usually Physical, but some enemies have elemental attacks.',
+			label: i18n.t('settings_tab.encounter.spell_school.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.spell_school.tooltip'),
 			values: [
-				{ name: 'Physical', value: SpellSchool.SpellSchoolPhysical },
-				{ name: 'Arcane', value: SpellSchool.SpellSchoolArcane },
-				{ name: 'Fire', value: SpellSchool.SpellSchoolFire },
-				{ name: 'Frost', value: SpellSchool.SpellSchoolFrost },
-				{ name: 'Holy', value: SpellSchool.SpellSchoolHoly },
-				{ name: 'Nature', value: SpellSchool.SpellSchoolNature },
-				{ name: 'Shadow', value: SpellSchool.SpellSchoolShadow },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolPhysical), value: SpellSchool.SpellSchoolPhysical },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolArcane), value: SpellSchool.SpellSchoolArcane },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolFire), value: SpellSchool.SpellSchoolFire },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolFrost), value: SpellSchool.SpellSchoolFrost },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolHoly), value: SpellSchool.SpellSchoolHoly },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolNature), value: SpellSchool.SpellSchoolNature },
+				{ name: translateSpellSchool(SpellSchool.SpellSchoolShadow), value: SpellSchool.SpellSchoolShadow },
 			],
 			changedEvent: () => encounter.targetsChangeEmitter,
 			getValue: () => this.getTarget().spellSchool,
 			setValue: (eventID: EventID, _: null, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'targets',
+					label: 'spell_school',
+					value: newValue,
+				});
 				this.getTarget().spellSchool = newValue;
 				encounter.targetsChangeEmitter.emit(eventID);
 			},
@@ -609,13 +692,19 @@ class TargetInputPicker extends Input<Encounter, TargetInput> {
 			enumValue: this.enumPicker ? this.enumPicker.getInputValue() : undefined,
 		});
 	}
-	setInputValue(newValue: TargetInput) {
-		if (!newValue) {
+	setInputValue(newTargetValue: TargetInput) {
+		if (!newTargetValue) {
 			return;
 		}
 
-		if (newValue.inputType == InputType.Number) {
-			if (this.numberPicker && this.numberPicker.inputConfig.label === newValue.label) {
+		const sharedTrackingConfig: TrackEventProps = {
+			action: 'settings',
+			category: 'targets',
+			label: newTargetValue.label,
+		};
+
+		if (newTargetValue.inputType == InputType.Number) {
+			if (this.numberPicker && this.numberPicker.inputConfig.label === newTargetValue.label) {
 				return;
 			}
 
@@ -623,44 +712,56 @@ class TargetInputPicker extends Input<Encounter, TargetInput> {
 			this.numberPicker = new NumberPicker(this.rootElem, null, {
 				id: randomUUID(),
 				float: true,
-				label: newValue.label,
-				labelTooltip: newValue.tooltip,
+				label: translateTargetInputLabel(newTargetValue.label),
+				labelTooltip: translateTargetInputTooltip(newTargetValue.label, newTargetValue.tooltip),
 				changedEvent: () => this.encounter.targetsChangeEmitter,
 				getValue: () => this.getTargetInput().numberValue,
 				setValue: (eventID: EventID, _: null, newValue: number) => {
+					trackEvent({
+						...sharedTrackingConfig,
+						value: newValue,
+					});
 					this.getTargetInput().numberValue = newValue;
 					this.encounter.targetsChangeEmitter.emit(eventID);
 				},
 			});
-		} else if (newValue.inputType == InputType.Bool) {
-			if (this.boolPicker && this.boolPicker.inputConfig.label === newValue.label) {
+		} else if (newTargetValue.inputType == InputType.Bool) {
+			if (this.boolPicker && this.boolPicker.inputConfig.label === newTargetValue.label) {
 				return;
 			}
 
 			this.clearPickers();
 			this.boolPicker = new BooleanPicker(this.rootElem, null, {
 				id: randomUUID(),
-				label: newValue.label,
-				labelTooltip: newValue.tooltip,
+				label: translateTargetInputLabel(newTargetValue.label),
+				labelTooltip: translateTargetInputTooltip(newTargetValue.label, newTargetValue.tooltip),
 				extraCssClasses: ['input-inline'],
 				changedEvent: () => this.encounter.targetsChangeEmitter,
 				getValue: () => this.getTargetInput().boolValue,
 				setValue: (eventID: EventID, _: null, newValue: boolean) => {
+					trackEvent({
+						...sharedTrackingConfig,
+						value: newValue,
+					});
 					this.getTargetInput().boolValue = newValue;
 					this.encounter.targetsChangeEmitter.emit(eventID);
 				},
 			});
-		} else if (newValue.inputType == InputType.Enum) {
+		} else if (newTargetValue.inputType == InputType.Enum) {
 			this.clearPickers();
 			this.enumPicker = new EnumPicker<null>(this.rootElem, null, {
 				id: randomUUID(),
-				label: newValue.label,
-				values: newValue.enumOptions.map((option, index) => {
+				label: translateTargetInputLabel(newTargetValue.label),
+				values: newTargetValue.enumOptions.map((option, index) => {
 					return { value: index, name: option };
 				}),
 				changedEvent: () => this.encounter.targetsChangeEmitter,
 				getValue: () => this.getTargetInput().enumValue,
 				setValue: (eventID: EventID, _: null, newValue: number) => {
+					trackEvent({
+						...sharedTrackingConfig,
+						value: newValue,
+					});
 					this.getTargetInput().enumValue = newValue;
 					this.encounter.targetsChangeEmitter.emit(eventID);
 				},
@@ -672,14 +773,19 @@ class TargetInputPicker extends Input<Encounter, TargetInput> {
 function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, showExecuteProportion: boolean) {
 	const durationGroup = Input.newGroupContainer();
 	rootElem.appendChild(durationGroup);
-
 	new NumberPicker(durationGroup, encounter, {
 		id: 'encounter-duration',
-		label: 'Duration',
-		labelTooltip: 'The fight length for each sim iteration, in seconds.',
+		label: i18n.t('settings_tab.encounter.duration.label'),
+		labelTooltip: i18n.t('settings_tab.encounter.duration.tooltip'),
 		changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 		getValue: (encounter: Encounter) => encounter.getDuration(),
 		setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+			trackEvent({
+				action: 'settings',
+				category: 'duration',
+				label: 'duration',
+				value: newValue,
+			});
 			encounter.setDuration(eventID, newValue);
 		},
 		enableWhen: _obj => {
@@ -688,12 +794,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 	});
 	new NumberPicker(durationGroup, encounter, {
 		id: 'encounter-duration-variation',
-		label: 'Duration +/-',
-		labelTooltip:
-			'Adds a random amount of time, in seconds, between [value, -1 * value] to each sim iteration. For example, setting Duration to 180 and Duration +/- to 10 will result in random durations between 170s and 190s.',
+		label: i18n.t('settings_tab.encounter.duration_variation.label'),
+		labelTooltip: i18n.t('settings_tab.encounter.duration_variation.tooltip'),
 		changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 		getValue: (encounter: Encounter) => encounter.getDurationVariation(),
 		setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+			trackEvent({
+				action: 'settings',
+				category: 'duration',
+				label: 'variation',
+				value: newValue,
+			});
 			encounter.setDurationVariation(eventID, newValue);
 		},
 		enableWhen: _obj => {
@@ -708,12 +819,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 
 		new NumberPicker(executeGroup, encounter, {
 			id: 'encounter-execute-proportion',
-			label: 'Execute Duration 20 (%)',
-			labelTooltip:
-				'Percentage of the total encounter duration, for which the targets will be considered to be in execute range (< 20% HP) for the purpose of effects like Warrior Execute or Mage Molten Fury.',
+			label: i18n.t('settings_tab.encounter.execute_duration_20.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.execute_duration_20.tooltip'),
 			changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 			getValue: (encounter: Encounter) => encounter.getExecuteProportion20() * 100,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'execute',
+					label: 'execute_20',
+					value: newValue,
+				});
 				encounter.setExecuteProportion20(eventID, newValue / 100);
 			},
 			enableWhen: _obj => {
@@ -722,12 +838,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 		});
 		new NumberPicker(executeGroup, encounter, {
 			id: 'encounter-execute-proportion-25',
-			label: 'Execute Duration 25 (%)',
-			labelTooltip:
-				"Percentage of the total encounter duration, for which the targets will be considered to be in execute range (< 25% HP) for the purpose of effects like Warlock's Drain Soul.",
+			label: i18n.t('settings_tab.encounter.execute_duration_25.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.execute_duration_25.tooltip'),
 			changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 			getValue: (encounter: Encounter) => encounter.getExecuteProportion25() * 100,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'execute',
+					label: 'execute_25',
+					value: newValue,
+				});
 				encounter.setExecuteProportion25(eventID, newValue / 100);
 			},
 			enableWhen: _obj => {
@@ -736,12 +857,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 		});
 		new NumberPicker(executeGroup, encounter, {
 			id: 'encounter-execute-proportion-35',
-			label: 'Execute Duration 35 (%)',
-			labelTooltip:
-				'Percentage of the total encounter duration, for which the targets will be considered to be in execute range (< 35% HP) for the purpose of effects like Death Knight Soul Reaper.',
+			label: i18n.t('settings_tab.encounter.execute_duration_35.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.execute_duration_35.tooltip'),
 			changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 			getValue: (encounter: Encounter) => encounter.getExecuteProportion35() * 100,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'execute',
+					label: 'execute_35',
+					value: newValue,
+				});
 				encounter.setExecuteProportion35(eventID, newValue / 100);
 			},
 			enableWhen: _obj => {
@@ -750,12 +876,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 		});
 		new NumberPicker(executeGroup, encounter, {
 			id: 'encounter-execute-proportion-45',
-			label: 'Execute Duration 45 (%)',
-			labelTooltip:
-				'Percentage of the total encounter duration, for which the targets will be considered to be in execute range (< 45% HP) for the purpose of effects like Death Knight Soul Reaper with T15 DPS 4pc.',
+			label: i18n.t('settings_tab.encounter.execute_duration_45.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.execute_duration_45.tooltip'),
 			changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 			getValue: (encounter: Encounter) => encounter.getExecuteProportion45() * 100,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'execute',
+					label: 'execute_45',
+					value: newValue,
+				});
 				encounter.setExecuteProportion45(eventID, newValue / 100);
 			},
 			enableWhen: _obj => {
@@ -764,12 +895,17 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 		});
 		new NumberPicker(executeGroup, encounter, {
 			id: 'encounter-execute-proportion-90',
-			label: 'Duration spent below high-HP regime (%)',
-			labelTooltip:
-				'Percentage of the total encounter duration, for which the targets are considered out of range for effects like Hunter Careful Aim (<90% HP) or Druid Predatory Strikes (<80% HP).',
+			label: i18n.t('settings_tab.encounter.duration_below_high_hp.label'),
+			labelTooltip: i18n.t('settings_tab.encounter.duration_below_high_hp.tooltip'),
 			changedEvent: (encounter: Encounter) => encounter.changeEmitter,
 			getValue: (encounter: Encounter) => encounter.getExecuteProportion90() * 100,
 			setValue: (eventID: EventID, encounter: Encounter, newValue: number) => {
+				trackEvent({
+					action: 'settings',
+					category: 'execute',
+					label: 'execute_90',
+					value: newValue,
+				});
 				encounter.setExecuteProportion90(eventID, newValue / 100);
 			},
 			enableWhen: _obj => {
@@ -782,12 +918,18 @@ function addEncounterFieldPickers(rootElem: HTMLElement, encounter: Encounter, s
 function makeTargetInputsPicker(parent: HTMLElement, encounter: Encounter, targetIndex: number) {
 	return new ListPicker<Encounter, TargetInput>(parent, encounter, {
 		allowedActions: [],
-		itemLabel: 'Target Input',
+		itemLabel: i18n.t('settings_tab.encounter.target_inputs.label'),
 		extraCssClasses: ['mt-2'],
 		isCompact: true,
 		changedEvent: (encounter: Encounter) => encounter.targetsChangeEmitter,
 		getValue: (encounter: Encounter) => encounter.targets[targetIndex].targetInputs,
 		setValue: (eventID: EventID, encounter: Encounter, newValue: Array<TargetInput>) => {
+			trackEvent({
+				action: 'settings',
+				category: 'targets',
+				label: 'count',
+				value: newValue.length,
+			});
 			encounter.targets[targetIndex].targetInputs = newValue;
 			encounter.targetsChangeEmitter.emit(eventID);
 		},
@@ -821,13 +963,13 @@ const ALL_TARGET_STATS: Array<{ stat: Stat; tooltip: string; extraCssClasses: Ar
 ];
 
 const mobTypeEnumValues = [
-	{ name: 'None', value: MobType.MobTypeUnknown },
-	{ name: 'Beast', value: MobType.MobTypeBeast },
-	{ name: 'Demon', value: MobType.MobTypeDemon },
-	{ name: 'Dragonkin', value: MobType.MobTypeDragonkin },
-	{ name: 'Elemental', value: MobType.MobTypeElemental },
-	{ name: 'Giant', value: MobType.MobTypeGiant },
-	{ name: 'Humanoid', value: MobType.MobTypeHumanoid },
-	{ name: 'Mechanical', value: MobType.MobTypeMechanical },
-	{ name: 'Undead', value: MobType.MobTypeUndead },
+	{ name: translateMobType(MobType.MobTypeUnknown), value: MobType.MobTypeUnknown },
+	{ name: translateMobType(MobType.MobTypeBeast), value: MobType.MobTypeBeast },
+	{ name: translateMobType(MobType.MobTypeDemon), value: MobType.MobTypeDemon },
+	{ name: translateMobType(MobType.MobTypeDragonkin), value: MobType.MobTypeDragonkin },
+	{ name: translateMobType(MobType.MobTypeElemental), value: MobType.MobTypeElemental },
+	{ name: translateMobType(MobType.MobTypeGiant), value: MobType.MobTypeGiant },
+	{ name: translateMobType(MobType.MobTypeHumanoid), value: MobType.MobTypeHumanoid },
+	{ name: translateMobType(MobType.MobTypeMechanical), value: MobType.MobTypeMechanical },
+	{ name: translateMobType(MobType.MobTypeUndead), value: MobType.MobTypeUndead },
 ];

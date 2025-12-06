@@ -1,4 +1,4 @@
-import { GemColor, Profession } from '../proto/common.js';
+import { GemColor, Profession, Stat } from '../proto/common.js';
 import { UIGem as Gem } from '../proto/ui.js';
 import { getEnumValues } from '../utils.js';
 
@@ -49,6 +49,10 @@ export function gemEligibleForSocket(gem: Gem, socketColor: GemColor) {
 
 export function isUnrestrictedGem(gem: Gem, phase?: number): boolean {
 	return !gem.unique && gem.requiredProfession == Profession.ProfessionUnknown && (phase == null || gem.phase <= phase);
+}
+
+export function gemMatchesStats(gem: Gem, statsToMatch: Stat[]) {
+	return gem.stats.some((stat, statIdx) => stat > 0 && statsToMatch.includes(statIdx));
 }
 
 export class MetaGemCondition {

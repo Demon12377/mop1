@@ -1,7 +1,8 @@
 import clsx from 'clsx';
 import tippy from 'tippy.js';
 
-import { TOOLTIP_METRIC_LABELS } from '../constants/tooltips';
+import i18n from '../../i18n/config.js';
+import { translateResultMetricLabel, translateResultMetricTooltip } from '../../i18n/localization';
 import { DistributionMetrics as DistributionMetricsProto, ProgressMetrics, Raid as RaidProto } from '../proto/api';
 import { Encounter as EncounterProto, Spec } from '../proto/common';
 import { SimRunData } from '../proto/ui';
@@ -9,13 +10,21 @@ import { ActionMetrics, SimResult, SimResultFilter } from '../proto_utils/sim_re
 import { RequestTypes } from '../sim_signal_manager';
 import { SimUI } from '../sim_ui';
 import { EventID, TypedEvent } from '../typed_event';
-import { formatDeltaTextElem, formatToNumber, formatToPercent, sum } from '../utils';
+import { formatDeltaTextElem, formatToNumber, formatToPercent, isDevMode, sum } from '../utils';
+import { trackEvent } from '../../tracking/utils';
 
 export function addRaidSimAction(simUI: SimUI): RaidSimResultsManager {
 	const resultsViewer = simUI.resultsViewer;
 	let isRunning = false;
 	let waitAbort = false;
-	simUI.addAction('Simulate', 'dps-action', async ev => {
+
+	simUI.addAction(i18n.t('sidebar.buttons.simulate'), 'dps-action', async ev => {
+		trackEvent({
+			action: 'sim',
+			category: 'simulate',
+			label: 'simulate',
+			value: simUI.sim.getIterations(),
+		});
 		const button = ev.target as HTMLButtonElement;
 		button.disabled = true;
 		if (!isRunning) {
@@ -121,8 +130,8 @@ export class RaidSimResultsManager {
 
 	private readonly simUI: SimUI;
 
-	private currentData: ReferenceData | null = null;
-	private referenceData: ReferenceData | null = null;
+	currentData: ReferenceData | null = null;
+	referenceData: ReferenceData | null = null;
 
 	private resetCallbacks: (() => void)[] = [];
 
@@ -148,9 +157,11 @@ export class RaidSimResultsManager {
 					</div>
 				)}
 				<div>
-					{progress.presimRunning ? 'presimulations running' : `${progress.completedIterations} / ${progress.totalIterations}`}
+					{progress.presimRunning
+						? i18n.t('sidebar.results.progress.presim_running')
+						: `${progress.completedIterations} / ${progress.totalIterations}`}
 					<br />
-					iterations complete
+					{i18n.t('sidebar.results.progress.iterations_complete')}
 				</div>
 			</div>,
 		);
@@ -174,17 +185,17 @@ export class RaidSimResultsManager {
 				{RaidSimResultsManager.makeToplineResultsContent(simResult, undefined, { asList: true })}
 				<div className="results-sim-reference">
 					<button className="results-sim-set-reference">
-						<i className={`fa fa-map-pin fa-lg text-${this.simUI.cssScheme} me-2`} />
-						Save as Reference
+						<i className={`fa fa-map-pin fa-lg text-${this.simUI.config.cssScheme} me-2`} />
+						{i18n.t('sidebar.results.reference.save_as_reference')}
 					</button>
 					<div className="results-sim-reference-bar">
 						<button className="results-sim-reference-swap me-3">
 							<i className="fas fa-arrows-rotate me-1" />
-							Swap
+							{i18n.t('sidebar.results.reference.swap')}
 						</button>
 						<button className="results-sim-reference-delete">
 							<i className="fa fa-times fa-lg me-1" />
-							Cancel
+							{i18n.t('sidebar.results.reference.cancel')}
 						</button>
 					</div>
 				</div>
@@ -198,34 +209,28 @@ export class RaidSimResultsManager {
 				this.addOnResetCallback(() => tooltip.destroy());
 			}
 		};
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dps']}`, 'Damage Per Second');
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['tto']}`, 'Time To OOM');
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['hps']}`, 'Healing+Shielding Per Second, including overhealing.');
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['tps']}`, 'Threat Per Second');
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dtps']}`, 'Damage Taken Per Second');
-		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dur']}`, 'Average Fight Duration');
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dps']}`, i18n.t('sidebar.results.metrics.dps.tooltip'));
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['tto']}`, i18n.t('sidebar.results.metrics.tto.tooltip'));
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['hps']}`, i18n.t('sidebar.results.metrics.hps.tooltip'));
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['tps']}`, i18n.t('sidebar.results.metrics.tps.tooltip'));
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dtps']}`, i18n.t('sidebar.results.metrics.dtps.tooltip'));
+		setResultTooltip(`.${RaidSimResultsManager.resultMetricClasses['dur']}`, i18n.t('sidebar.results.metrics.dur.tooltip'));
 		setResultTooltip(
 			`.${RaidSimResultsManager.resultMetricClasses['tmi']}`,
 			<>
-				<p>Theck-Meloree Index (TMI)</p>
-				<p>A measure of incoming damage smoothness which combines the benefits of avoidance with effective health.</p>
+				<p>{i18n.t('sidebar.results.metrics.tmi.tooltip.title')}</p>
+				<p>{i18n.t('sidebar.results.metrics.tmi.tooltip.description')}</p>
 				<p>
-					<b>Lower is better.</b> This represents the % of your HP to expect in a 6-second burst window based on the encounter settings.
+					<b>{i18n.t('sidebar.results.metrics.tmi.tooltip.note')}</b>
 				</p>
 			</>,
 		);
 		setResultTooltip(
 			`.${RaidSimResultsManager.resultMetricClasses['cod']}`,
 			<>
-				<p>Chance of Death</p>
-				<p>
-					The percentage of iterations in which the player died, based on incoming damage from the enemies and incoming healing (see the{' '}
-					<b>Incoming HPS</b> and <b>Healing Cadence</b> options).
-				</p>
-				<p>
-					DTPS alone is not a good measure of tankiness because it is not affected by health and ignores damage spikes. Chance of Death attempts to
-					capture overall tankiness.
-				</p>
+				<p>{i18n.t('sidebar.results.metrics.cod.tooltip.title')}</p>
+				<p>{i18n.t('sidebar.results.metrics.cod.tooltip.description')}</p>
+				<p>{i18n.t('sidebar.results.metrics.cod.tooltip.note')}</p>
 			</>,
 		);
 
@@ -246,7 +251,7 @@ export class RaidSimResultsManager {
 				this.updateReference();
 			};
 			simReferenceSetButton.addEventListener('click', onSetReferenceClickHandler);
-			const tooltip = tippy(simReferenceSetButton, { content: 'Use as reference' });
+			const tooltip = tippy(simReferenceSetButton, { content: i18n.t('sidebar.results.reference.use_as_reference') });
 			this.addOnResetCallback(() => {
 				tooltip.destroy();
 				simReferenceSetButton?.removeEventListener('click', onSetReferenceClickHandler);
@@ -274,7 +279,7 @@ export class RaidSimResultsManager {
 			};
 			simReferenceSwapButton.addEventListener('click', onSwapClickHandler);
 			const tooltip = tippy(simReferenceSwapButton, {
-				content: 'Swap reference with current',
+				content: i18n.t('sidebar.results.reference.swap_reference_with_current'),
 				ignoreAttributes: true,
 			});
 			this.addOnResetCallback(() => {
@@ -291,7 +296,7 @@ export class RaidSimResultsManager {
 			};
 			simReferenceDeleteButton.addEventListener('click', onDeleteReferenceClickHandler);
 			const tooltip = tippy(simReferenceDeleteButton, {
-				content: 'Remove reference',
+				content: i18n.t('sidebar.results.reference.remove_reference'),
 				ignoreAttributes: true,
 			});
 
@@ -304,7 +309,7 @@ export class RaidSimResultsManager {
 		this.updateReference();
 	}
 
-	private updateReference() {
+	updateReference() {
 		if (!this.referenceData || !this.currentData) {
 			// Remove references
 			this.simUI.resultsViewer.contentElem.querySelector('.results-sim-reference')?.classList.remove('has-reference');
@@ -368,7 +373,7 @@ export class RaidSimResultsManager {
 		} else {
 			const curMetrics = curMetricsTemp as DistributionMetricsProto;
 			const refMetrics = refMetricsTemp as DistributionMetricsProto;
-			const isDiff = this.applyZTestTooltip(
+			const isDiff = RaidSimResultsManager.applyZTestTooltip(
 				elem,
 				ref.iterations,
 				refMetrics.avg,
@@ -382,7 +387,7 @@ export class RaidSimResultsManager {
 		}
 	}
 
-	private applyZTestTooltip(
+	static applyZTestTooltip(
 		elem: HTMLElement,
 		n1: number,
 		avg1: number,
@@ -468,19 +473,19 @@ export class RaidSimResultsManager {
 				const { chanceOfDeath, dps: dpsMetrics, tps: tpsMetrics, dtps: dtpsMetrics, tmi: tmiMetrics } = playerMetrics;
 
 				resultColumns.push({
-					name: 'DPS',
+					name: i18n.t('sidebar.results.metrics.dps.label'),
 					average: dpsMetrics.avg,
 					stdev: dpsMetrics.stdev,
 					classes: this.getResultsLineClasses('dps'),
 				});
 				resultColumns.push({
-					name: 'TPS',
+					name: i18n.t('sidebar.results.metrics.tps.label'),
 					average: tpsMetrics.avg,
 					stdev: tpsMetrics.stdev,
 					classes: this.getResultsLineClasses('tps'),
 				});
 				resultColumns.push({
-					name: 'DTPS',
+					name: i18n.t('sidebar.results.metrics.dtps.label'),
 					average: dtpsMetrics.avg,
 					stdev: dtpsMetrics.stdev,
 					classes: this.getResultsLineClasses('dtps'),
@@ -489,7 +494,7 @@ export class RaidSimResultsManager {
 				if (showHPSMetricsForTanks) {
 					const { hps } = playerMetrics;
 					resultColumns.push({
-						name: 'HPS',
+						name: i18n.t('sidebar.results.metrics.hps.label'),
 						average: hps.avg,
 						stdev: hps.stdev,
 						classes: this.getResultsLineClasses('hps'),
@@ -497,7 +502,7 @@ export class RaidSimResultsManager {
 				}
 
 				resultColumns.push({
-					name: 'TMI',
+					name: i18n.t('sidebar.results.metrics.tmi.label'),
 					average: tmiMetrics.avg,
 					stdev: tmiMetrics.stdev,
 					classes: this.getResultsLineClasses('tmi'),
@@ -505,7 +510,7 @@ export class RaidSimResultsManager {
 				});
 
 				resultColumns.push({
-					name: 'COD',
+					name: i18n.t('sidebar.results.metrics.cod.label'),
 					average: chanceOfDeath.avg,
 					stdev: chanceOfDeath.stdev,
 					classes: this.getResultsLineClasses('cod'),
@@ -516,13 +521,13 @@ export class RaidSimResultsManager {
 				if (!!actions.length) {
 					const { dps, tps } = ActionMetrics.merge(actions);
 					resultColumns.push({
-						name: 'DPS',
+						name: i18n.t('sidebar.results.metrics.dps.label'),
 						average: dps,
 						classes: this.getResultsLineClasses('dps'),
 					});
 
 					resultColumns.push({
-						name: 'TPS',
+						name: i18n.t('sidebar.results.metrics.tps.label'),
 						average: tps,
 						classes: this.getResultsLineClasses('tps'),
 					});
@@ -537,7 +542,7 @@ export class RaidSimResultsManager {
 					const { dps: dtps } = ActionMetrics.merge(targetActions);
 
 					resultColumns.push({
-						name: 'DTPS',
+						name: i18n.t('sidebar.results.metrics.dtps.label'),
 						average: dtps,
 						classes: this.getResultsLineClasses('dtps'),
 					});
@@ -545,7 +550,7 @@ export class RaidSimResultsManager {
 
 				if (showHPSMetricsForTanks) {
 					resultColumns.push({
-						name: 'HPS',
+						name: i18n.t('sidebar.results.metrics.hps.label'),
 						average: playerMetrics.hps.avg,
 						stdev: playerMetrics.hps.stdev,
 						classes: this.getResultsLineClasses('hps'),
@@ -555,7 +560,7 @@ export class RaidSimResultsManager {
 
 			if (!showHPSMetricsForTanks) {
 				resultColumns.push({
-					name: 'TTO',
+					name: i18n.t('sidebar.results.metrics.tto.label'),
 					average: playerMetrics.tto.avg,
 					stdev: playerMetrics.tto.stdev,
 					classes: this.getResultsLineClasses('tto'),
@@ -563,7 +568,7 @@ export class RaidSimResultsManager {
 				});
 
 				resultColumns.push({
-					name: 'HPS',
+					name: i18n.t('sidebar.results.metrics.hps.label'),
 					average: playerMetrics.hps.avg,
 					stdev: playerMetrics.hps.stdev,
 					classes: this.getResultsLineClasses('hps'),
@@ -573,7 +578,7 @@ export class RaidSimResultsManager {
 			const dpsMetrics = simResult.raidMetrics.dps;
 
 			resultColumns.push({
-				name: 'DPS',
+				name: i18n.t('sidebar.results.metrics.dps.label'),
 				average: dpsMetrics.avg,
 				stdev: dpsMetrics.stdev,
 				classes: this.getResultsLineClasses('dps'),
@@ -587,7 +592,7 @@ export class RaidSimResultsManager {
 			if (!!targetActions.length) {
 				const mergedTargetActions = ActionMetrics.merge(targetActions);
 				resultColumns.push({
-					name: 'DTPS',
+					name: i18n.t('sidebar.results.metrics.dtps.label'),
 					average: mergedTargetActions.dps,
 					classes: this.getResultsLineClasses('dtps'),
 				});
@@ -595,7 +600,7 @@ export class RaidSimResultsManager {
 
 			const hpsMetrics = simResult.raidMetrics.hps;
 			resultColumns.push({
-				name: 'HPS',
+				name: i18n.t('sidebar.results.metrics.hps.label'),
 				average: hpsMetrics.avg,
 				stdev: hpsMetrics.stdev,
 				classes: this.getResultsLineClasses('hps'),
@@ -604,7 +609,7 @@ export class RaidSimResultsManager {
 
 		if (simResult.request.encounter?.useHealth) {
 			resultColumns.push({
-				name: 'DUR',
+				name: i18n.t('sidebar.results.metrics.dur.label'),
 				average: simResult.result.avgIterationDuration,
 				classes: this.getResultsLineClasses('dur'),
 				unit: 'seconds',
@@ -618,7 +623,7 @@ export class RaidSimResultsManager {
 			const dangerLevel = percentOOM < 0.01 ? 'safe' : percentOOM < 0.05 ? 'warning' : 'danger';
 
 			resultColumns.push({
-				name: 'OOM',
+				name: i18n.t('sidebar.results.metrics.oom.label'),
 				average: secondsOOM,
 				classes: [this.getResultsLineClasses('oom'), dangerLevel].join(' '),
 				unit: 'seconds',
@@ -626,6 +631,7 @@ export class RaidSimResultsManager {
 		}
 
 		if (options.asList) return this.buildResultsList(resultColumns);
+
 		return this.buildResultsTable(resultColumns);
 	}
 
@@ -643,10 +649,11 @@ export class RaidSimResultsManager {
 					<thead className="metrics-table-header">
 						<tr className="metrics-table-header-row">
 							{data.map(({ name, classes }) => {
-								const cell = <th className={clsx('metrics-table-header-cell', classes)}>{name}</th>;
+								const localizedName = translateResultMetricLabel(name) || name;
+								const cell = <th className={clsx('metrics-table-header-cell', classes)}>{localizedName}</th>;
 
 								tippy(cell, {
-									content: TOOLTIP_METRIC_LABELS[name],
+									content: translateResultMetricTooltip(name) || name,
 									ignoreAttributes: true,
 								});
 
@@ -680,7 +687,7 @@ export class RaidSimResultsManager {
 											</div>
 										) : undefined}
 										<div className="results-reference hide">
-											<span className="results-reference-diff"></span> vs ref
+											<span className="results-reference-diff"></span> {i18n.t('sidebar.results.reference.vs_ref')}
 										</div>
 									</td>
 								);
@@ -697,9 +704,18 @@ export class RaidSimResultsManager {
 			<>
 				{data.map(column => {
 					const errorDecimals = column.unit === 'percentage' ? 2 : 0;
+					const label = translateResultMetricLabel(column.name) || column.name;
+					const prefix = column.name === 'tmi' || column.name === 'cod' ? '% ' : ' ';
+
 					return (
 						<div className={`results-metric ${column.classes}`}>
-							<span className="topline-result-avg">{column.average.toFixed(2)}</span>
+							<span className="topline-result-avg">
+								{column.average.toFixed(2)}
+								<span className="metric-label">
+									{prefix}
+									{label}
+								</span>
+							</span>
 							{column.stdev && (
 								<span className="topline-result-stdev">
 									(<i className="fas fa-plus-minus fa-xs"></i>
@@ -707,7 +723,7 @@ export class RaidSimResultsManager {
 								</span>
 							)}
 							<div className="results-reference hide">
-								<span className="results-reference-diff"></span> vs ref
+								<span className="results-reference-diff"></span> {i18n.t('sidebar.results.reference.vs_ref')}
 							</div>
 						</div>
 					);
@@ -732,7 +748,7 @@ type ToplineResultOptions = {
 };
 
 type ResultMetric = {
-	name: keyof typeof TOOLTIP_METRIC_LABELS;
+	name: string;
 	average: number;
 	stdev?: number;
 	classes?: string;

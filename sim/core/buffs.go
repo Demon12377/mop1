@@ -9,6 +9,8 @@ import (
 	"github.com/wowsims/mop/sim/core/stats"
 )
 
+const MasteryRaidBuffStrength = 3000
+
 type BuffConfig struct {
 	Label    string
 	ActionID ActionID
@@ -203,9 +205,11 @@ func applyBuffEffects(agent Agent, raidBuffs *proto.RaidBuffs, _ *proto.PartyBuf
 
 		// Other individual CDs
 		registerUnholyFrenzyCD(agent, individual.UnholyFrenzyCount)
-		registerTricksOfTheTradeCD(agent, individual.TricksOfTheTrade)
+		if individual.TricksOfTheTrade {
+			registerTricksOfTheTradeCD(agent)
+		}
 		registerDevotionAuraCD(agent, individual.DevotionAuraCount)
-		registerHandOfSacrificeCD(agent, individual.HandOfSacrificeCount)
+		registerVigilanceCD(agent, individual.VigilanceCount)
 		registerPainSuppressionCD(agent, individual.PainSuppressionCount)
 		registerGuardianSpiritCD(agent, individual.GuardianSpiritCount)
 		registerRallyingCryCD(agent, individual.RallyingCryCount)
@@ -283,16 +287,16 @@ func applyStaminaBuffs(u *Unit, raidBuffs *proto.RaidBuffs) {
 //////// 3000 Mastery Rating
 
 func RoarOfCourageAura(u *Unit) *Aura {
-	return makeExclusiveBuff(u, BuffConfig{"Roar of Courage", ActionID{SpellID: 93435}, []StatConfig{{stats.MasteryRating, 3000, false}}})
+	return makeExclusiveBuff(u, BuffConfig{"Roar of Courage", ActionID{SpellID: 93435}, []StatConfig{{stats.MasteryRating, MasteryRaidBuffStrength, false}}})
 }
 func SpiritBeastBlessingAura(u *Unit) *Aura {
-	return makeExclusiveBuff(u, BuffConfig{"Spirit Beast Blessing", ActionID{SpellID: 128997}, []StatConfig{{stats.MasteryRating, 3000, false}}})
+	return makeExclusiveBuff(u, BuffConfig{"Spirit Beast Blessing", ActionID{SpellID: 128997}, []StatConfig{{stats.MasteryRating, MasteryRaidBuffStrength, false}}})
 }
 func BlessingOfMightAura(u *Unit) *Aura {
-	return makeExclusiveBuff(u, BuffConfig{"Blessing of Might", ActionID{SpellID: 19740}, []StatConfig{{stats.MasteryRating, 3000, false}}})
+	return makeExclusiveBuff(u, BuffConfig{"Blessing of Might", ActionID{SpellID: 19740}, []StatConfig{{stats.MasteryRating, MasteryRaidBuffStrength, false}}})
 }
 func GraceOfAirAura(u *Unit) *Aura {
-	return makeExclusiveBuff(u, BuffConfig{"Grace of Air", ActionID{SpellID: 116956}, []StatConfig{{stats.MasteryRating, 3000, false}}})
+	return makeExclusiveBuff(u, BuffConfig{"Grace of Air", ActionID{SpellID: 116956}, []StatConfig{{stats.MasteryRating, MasteryRaidBuffStrength, false}}})
 }
 
 ///////////////////////////////////////////////////////////////////////////
@@ -551,7 +555,9 @@ type externalConsecutiveCDApproximation struct {
 	ShouldActivate CooldownActivationCondition
 
 	// Applies the buff.
-	AddAura CooldownActivation
+	AddAura           CooldownActivation
+	RelatedSelfBuff   *Aura             // Used to attach the aura to the generic spell
+	RelatedAuraArrays LabeledAuraArrays // Used to attach the aura to the generic spell
 }
 
 // numSources is the number of other players assigned to apply the buff to this player.
@@ -604,6 +610,8 @@ func registerExternalConsecutiveCDApproximation(agent Agent, config externalCons
 				sharedTimer.Set(sim.CurrentTime + externalTimers[nextExternalIndex].TimeToReady(sim))
 			}
 		},
+		RelatedSelfBuff:   config.RelatedSelfBuff,
+		RelatedAuraArrays: config.RelatedAuraArrays,
 	})
 
 	character.AddMajorCooldown(MajorCooldown{
@@ -696,16 +704,9 @@ func multiplyCastSpeedEffect(aura *Aura, multiplier float64) *ExclusiveEffect {
 
 var TricksOfTheTradeAuraTag = "TricksOfTheTrade"
 
-func registerTricksOfTheTradeCD(agent Agent, tristateConfig proto.TristateEffect) {
-	if tristateConfig == proto.TristateEffect_TristateEffectMissing {
-		return
-	}
-
-	// TristateEffectRegular is interpreted as the Glyphed version (since it
-	// is weaker).
-	damageMultiplier := GetTristateValueFloat(tristateConfig, 1.1, 1.15)
+func registerTricksOfTheTradeCD(agent Agent) {
 	unit := &agent.GetCharacter().Unit
-	tricksAura := TricksOfTheTradeAura(unit, -1, damageMultiplier)
+	tricksAura := TricksOfTheTradeAura(unit, -1, 1.15)
 
 	// Add a small offset to the tooltip CD to account for input delays
 	// between the Rogue pressing Tricks and hitting a target.
@@ -717,6 +718,7 @@ func registerTricksOfTheTradeCD(agent Agent, tristateConfig proto.TristateEffect
 			ActionID:         ActionID{SpellID: 57933, Tag: -1},
 			AuraTag:          TricksOfTheTradeAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  tricksAura,
 			AuraDuration:     tricksAura.Duration,
 			AuraCD:           effectiveCD,
 			Type:             CooldownTypeDPS,
@@ -763,6 +765,7 @@ func registerUnholyFrenzyCD(agent Agent, numUnholyFrenzy int32) {
 			ActionID:         ActionID{SpellID: 49016, Tag: -1},
 			AuraTag:          UnholyFrenzyAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  ufAura,
 			AuraDuration:     UnholyFrenzyDuration,
 			AuraCD:           UnholyFrenzyCD,
 			Type:             CooldownTypeDPS,
@@ -816,7 +819,7 @@ func registerDevotionAuraCD(agent Agent, numDevotionAuras int32) {
 	}
 
 	// TODO: Config for specifying the amount of Holy spec Devotion Auras?
-	devAura := DevotionAuraAura(&agent.GetCharacter().Unit, -1, false)
+	devAura := DevotionAuraAura(&agent.GetCharacter().Unit, -1, true)
 
 	registerExternalConsecutiveCDApproximation(
 		agent,
@@ -824,6 +827,7 @@ func registerDevotionAuraCD(agent Agent, numDevotionAuras int32) {
 			ActionID:         DevotionAuraActionID.WithTag(-1),
 			AuraTag:          DevotionAuraTag,
 			CooldownPriority: CooldownPriorityLow,
+			RelatedSelfBuff:  devAura,
 			AuraDuration:     DevotionAuraDuration,
 			AuraCD:           DevotionAuraCD,
 			Type:             CooldownTypeSurvival,
@@ -874,46 +878,47 @@ func DevotionAuraAura(unit *Unit, actionTag int32, isHoly bool) *Aura {
 	return unit.GetOrRegisterAura(auraConfig)
 }
 
-var HandOfSacrificeAuraTag = "HandOfSacrifice"
+const VigilanceAuraTag = "Vigilance"
+const VigilanceDuration = time.Second * 12
+const VigilanceCD = time.Minute * 2
+const VigilanceSpellID int32 = 114030
 
-const HandOfSacrificeDuration = time.Millisecond * 10500 // subtract Divine Shield GCD
-const HandOfSacrificeCD = time.Minute * 5                // use Divine Shield CD here
-
-func registerHandOfSacrificeCD(agent Agent, numSacs int32) {
-	if numSacs == 0 {
+func registerVigilanceCD(agent Agent, numWarriors int32) {
+	if numWarriors == 0 {
 		return
 	}
 
-	hosAura := HandOfSacrificeAura(agent.GetCharacter(), -1)
+	buffAura := VigilanceAura(agent.GetCharacter(), -1)
 
 	registerExternalConsecutiveCDApproximation(
 		agent,
 		externalConsecutiveCDApproximation{
-			ActionID:         ActionID{SpellID: 6940, Tag: -1},
-			AuraTag:          HandOfSacrificeAuraTag,
+			ActionID:         ActionID{SpellID: VigilanceSpellID, Tag: -1},
+			AuraTag:          VigilanceAuraTag,
 			CooldownPriority: CooldownPriorityLow,
-			AuraDuration:     HandOfSacrificeDuration,
-			AuraCD:           HandOfSacrificeCD,
+			RelatedSelfBuff:  buffAura,
+			AuraDuration:     VigilanceDuration,
+			AuraCD:           VigilanceCD,
 			Type:             CooldownTypeSurvival,
 
 			ShouldActivate: func(sim *Simulation, character *Character) bool {
 				return true
 			},
 			AddAura: func(sim *Simulation, character *Character) {
-				hosAura.Activate(sim)
+				buffAura.Activate(sim)
 			},
 		},
-		numSacs)
+		numWarriors)
 }
 
-func HandOfSacrificeAura(character *Character, actionTag int32) *Aura {
-	actionID := ActionID{SpellID: 6940, Tag: actionTag}
+func VigilanceAura(character *Character, actionTag int32) *Aura {
+	actionID := ActionID{SpellID: VigilanceSpellID, Tag: actionTag}
 
 	return character.GetOrRegisterAura(Aura{
-		Label:    "HandOfSacrifice-" + actionID.String(),
-		Tag:      HandOfSacrificeAuraTag,
+		Label:    "Vigilance-" + actionID.String(),
+		Tag:      VigilanceAuraTag,
 		ActionID: actionID,
-		Duration: HandOfSacrificeDuration,
+		Duration: VigilanceDuration,
 	}).AttachMultiplicativePseudoStatBuff(&character.PseudoStats.DamageTakenMultiplier, 0.7)
 }
 
@@ -935,6 +940,7 @@ func registerPainSuppressionCD(agent Agent, numPainSuppressions int32) {
 			ActionID:         ActionID{SpellID: 33206, Tag: -1},
 			AuraTag:          PainSuppressionAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  psAura,
 			AuraDuration:     PainSuppressionDuration,
 			AuraCD:           PainSuppressionCD,
 			Type:             CooldownTypeSurvival,
@@ -988,6 +994,7 @@ func registerGuardianSpiritCD(agent Agent, numGuardianSpirits int32) {
 			ActionID:         ActionID{SpellID: 47788, Tag: -1},
 			AuraTag:          GuardianSpiritAuraTag,
 			CooldownPriority: CooldownPriorityLow,
+			RelatedSelfBuff:  gsAura,
 			AuraDuration:     GuardianSpiritDuration,
 			AuraCD:           GuardianSpiritCD,
 			Type:             CooldownTypeSurvival,
@@ -1024,51 +1031,58 @@ func registerRallyingCryCD(agent Agent, numRallyingCries int32) {
 		return
 	}
 
-	buffAura := RallyingCryAura(agent.GetCharacter(), -1)
+	rallyingCryArray := RallyingCryAuraArray(&agent.GetCharacter().Unit, -1)
 
 	registerExternalConsecutiveCDApproximation(
 		agent,
 		externalConsecutiveCDApproximation{
-			ActionID:         RallyingCryActionID.WithTag(-1),
-			AuraTag:          RallyingCryAuraTag,
-			CooldownPriority: CooldownPriorityLow,
-			AuraDuration:     RallyingCryDuration,
-			AuraCD:           RallyingCryCD,
-			Type:             CooldownTypeSurvival,
+			ActionID:          RallyingCryActionID.WithTag(-1),
+			AuraTag:           RallyingCryAuraTag,
+			CooldownPriority:  CooldownPriorityLow,
+			RelatedAuraArrays: rallyingCryArray.ToMap(),
+			AuraDuration:      RallyingCryDuration,
+			AuraCD:            RallyingCryCD,
+			Type:              CooldownTypeSurvival,
 
 			ShouldActivate: func(_ *Simulation, _ *Character) bool {
 				return true
 			},
 
 			AddAura: func(sim *Simulation, _ *Character) {
-				buffAura.Activate(sim)
+				rallyingCryArray.ActivateAll(sim)
 			},
 		},
 		numRallyingCries,
 	)
 }
 
-func RallyingCryAura(character *Character, actionTag int32) *Aura {
+func RallyingCryAuraArray(unit *Unit, actionTag int32) AuraArray {
 	actionID := RallyingCryActionID.WithTag(actionTag)
-	healthMetrics := character.NewHealthMetrics(actionID)
 
-	var bonusHealth float64
+	return unit.NewAllyAuraArray(func(allyUnit *Unit) *Aura {
+		if !allyUnit.HasHealthBar() {
+			return nil
+		}
 
-	return character.GetOrRegisterAura(Aura{
-		Label:    "RallyingCry-" + actionID.String(),
-		Tag:      RallyingCryAuraTag,
-		ActionID: actionID,
-		Duration: RallyingCryDuration,
+		healthMetrics := allyUnit.NewHealthMetrics(actionID)
+		var bonusHealth float64
+		return allyUnit.GetOrRegisterAura(Aura{
+			Label:    "RallyingCry-" + actionID.String(),
+			Tag:      RallyingCryAuraTag,
+			ActionID: actionID,
+			Duration: RallyingCryDuration,
 
-		OnGain: func(_ *Aura, sim *Simulation) {
-			bonusHealth = character.MaxHealth() * 0.2
-			character.UpdateMaxHealth(sim, bonusHealth, healthMetrics)
-		},
+			OnGain: func(_ *Aura, sim *Simulation) {
+				bonusHealth = allyUnit.MaxHealth() * 0.2
+				allyUnit.UpdateMaxHealth(sim, bonusHealth, healthMetrics)
+			},
 
-		OnExpire: func(_ *Aura, sim *Simulation) {
-			character.UpdateMaxHealth(sim, -bonusHealth, healthMetrics)
-		},
+			OnExpire: func(_ *Aura, sim *Simulation) {
+				allyUnit.UpdateMaxHealth(sim, -bonusHealth, healthMetrics)
+			},
+		})
 	})
+
 }
 
 const ShatteringThrowCD = time.Minute * 5
@@ -1078,14 +1092,15 @@ func registerShatteringThrowCD(agent Agent, numShatteringThrows int32) {
 		return
 	}
 
-	stAura := ShatteringThrowAura(agent.GetCharacter().Env.Encounter.TargetUnits[0], -1)
+	stAura := ShatteringThrowAura(agent.GetCharacter().Env.GetTargetUnitByIndex(0), -1)
 
 	registerExternalConsecutiveCDApproximation(
 		agent,
 		externalConsecutiveCDApproximation{
-			ActionID:         ActionID{SpellID: 64382, Tag: -1},
+			ActionID:         ActionID{SpellID: 1249459, Tag: -1},
 			AuraTag:          ShatteringThrowAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  stAura,
 			AuraDuration:     ShatteringThrowDuration,
 			AuraCD:           ShatteringThrowCD,
 			Type:             CooldownTypeDPS,
@@ -1119,6 +1134,7 @@ func registerSkullBannerCD(agent Agent, numSkullBanners int32) {
 			ActionID:         SkullBannerActionID.WithTag(-1),
 			AuraTag:          SkullBannerAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  sbAura,
 			AuraDuration:     SkullBannerDuration,
 			AuraCD:           SkullBannerCD,
 			Type:             CooldownTypeDPS,
@@ -1134,12 +1150,30 @@ func registerSkullBannerCD(agent Agent, numSkullBanners int32) {
 }
 
 func SkullBannerAura(character *Character, actionTag int32) *Aura {
+	for _, pet := range character.Pets {
+		if !pet.IsGuardian() {
+			SkullBannerAura(&pet.Character, actionTag)
+		}
+	}
+
 	return character.GetOrRegisterAura(Aura{
 		Label:    "Skull Banner",
 		Tag:      SkullBannerAuraTag,
 		ActionID: SkullBannerActionID.WithTag(actionTag),
 		Duration: SkullBannerDuration,
-	}).AttachMultiplicativePseudoStatBuff(&character.PseudoStats.CritDamageMultiplier, 1.2)
+
+		OnGain: func(aura *Aura, sim *Simulation) {
+			character.PseudoStats.CritDamageMultiplier *= 1.2
+			for _, pet := range character.Pets {
+				if pet.IsEnabled() && !pet.IsGuardian() {
+					pet.GetAura(aura.Label).Activate(sim)
+				}
+			}
+		},
+		OnExpire: func(aura *Aura, sim *Simulation) {
+			character.PseudoStats.CritDamageMultiplier /= 1.2
+		},
+	})
 }
 
 var ManaTideTotemActionID = ActionID{SpellID: 16190}
@@ -1170,6 +1204,7 @@ func registerManaTideTotemCD(agent Agent, numManaTideTotems int32) {
 			ActionID:         ManaTideTotemActionID.WithTag(-1),
 			AuraTag:          ManaTideTotemAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  mttAura,
 			AuraDuration:     ManaTideTotemDuration,
 			AuraCD:           ManaTideTotemCD,
 			Type:             CooldownTypeMana,
@@ -1212,6 +1247,7 @@ func registerStormLashCD(agent Agent, numStormLashes int32) {
 			ActionID:         ActionID{SpellID: 120668, Tag: -1},
 			AuraTag:          StormLashAuraTag,
 			CooldownPriority: CooldownPriorityDefault,
+			RelatedSelfBuff:  sbAura,
 			AuraDuration:     StormLashDuration,
 			AuraCD:           StormLashCD,
 			Type:             CooldownTypeDPS,
@@ -1234,6 +1270,8 @@ var StormLashSpellExceptions = map[int32]float64{
 	15407:  1.0, // Mind Flay
 	129197: 1.0, // Mind Flay - Insanity
 	120360: 1.0, // Barrage
+	1752:   0.5, // Sinister Strike
+	50286:  0.0, // Starfall
 }
 
 // Source: https://www.wowhead.com/mop-classic/spell=120668/stormlash-totem#comments
@@ -1261,16 +1299,11 @@ func StormLashAura(character *Character, actionTag int32) *Aura {
 		},
 	})
 
-	getStormLashSpellOverride := func(spell *Spell) float64 {
-		return StormLashSpellExceptions[spell.ActionID.SpellID]
-	}
-
 	handler := func(aura *Aura, sim *Simulation, spell *Spell, result *SpellResult) {
 		if !aura.Icd.IsReady(sim) || !result.Landed() || result.Damage <= 0 || !spell.ProcMask.Matches(ProcMaskDirect|ProcMaskSpecial) || !sim.Proc(0.5, "Stormlash") {
 			return
 		}
 
-		baseMultiplierExtension := getStormLashSpellOverride(spell)
 		ap := Ternary(spell.IsRanged(), stormlashSpell.RangedAttackPower(), stormlashSpell.MeleeAttackPower())
 		sp := stormlashSpell.SpellPower()
 		scaledAP := ap * 0.2
@@ -1279,8 +1312,8 @@ func StormLashAura(character *Character, actionTag int32) *Aura {
 		baseDamage := max(scaledAP, scaledSP)
 		baseMultiplier := 2.0
 		speedMultiplier := 1.0
-		if baseMultiplierExtension != 0 {
-			baseMultiplier = baseMultiplier * baseMultiplierExtension
+		if multiplier, ok := StormLashSpellExceptions[spell.ActionID.SpellID]; ok && multiplier != 0 {
+			baseMultiplier = baseMultiplier * multiplier
 		}
 		if spell.Unit.Type == PetUnit {
 			baseMultiplier *= 0.2
@@ -1345,11 +1378,14 @@ func StormLashAura(character *Character, actionTag int32) *Aura {
 			}
 		},
 		OnSpellHitDealt: func(aura *Aura, sim *Simulation, spell *Spell, result *SpellResult) {
-			handler(aura, sim, spell, result)
+			// Some Spells are DoT-like, so filter them
+			if multiplier, ok := StormLashSpellExceptions[spell.ActionID.SpellID]; !ok || (ok && multiplier != 0) {
+				handler(aura, sim, spell, result)
+			}
 		},
 		OnPeriodicDamageDealt: func(aura *Aura, sim *Simulation, spell *Spell, result *SpellResult) {
-			isValidDot := getStormLashSpellOverride(spell) != 0
-			if isValidDot {
+			// All DoTs that can trigger Stormlash are exceptions
+			if _, ok := StormLashSpellExceptions[spell.ActionID.SpellID]; ok {
 				handler(aura, sim, spell, result)
 			}
 		},

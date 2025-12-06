@@ -4,9 +4,14 @@ import (
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
+	"github.com/wowsims/mop/sim/core/proto"
 )
 
 func (druid *Druid) registerNaturesSwiftness() {
+	if druid.Spec == proto.Spec_SpecGuardianDruid {
+		return
+	}
+
 	actionID := core.ActionID{SpellID: 132158}
 	cdTimer := druid.NewTimer()
 	cd := time.Minute * 1
@@ -15,6 +20,19 @@ func (druid *Druid) registerNaturesSwiftness() {
 		Label:    "Nature's Swiftness",
 		ActionID: actionID,
 		Duration: core.NeverExpires,
+
+		OnReset: func(_ *core.Aura, _ *core.Simulation) {
+			druid.HealingTouch.FormMask = Humanoid | Moonkin
+		},
+
+		OnGain: func(_ *core.Aura, _ *core.Simulation) {
+			druid.HealingTouch.FormMask |= Cat
+		},
+
+		OnExpire: func(_ *core.Aura, _ *core.Simulation) {
+			druid.HealingTouch.FormMask ^= Cat
+		},
+
 		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
 			if !spell.Matches(DruidSpellHealingTouch) {
 				return

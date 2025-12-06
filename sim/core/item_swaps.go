@@ -56,7 +56,7 @@ func (character *Character) enableItemSwap(itemSwap *proto.ItemSwap, mhCritMulti
 
 	has2HSwap := swapItems[proto.ItemSlot_ItemSlotMainHand].HandType == proto.HandType_HandTypeTwoHand
 	hasMhEquipped := character.HasMHWeapon()
-	hasOhEquipped := character.HasOHWeapon()
+	hasOhEquipped := character.HasOH()
 
 	// Handle MH and OH together, because present MH + empty OH --> swap MH and unequip OH
 	if hasItemSwap[proto.ItemSlot_ItemSlotOffHand] && hasMhEquipped {
@@ -68,7 +68,6 @@ func (character *Character) enableItemSwap(itemSwap *proto.ItemSwap, mhCritMulti
 	}
 
 	slots := SetToSortedSlice(hasItemSwap)
-
 	if len(slots) == 0 {
 		return
 	}
@@ -98,6 +97,17 @@ func (character *Character) enableItemSwap(itemSwap *proto.ItemSwap, mhCritMulti
 
 func (swap *ItemSwap) initialize(character *Character) {
 	swap.character = character
+}
+
+// Used by shaman imbues because itemswap is setup before Imbue spells registers
+func (swap *ItemSwap) AddTempEnchant(enchantID int32, slot proto.ItemSlot, swapped bool) {
+	// Add it to the swapped item
+	if swapped {
+		swap.unEquippedItems[slot].TempEnchant = enchantID
+		swap.swapEquip[slot].TempEnchant = enchantID
+	} else {
+		swap.originalEquip[slot].TempEnchant = enchantID
+	}
 }
 
 func (character *Character) RegisterItemSwapCallback(slots []proto.ItemSlot, callback OnItemSwap) {
@@ -181,6 +191,17 @@ func (swap *ItemSwap) registerProcInternal(config ItemSwapProcConfig) {
 				// actions from executing for unequipped items.
 				config.Aura.Icd.Set(NeverExpires)
 			}
+		}
+	})
+}
+
+// Helper for handling weapon enchant buffs that fall off when the weapon is swapped out.
+func (swap *ItemSwap) RegisterWeaponEnchantBuff(buffAura *Aura, enchantID int32) {
+	character := swap.character
+	slots := AllWeaponSlots()
+	character.RegisterItemSwapCallback(slots, func(sim *Simulation, _ proto.ItemSlot) {
+		if !character.hasEnchantEquipped(enchantID, slots) {
+			buffAura.Deactivate(sim)
 		}
 	})
 }
@@ -309,6 +330,24 @@ func (swap *ItemSwap) EligibleSlotsForEffect(effectID int32) []proto.ItemSlot {
 	return eligibleSlots
 }
 
+func (swap *ItemSwap) EligibleSlotsForGem(effectID int32) []proto.ItemSlot {
+	var eligibleSlots []proto.ItemSlot
+
+	for itemSlot := proto.ItemSlot(0); itemSlot < NumItemSlots; itemSlot++ {
+		if !swap.IsEnabled() {
+			if swap.character.Equipment.containsGemInSlot(effectID, itemSlot) {
+				eligibleSlots = append(eligibleSlots, itemSlot)
+			}
+		} else {
+			if swap.originalEquip.containsGemInSlot(effectID, itemSlot) || swap.swapEquip.containsGemInSlot(effectID, itemSlot) {
+				eligibleSlots = append(eligibleSlots, itemSlot)
+			}
+		}
+	}
+
+	return eligibleSlots
+}
+
 func (swap *ItemSwap) SwapItems(sim *Simulation, swapSet proto.APLActionItemSwap_SwapSet, isReset bool) {
 	if !swap.IsEnabled() || (!swap.IsValidSwap(swapSet) && !isReset) {
 		return
@@ -393,10 +432,9 @@ func (swap *ItemSwap) swapItem(sim *Simulation, slot proto.ItemSlot, isPrepull b
 		// depending on the updated DW status after the swap.
 		if character.AutoAttacks.AutoSwingMelee {
 			weapon := character.WeaponFromOffHand(swap.ohCritMultiplier)
-			isCurrentlyDualWielding := character.AutoAttacks.IsDualWielding
 			character.AutoAttacks.SetOH(weapon)
-			if !isPrepull && !isCurrentlyDualWielding {
-				character.AutoAttacks.IsDualWielding = weapon.SwingSpeed != 0
+			character.AutoAttacks.IsDualWielding = weapon.SwingSpeed != 0
+			if !isReset {
 				character.AutoAttacks.EnableMeleeSwing(sim)
 			}
 			character.PseudoStats.CanBlock = character.OffHand().WeaponType == proto.WeaponType_WeaponTypeShield

@@ -4,7 +4,7 @@ node_modules
 ui/core/index.ts
 ui/*/*/index.html
 .dirstamp
-.vscode/launch.json
+
 # IDE folders
 .idea
 .history
@@ -19,6 +19,7 @@ sim/web/__debug_bin
 # temporary files
 *.results.tmp
 package.json.tmp
+.stylelintcache
 
 #.dockerignore
 /mop/

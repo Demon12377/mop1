@@ -50,14 +50,13 @@ type Mage struct {
 	HeatingUp            *core.Aura
 	InstantPyroblastAura *core.Aura
 
-	T15_4PC_ArcaneChargeEffect  float64
+	ArcanePowerDamageMod *core.SpellMod
+
 	T15_4PC_FrostboltProcChance float64
+	T15_4PC_ArcaneChargeEffect  float64
 	Icicles                     []float64
 
 	// Item sets
-	T12_4pc *core.Aura
-	T13_4pc *core.Aura
-	T14_4pc *core.Aura
 	T16_4pc *core.Aura
 }
 
@@ -119,7 +118,7 @@ func (mage *Mage) registerPassives() {
 func (mage *Mage) registerSpells() {
 	mage.registerArmorSpells()
 
-	// mage.registerArcaneExplosionSpell()
+	mage.registerArcaneExplosionSpell()
 	mage.registerBlizzardSpell()
 	mage.registerConeOfColdSpell()
 	mage.registerDeepFreezeSpell()
@@ -130,11 +129,12 @@ func (mage *Mage) registerSpells() {
 	mage.registerFireBlastSpell()
 	mage.registerManaGems()
 	mage.registerMirrorImageCD()
-	mage.registerfrostNovaSpell()
-	mage.registerIceLanceSpell()
+	mage.registerFrostNovaSpell()
 	mage.registerIcyVeinsCD()
 	mage.registerHeatingUp()
 	mage.registerAlterTimeCD()
+
+	mage.registerHotfixes()
 }
 
 func (mage *Mage) registerMastery() {
@@ -142,12 +142,14 @@ func (mage *Mage) registerMastery() {
 }
 
 func (mage *Mage) Reset(sim *core.Simulation) {
-	mage.T15_4PC_ArcaneChargeEffect = 1.0
-	mage.T15_4PC_FrostboltProcChance = 0
 	mage.Icicles = make([]float64, 0)
 }
 
+func (mage *Mage) OnEncounterStart(sim *core.Simulation) {
+}
+
 func NewMage(character *core.Character, options *proto.Player, mageOptions *proto.MageOptions) *Mage {
+
 	mage := &Mage{
 		Character:         *character,
 		Talents:           &proto.MageTalents{},
@@ -164,8 +166,8 @@ func NewMage(character *core.Character, options *proto.Player, mageOptions *prot
 	mage.HasteEffectsManaRegen()
 
 	mage.Icicles = make([]float64, 0)
-	mage.T15_4PC_ArcaneChargeEffect = 1.0
 	mage.T15_4PC_FrostboltProcChance = 0
+	mage.T15_4PC_ArcaneChargeEffect = 1.0
 
 	return mage
 }

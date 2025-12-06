@@ -10,15 +10,15 @@ import (
 // This is just the static bonuses. Most professions are handled elsewhere.
 func (character *Character) applyProfessionEffects() {
 	if character.HasProfession(proto.Profession_Mining) {
-		character.AddStat(stats.Stamina, 120)
+		character.AddStat(stats.Stamina, 480)
 	}
 
 	if character.HasProfession(proto.Profession_Skinning) {
-		character.AddStats(stats.Stats{stats.CritRating: 80})
+		character.AddStats(stats.Stats{stats.CritRating: 480})
 	}
 
 	if character.HasProfession(proto.Profession_Herbalism) {
-		actionID := ActionID{SpellID: 74497}
+		actionID := ActionID{SpellID: 121279}
 
 		aura := character.NewTemporaryStatsAura(
 			"Lifeblood",

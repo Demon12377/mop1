@@ -53,23 +53,30 @@ func (dk *DeathKnight) registerRoilingBlood() {
 		return
 	}
 
-	core.MakeProcTriggerAura(&dk.Unit, core.ProcTrigger{
-		Name:           "Roiling Blood" + dk.Label,
-		ActionID:       core.ActionID{SpellID: 108170},
-		Callback:       core.CallbackOnSpellHitDealt,
-		ClassSpellMask: DeathKnightSpellBloodBoil,
-		Outcome:        core.OutcomeLanded,
-		ICD:            core.SpellBatchWindow,
+	dk.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Roiling Blood" + dk.Label,
+		MetricsActionID:    core.ActionID{SpellID: 108170},
+		Callback:           core.CallbackOnSpellHitDealt,
+		ClassSpellMask:     DeathKnightSpellBloodBoil,
+		Outcome:            core.OutcomeLanded,
+		ICD:                core.SpellBatchWindow,
+		TriggerImmediately: true,
 
 		ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
-			return dk.BloodPlagueSpell.Dot(result.Target).IsActive() ||
-				dk.FrostFeverSpell.Dot(result.Target).IsActive()
+			return dk.DiseasesAreActive(result.Target)
 		},
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
-			dk.PestilenceSpell.Cost.PercentModifier -= 100
+			costModifier := dk.PestilenceSpell.Cost.PercentModifier
+			gcd := dk.PestilenceSpell.DefaultCast.GCD
+
+			dk.PestilenceSpell.Cost.PercentModifier = 0
+			dk.PestilenceSpell.DefaultCast.GCD = 0
+
 			dk.PestilenceSpell.Cast(sim, result.Target)
-			dk.PestilenceSpell.Cost.PercentModifier += 100
+
+			dk.PestilenceSpell.DefaultCast.GCD = gcd
+			dk.PestilenceSpell.Cost.PercentModifier = costModifier
 		},
 	})
 }
@@ -92,7 +99,7 @@ func (dk *DeathKnight) registerPlagueLeech() {
 		ActionID:       actionID,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskEmpty,
-		Flags:          core.SpellFlagAPL,
+		Flags:          core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellPlagueLeech,
 
 		Cast: core.CastConfig{
@@ -136,8 +143,8 @@ func (dk *DeathKnight) registerUnholyBlight() {
 		ProcMask:    core.ProcMaskEmpty,
 		Flags:       core.SpellFlagPassiveSpell,
 
-		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
-			for _, target := range sim.Encounter.TargetUnits {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
+			for _, target := range sim.Encounter.ActiveTargetUnits {
 				dk.BloodPlagueSpell.Cast(sim, target)
 				dk.FrostFeverSpell.Cast(sim, target)
 			}
@@ -161,7 +168,8 @@ func (dk *DeathKnight) registerUnholyBlight() {
 			},
 		},
 
-		Hot: core.DotConfig{
+		Dot: core.DotConfig{
+			IsAOE: true,
 			Aura: core.Aura{
 				Label: "Unholy Blight" + dk.Label,
 			},
@@ -174,7 +182,7 @@ func (dk *DeathKnight) registerUnholyBlight() {
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			spell.Hot(&dk.Unit).Apply(sim)
+			spell.AOEDot().Apply(sim)
 		},
 	})
 }
@@ -193,7 +201,7 @@ func (dk *DeathKnight) registerLichborne() {
 		ActionID:       actionID,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskEmpty,
-		Flags:          core.SpellFlagAPL | core.SpellFlagHelpful,
+		Flags:          core.SpellFlagAPL | core.SpellFlagHelpful | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellLichborne,
 
 		Cast: core.CastConfig{
@@ -272,9 +280,7 @@ func (dk *DeathKnight) registerAntiMagicZone() {
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			for _, unit := range sim.Raid.AllUnits {
-				antiMagicZoneAuras.Get(unit).Activate(sim)
-			}
+			antiMagicZoneAuras.ActivateAll(sim)
 		},
 
 		RelatedAuraArrays: antiMagicZoneAuras.ToMap(),
@@ -448,7 +454,7 @@ func (dk *DeathKnight) registerDeathPact() {
 		ActionID:       actionID,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskSpellHealing,
-		Flags:          core.SpellFlagAPL | core.SpellFlagNoOnCastComplete | core.SpellFlagHelpful,
+		Flags:          core.SpellFlagAPL | core.SpellFlagNoOnCastComplete | core.SpellFlagHelpful | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellDeathPact,
 
 		Cast: core.CastConfig{
@@ -517,7 +523,7 @@ func (dk *DeathKnight) registerDeathSiphon() {
 		ActionID:       DeathSiphonActionID,
 		SpellSchool:    core.SpellSchoolShadowFrost,
 		ProcMask:       core.ProcMaskSpellDamage,
-		Flags:          core.SpellFlagAPL,
+		Flags:          core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellDeathSiphon,
 
 		MaxRange: 40,
@@ -629,7 +635,7 @@ func (dk *DeathKnight) registerConversion() {
 		ActionID:       actionID,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskEmpty,
-		Flags:          core.SpellFlagAPL | core.SpellFlagHelpful,
+		Flags:          core.SpellFlagAPL | core.SpellFlagHelpful | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellConversion,
 
 		RuneCost: core.RuneCostOptions{
@@ -654,12 +660,12 @@ func (dk *DeathKnight) registerBloodTap() {
 		return
 	}
 
-	bloodChargeAura := dk.RegisterAura(core.Aura{
+	bloodChargeAura := core.BlockPrepull(dk.RegisterAura(core.Aura{
 		Label:     "Blood Charge" + dk.Label,
 		ActionID:  core.ActionID{SpellID: 114851},
 		Duration:  time.Second * 25,
 		MaxStacks: 12,
-	})
+	}))
 
 	actionID := core.ActionID{SpellID: 45529}
 
@@ -673,7 +679,7 @@ func (dk *DeathKnight) registerBloodTap() {
 
 	dk.RegisterSpell(core.SpellConfig{
 		ActionID:       actionID,
-		Flags:          core.SpellFlagAPL,
+		Flags:          core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellBloodTap,
 
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
@@ -687,26 +693,19 @@ func (dk *DeathKnight) registerBloodTap() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&dk.Unit, core.ProcTrigger{
-		Name:           "Blood Charge Trigger" + dk.Label,
-		Callback:       core.CallbackOnSpellHitDealt,
-		ProcMask:       core.ProcMaskMeleeMH | core.ProcMaskSpellDamage,
-		ClassSpellMask: DeathKnightSpellDeathCoil | DeathKnightSpellFrostStrike | DeathKnightSpellRuneStrike,
-		Outcome:        core.OutcomeLanded,
+	dk.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Blood Charge Trigger" + dk.Label,
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcMask:           core.ProcMaskMeleeMH | core.ProcMaskSpellDamage,
+		ClassSpellMask:     DeathKnightSpellDeathCoil | DeathKnightSpellFrostStrike | DeathKnightSpellRuneStrike,
+		Outcome:            core.OutcomeLanded,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			bloodChargeAura.Activate(sim)
 			bloodChargeAura.AddStacks(sim, 2)
 		},
 	})
-}
-
-func (dk *DeathKnight) getRunicMasteryAura() *core.StatBuffAura {
-	if dk.CouldHaveSetBonus(ItemSetNecroticBoneplateBattlegear, 4) {
-		return dk.NewTemporaryStatsAura("Runic Mastery", core.ActionID{SpellID: 105647}, stats.Stats{stats.MasteryRating: 710}, time.Second*12)
-	}
-
-	return nil
 }
 
 /*
@@ -717,8 +716,6 @@ func (dk *DeathKnight) registerRunicEmpowerment() {
 	if !dk.Talents.RunicEmpowerment {
 		return
 	}
-
-	runicMasteryAura := dk.getRunicMasteryAura()
 
 	// Runic Empowerement refreshes random runes on cd
 	actionID := core.ActionID{SpellID: 81229}
@@ -734,7 +731,7 @@ func (dk *DeathKnight) registerRunicEmpowerment() {
 		ActionID: actionID,
 	}))
 
-	core.MakeProcTriggerAura(&dk.Unit, core.ProcTrigger{
+	dk.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Runic Empowerement Trigger" + dk.Label,
 		Callback:       core.CallbackOnSpellHitDealt,
 		ProcMask:       core.ProcMaskMeleeMH | core.ProcMaskSpellDamage,
@@ -744,11 +741,6 @@ func (dk *DeathKnight) registerRunicEmpowerment() {
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			dk.RegenRunicEmpowermentRune(sim, runeMetrics)
-
-			// T13 4pc: Runic Empowerment has a 25% chance to also grant 710 mastery rating for 12 sec when activated.
-			if dk.T13Dps4pc.IsActive() && sim.Proc(0.25, "T13 4pc") {
-				runicMasteryAura.Activate(sim)
-			}
 		},
 	})
 }
@@ -762,13 +754,11 @@ func (dk *DeathKnight) registerRunicCorruption() {
 		return
 	}
 
-	runicMasteryAura := dk.getRunicMasteryAura()
-
 	duration := time.Second * 3
 	multi := 2.0
 	// Runic Corruption gives rune regen speed
-	regenAura := dk.GetOrRegisterAura(core.Aura{
-		Label:    "Runic Corruption",
+	regenAura := core.BlockPrepull(dk.RegisterAura(core.Aura{
+		Label:    "Runic Corruption" + dk.Label,
 		ActionID: core.ActionID{SpellID: 51460},
 		Duration: duration,
 
@@ -778,15 +768,16 @@ func (dk *DeathKnight) registerRunicCorruption() {
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			dk.MultiplyRuneRegenSpeed(sim, 1/multi)
 		},
-	})
+	}))
 
-	core.MakeProcTriggerAura(&dk.Unit, core.ProcTrigger{
-		Name:           "Runic Corruption Trigger" + dk.Label,
-		Callback:       core.CallbackOnSpellHitDealt,
-		ProcMask:       core.ProcMaskMeleeMH | core.ProcMaskSpellDamage,
-		Outcome:        core.OutcomeLanded,
-		ClassSpellMask: DeathKnightSpellDeathCoil | DeathKnightSpellFrostStrike | DeathKnightSpellRuneStrike,
-		ProcChance:     0.45,
+	dk.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Runic Corruption Trigger" + dk.Label,
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcMask:           core.ProcMaskMeleeMH | core.ProcMaskSpellDamage,
+		Outcome:            core.OutcomeLanded,
+		ClassSpellMask:     DeathKnightSpellDeathCoil | DeathKnightSpellFrostStrike | DeathKnightSpellRuneStrike,
+		ProcChance:         0.45,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
 			hasteMultiplier := 1.0 + dk.GetStat(stats.HasteRating)/(100*core.HasteRatingPerHastePercent)
@@ -799,11 +790,6 @@ func (dk *DeathKnight) registerRunicCorruption() {
 				hastedDuration := core.DurationFromSeconds(duration.Seconds() * totalMultiplier)
 				regenAura.Duration = hastedDuration
 				regenAura.Activate(sim)
-			}
-
-			// T13 4pc: Runic Corruption has a 40% chance to also grant 710 mastery rating for 12 sec when activated.
-			if dk.T13Dps4pc.IsActive() && sim.Proc(0.4, "T13 4pc") {
-				runicMasteryAura.Activate(sim)
 			}
 		},
 	})

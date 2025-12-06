@@ -7,8 +7,8 @@ import (
 	"github.com/wowsims/mop/sim/warlock"
 )
 
-const immolateScale = 0.47 * 1.13 // Hotfix
-const immolateCoeff = 0.47 * 1.13
+const immolateScale = 0.47 * 1.3 // Hotfix
+const immolateCoeff = 0.47 * 1.3
 
 // Damage Done By Caster setup
 const (
@@ -84,10 +84,14 @@ func (destruction *DestructionWarlock) registerImmolate() {
 				dot.Snapshot(target, destruction.CalcScalingSpellDmg(immolateScale))
 			},
 			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
-				result := dot.CalcAndDealPeriodicSnapshotDamage(sim, target, dot.OutcomeSnapshotCrit)
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeSnapshotCrit)
 				if result.DidCrit() {
 					destruction.BurningEmbers.Gain(sim, 1, dot.Spell.ActionID)
 				}
+				if destruction.SiphonLife != nil {
+					destruction.SiphonLife.Cast(sim, &destruction.Unit)
+				}
+				dot.Spell.DealPeriodicDamage(sim, result)
 			},
 		},
 
@@ -98,7 +102,7 @@ func (destruction *DestructionWarlock) registerImmolate() {
 		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
 			dot := spell.Dot(target)
 			if useSnapshot {
-				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedMagicSnapshotCrit)
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
 				result.Damage /= dot.TickPeriod().Seconds()
 				return result
 			} else {

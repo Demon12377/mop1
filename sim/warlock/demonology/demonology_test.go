@@ -43,18 +43,24 @@ func TestDemonology(t *testing.T) {
 		PrepotId: 76093, // Potion of the Jade Serpent
 	}
 
-	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator(core.CharacterSuiteConfig{
-		Class:            proto.Class_ClassWarlock,
-		Race:             proto.Race_RaceOrc,
-		OtherRaces:       []proto.Race{proto.Race_RaceTroll, proto.Race_RaceGoblin, proto.Race_RaceHuman},
-		GearSet:          core.GetGearSet("../../../ui/warlock/demonology/gear_sets", "preraid"),
-		Talents:          "231221",
-		Glyphs:           &proto.Glyphs{},
-		Consumables:      fullConsumesSpec,
-		SpecOptions:      core.SpecOptionsCombo{Label: "Demonology Warlock", SpecOptions: defaultDemonologyWarlock},
-		OtherSpecOptions: []core.SpecOptionsCombo{},
-		Rotation:         core.GetAplRotation("../../../ui/warlock/demonology/apls", "default"),
-		ItemFilter:       itemFilter,
-		StartingDistance: 25,
+	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{
+		{
+			Class:      proto.Class_ClassWarlock,
+			Race:       proto.Race_RaceOrc,
+			OtherRaces: []proto.Race{proto.Race_RaceTroll, proto.Race_RaceGoblin, proto.Race_RaceHuman},
+			GearSet:    core.GetGearSet("../../../ui/warlock/demonology/gear_sets", "p3"),
+			Talents:    "231221",
+			Glyphs: &proto.Glyphs{
+				Major1: int32(proto.WarlockMajorGlyph_GlyphOfSoulstone),
+				Major2: int32(proto.WarlockMajorGlyph_GlyphOfSiphonLife),
+				Major3: int32(proto.WarlockMajorGlyph_GlyphOfImpSwarm),
+			},
+			Consumables:      fullConsumesSpec,
+			SpecOptions:      core.SpecOptionsCombo{Label: "Demonology Warlock", SpecOptions: defaultDemonologyWarlock},
+			OtherSpecOptions: []core.SpecOptionsCombo{},
+			Rotation:         core.GetAplRotation("../../../ui/warlock/demonology/apls", "default"),
+			ItemFilter:       itemFilter,
+			StartingDistance: 25,
+		},
 	}))
 }

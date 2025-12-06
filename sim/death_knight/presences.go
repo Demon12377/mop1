@@ -33,7 +33,8 @@ func (dk *DeathKnight) registerBloodPresence() {
 		},
 	}).AttachMultiplicativePseudoStatBuff(
 		// 2025-06-24: Changed from 10% to 12% on the beta
-		&dk.PseudoStats.DamageTakenMultiplier, 0.88,
+		// 2025-11-20: Changed from 12% to 10% on the PTR
+		&dk.PseudoStats.DamageTakenMultiplier, 0.90,
 	).AttachMultiplicativePseudoStatBuff(
 		&dk.PseudoStats.ThreatMultiplier, 7.0,
 	).AttachStatDependency(
@@ -111,11 +112,13 @@ func (dk *DeathKnight) registerUnholyPresence() {
 
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
 			dk.MultiplyAttackSpeed(sim, hasteMulti)
+			dk.MultiplyCastSpeed(sim, hasteMulti)
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			dk.MultiplyAttackSpeed(sim, 1/hasteMulti)
+			dk.MultiplyCastSpeed(sim, 1/hasteMulti)
 		},
-	}).NewMovementSpeedEffect(0.15)
+	}).NewPassiveMovementSpeedEffect(0.15)
 	presenceAura.Aura.NewExclusiveEffect(presenceEffectCategory, true, core.ExclusiveEffect{})
 
 	dk.UnholyPresenceSpell = dk.RegisterSpell(core.SpellConfig{

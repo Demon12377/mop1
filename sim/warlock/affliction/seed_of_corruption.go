@@ -36,7 +36,7 @@ func (affliction *AfflictionWarlock) registerSeed() {
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			baseDmg := affliction.CalcAndRollDamageRange(sim, seedExploScale, seedExploVariance)
 			isSoulBurn := seedPropertyTracker[target.UnitIndex].isSoulBurn
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				result := spell.CalcAndDealDamage(sim, aoeTarget, baseDmg, spell.OutcomeMagicHitAndCrit)
 				if isSoulBurn && result.Landed() {
 					affliction.Corruption.Proc(sim, aoeTarget)
@@ -117,7 +117,6 @@ func (affliction *AfflictionWarlock) registerSeed() {
 				if result.Landed() {
 					if affliction.Options.DetonateSeed {
 						seedExplosion.Cast(sim, target)
-
 					} else {
 						spell.Dot(target).Apply(sim)
 					}

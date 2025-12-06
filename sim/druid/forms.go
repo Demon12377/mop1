@@ -1,10 +1,9 @@
 package druid
 
 import (
-	//"math"
+	"time"
 
 	"github.com/wowsims/mop/sim/core"
-	//"github.com/wowsims/mop/sim/core/proto"
 	"github.com/wowsims/mop/sim/core/stats"
 )
 
@@ -44,8 +43,9 @@ func (druid *Druid) ClearForm(sim *core.Simulation) {
 	} else if druid.InForm(Bear) {
 		druid.BearFormAura.Deactivate(sim)
 	} else if druid.InForm(Moonkin) {
-		panic("cant clear moonkin form")
+		druid.MoonkinFormAura.Deactivate(sim)
 	}
+
 	druid.form = Humanoid
 	druid.SetCurrentPowerBar(core.ManaBar)
 }
@@ -110,6 +110,7 @@ func (druid *Druid) RegisterCatFormAura() {
 				druid.AutoAttacks.EnableAutoSwing(sim)
 				druid.UpdateManaRegenRates()
 				druid.MHAutoSpell.DamageMultiplier *= 2
+				druid.HealingTouch.DefaultCast.GCD -= time.Millisecond * 500
 			}
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
@@ -126,11 +127,12 @@ func (druid *Druid) RegisterCatFormAura() {
 				druid.AutoAttacks.EnableAutoSwing(sim)
 				druid.UpdateManaRegenRates()
 				druid.MHAutoSpell.DamageMultiplier /= 2
+				druid.HealingTouch.DefaultCast.GCD += time.Millisecond * 500
 			}
 		},
 	})
 
-	druid.CatFormAura.NewMovementSpeedEffect(0.25)
+	druid.CatFormAura.NewPassiveMovementSpeedEffect(0.25)
 }
 
 func (druid *Druid) registerCatFormSpell() {
@@ -260,6 +262,55 @@ func (druid *Druid) registerBearFormSpell() {
 				druid.SpendRage(sim, -rageDelta, rageMetrics)
 			}
 			druid.BearFormAura.Activate(sim)
+		},
+	})
+}
+
+func (druid *Druid) RegisterMoonkinFormAura() {
+	druid.MoonkinFormAura = druid.RegisterAura(core.Aura{
+		Label:      "Moonkin Form",
+		ActionID:   core.ActionID{SpellID: 24858},
+		Duration:   core.NeverExpires,
+		BuildPhase: core.Ternary(druid.StartingForm.Matches(Moonkin), core.CharacterBuildPhaseBase, core.CharacterBuildPhaseNone),
+		OnGain: func(aura *core.Aura, sim *core.Simulation) {
+			if !druid.Env.MeasuringStats && druid.form != Moonkin {
+				druid.ClearForm(sim)
+			}
+
+			druid.form = Moonkin
+			druid.SetCurrentPowerBar(core.ManaBar)
+		},
+		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
+			druid.form = Humanoid
+		},
+	}).AttachStatDependency(
+		druid.NewDynamicMultiplyStat(stats.Armor, 0.6),
+	).AttachSpellMod(core.SpellModConfig{
+		Kind: core.SpellMod_DamageDone_Pct,
+		// 2025-11-13: Moonkin Form damage bonus reduced to 10% (was 25%).
+		// 2025-11-20: Moonkin Form damage bonus increased to 20% (was 10%).
+		FloatValue: 0.1 + 0.2,
+		School:     core.SpellSchoolArcane | core.SpellSchoolNature,
+	})
+}
+
+func (druid *Druid) RegisterMoonkinFormSpell() {
+	druid.MoonkinForm = druid.RegisterSpell(Any, core.SpellConfig{
+		ActionID: core.ActionID{SpellID: 24858},
+		Flags:    core.SpellFlagNoOnCastComplete | core.SpellFlagAPL,
+
+		ManaCost: core.ManaCostOptions{
+			BaseCostPercent: 9.3,
+		},
+		Cast: core.CastConfig{
+			DefaultCast: core.Cast{
+				GCD: core.GCDDefault,
+			},
+			IgnoreHaste: true,
+		},
+
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
+			druid.MoonkinFormAura.Activate(sim)
 		},
 	})
 }

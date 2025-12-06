@@ -99,7 +99,7 @@ func (shaman *Shaman) ApplyAncestralSwiftness() {
 		ActionID: core.ActionID{SpellID: 16188},
 		Duration: core.NeverExpires,
 		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
-			if !spell.Matches(affectedSpells) {
+			if !spell.Matches(affectedSpells) || spell.Flags.Matches(SpellFlagIsEcho) {
 				return
 			}
 			//If both AS and MW 5 stacks buff are active, only MW gets consumed.
@@ -146,10 +146,12 @@ func (shaman *Shaman) ApplyEchoOfTheElements() {
 	var alreadyProcced = map[*core.Spell]bool{}
 	var lastTimestamp time.Duration
 
+	const cantProc int64 = SpellMaskTotem | SpellMaskLightningShield | SpellMaskImbue | SpellMaskFulmination | SpellMaskFlameShockDot
+
 	core.MakePermanent(shaman.GetOrRegisterAura(core.Aura{
 		Label: "Echo of The Elements Dummy",
 		OnSpellHitDealt: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
-			if !result.Landed() || spell.Flags.Matches(SpellFlagIsEcho) || !spell.Flags.Matches(SpellFlagShamanSpell) {
+			if !result.Landed() || spell.Flags.Matches(SpellFlagIsEcho) || !spell.Flags.Matches(SpellFlagShamanSpell) || spell.Matches(cantProc) {
 				return
 			}
 			if sim.CurrentTime == lastTimestamp && alreadyProcced[spell] {
@@ -173,14 +175,14 @@ func (shaman *Shaman) ApplyEchoOfTheElements() {
 					ProcMask:                 core.ProcMaskSpellProc,
 					ApplyEffects:             spell.ApplyEffects,
 					ManaCost:                 core.ManaCostOptions{},
-					CritMultiplier:           spell.Unit.Env.Raid.GetPlayerFromUnit(spell.Unit).GetCharacter().DefaultCritMultiplier(),
+					CritMultiplier:           shaman.DefaultCritMultiplier(),
 					BonusCritPercent:         spell.BonusCritPercent,
 					DamageMultiplier:         core.TernaryFloat64(spell.Tag == CastTagLightningOverload, 0.75, 1),
 					DamageMultiplierAdditive: 1,
 					MissileSpeed:             spell.MissileSpeed,
 					ClassSpellMask:           spell.ClassSpellMask,
 					BonusCoefficient:         spell.BonusCoefficient,
-					Flags:                    spell.Flags & ^core.SpellFlagAPL | core.SpellFlagNoOnCastComplete | SpellFlagIsEcho,
+					Flags:                    spell.Flags & ^core.SpellFlagAPL | SpellFlagIsEcho,
 					RelatedDotSpell:          spell.RelatedDotSpell,
 				})
 			}
@@ -214,47 +216,55 @@ func (shaman *Shaman) ApplyUnleashedFury() {
 		}).AttachDDBC(DDBC_UnleashedFury, DDBC_Total, &shaman.AttackTables, unleashedFuryDDBCHandler)
 	})
 
-	windfuryProcAura := core.MakeProcTriggerAura(&shaman.Unit, core.ProcTrigger{
-		Name:            "Unleashed Fury WF Proc Aura",
-		MetricsActionID: core.ActionID{SpellID: 118472},
-		Callback:        core.CallbackOnSpellHitDealt,
-		ProcMask:        core.ProcMaskMeleeWhiteHit,
-		Outcome:         core.OutcomeLanded,
-		Duration:        time.Second * 8,
-		ProcChance:      0.45,
+	windfuryProcAura := shaman.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Unleashed Fury WF Proc Aura",
+		MetricsActionID:    core.ActionID{SpellID: 118472},
+		Callback:           core.CallbackOnSpellHitDealt,
+		Outcome:            core.OutcomeLanded,
+		Duration:           time.Second * 8,
+		ProcChance:         0.45,
+		RequireDamageDealt: true,
+		TriggerImmediately: true,
+
 		ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
 			return shaman.SelfBuffs.Shield == proto.ShamanShield_LightningShield
 		},
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			if spell.Matches(SpellMaskWindLash) || (!spell.Matches(SpellMaskWindfuryWeapon) && !spell.ProcMask.Matches(core.ProcMaskMeleeWhiteHit)) {
+				return
+			}
 			shaman.LightningShieldDamage.Cast(sim, result.Target)
 		},
 	})
 
-	core.MakeProcTriggerAura(&shaman.Unit, core.ProcTrigger{
+	shaman.MakeProcTriggerAura(core.ProcTrigger{
 		Name:            "Unleashed Fury",
 		MetricsActionID: core.ActionID{SpellID: 117012},
 		Callback:        core.CallbackOnApplyEffects,
 		ClassSpellMask:  SpellMaskUnleashElements,
 		ProcChance:      1.0,
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
-			switch shaman.SelfBuffs.ImbueMH {
-			case proto.ShamanImbue_FlametongueWeapon:
+			mh := shaman.GetMHWeapon()
+			switch mh.TempEnchant {
+			case flametongueEnchantID:
 				flametongueDebuffAura.Get(result.Target).Activate(sim)
-			case proto.ShamanImbue_WindfuryWeapon:
+			case windfuryEnchantID:
 				windfuryProcAura.Activate(sim)
-			case proto.ShamanImbue_EarthlivingWeapon:
-			case proto.ShamanImbue_FrostbrandWeapon:
-			case proto.ShamanImbue_RockbiterWeapon:
+			case earthlivingEnchantID:
+			case frostbrandEnchantID:
+			case rockbiterEnchantID:
 			}
-			if shaman.SelfBuffs.ImbueOH != proto.ShamanImbue_NoImbue && shaman.SelfBuffs.ImbueOH != shaman.SelfBuffs.ImbueMH {
-				switch shaman.SelfBuffs.ImbueOH {
-				case proto.ShamanImbue_FlametongueWeapon:
+			oh := shaman.GetOHWeapon()
+			if oh != nil && oh.TempEnchant != mh.TempEnchant {
+				switch oh.TempEnchant {
+				case flametongueEnchantID:
 					flametongueDebuffAura.Get(result.Target).Activate(sim)
-				case proto.ShamanImbue_WindfuryWeapon:
+				case windfuryEnchantID:
 					windfuryProcAura.Activate(sim)
-				case proto.ShamanImbue_EarthlivingWeapon:
-				case proto.ShamanImbue_FrostbrandWeapon:
-				case proto.ShamanImbue_RockbiterWeapon:
+				case earthlivingEnchantID:
+				case frostbrandEnchantID:
+				case rockbiterEnchantID:
 				}
 			}
 		},

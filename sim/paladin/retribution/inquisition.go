@@ -22,7 +22,7 @@ func (ret *RetributionPaladin) registerInquisition() {
 		stats.SpellCritPercent:    10,
 	}
 
-	inquisitionAura := ret.RegisterAura(core.Aura{
+	inquisitionAura := core.BlockPrepull(ret.RegisterAura(core.Aura{
 		Label:     "Inquisition" + ret.Label,
 		ActionID:  actionID,
 		Duration:  inquisitionDuration,
@@ -34,7 +34,7 @@ func (ret *RetributionPaladin) registerInquisition() {
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			ret.AddStatsDynamic(sim, critBuffs.Invert())
 		},
-	}).AttachSpellMod(core.SpellModConfig{
+	})).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
 		School:     core.SpellSchoolHoly,
 		FloatValue: 0.3,
@@ -63,7 +63,7 @@ func (ret *RetributionPaladin) registerInquisition() {
 		ThreatMultiplier: 1,
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
-			duration := inquisitionDuration * time.Duration(ret.DynamicHolyPowerSpent+core.TernaryInt32(ret.T11Ret4pc.IsActive(), 1, 0))
+			duration := inquisitionDuration * time.Duration(ret.DynamicHolyPowerSpent+core.TernaryFloat64(ret.T11Ret4pc.IsActive(), 1, 0))
 
 			// Inquisition behaves like a dot with DOT_REFRESH, which means you'll never lose your current tick
 			if spell.RelatedSelfBuff.IsActive() {
@@ -76,7 +76,7 @@ func (ret *RetributionPaladin) registerInquisition() {
 
 			spell.RelatedSelfBuff.Duration = duration
 			spell.RelatedSelfBuff.Activate(sim)
-			spell.RelatedSelfBuff.SetStacks(sim, ret.DynamicHolyPowerSpent)
+			spell.RelatedSelfBuff.SetStacks(sim, int32(ret.DynamicHolyPowerSpent))
 
 			ret.HolyPower.SpendUpTo(sim, ret.DynamicHolyPowerSpent, actionID)
 		},

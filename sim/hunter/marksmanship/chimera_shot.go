@@ -9,10 +9,9 @@ import (
 
 func (mmHunter *MarksmanshipHunter) registerChimeraShotSpell() {
 	mmHunter.RegisterSpell(core.SpellConfig{
-		ActionID:    core.ActionID{SpellID: 53209},
-		SpellSchool: core.SpellSchoolNature,
-		ProcMask:    core.ProcMaskRangedSpecial,
-
+		ActionID:       core.ActionID{SpellID: 53209},
+		SpellSchool:    core.SpellSchoolNature,
+		ProcMask:       core.ProcMaskRangedSpecial,
 		ClassSpellMask: hunter.HunterSpellChimeraShot,
 		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL | core.SpellFlagRanged,
 		MissileSpeed:   40,
@@ -33,7 +32,7 @@ func (mmHunter *MarksmanshipHunter) registerChimeraShotSpell() {
 			},
 		},
 
-		DamageMultiplier: 4.57,
+		DamageMultiplier: 2.65,
 		CritMultiplier:   mmHunter.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 

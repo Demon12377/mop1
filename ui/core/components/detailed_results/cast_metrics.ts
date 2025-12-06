@@ -1,5 +1,6 @@
 import { ActionMetrics } from '../../proto_utils/sim_result.js';
 import { ColumnSortType, MetricsTable } from './metrics_table/metrics_table.jsx';
+import i18n from '../../../i18n/config';
 import { ResultComponentConfig, SimResultData } from './result_component.js';
 
 export class CastMetricsTable extends MetricsTable<ActionMetrics> {
@@ -14,13 +15,13 @@ export class CastMetricsTable extends MetricsTable<ActionMetrics> {
 				};
 			}),
 			{
-				name: 'Casts',
+				name: i18n.t('results_tab.details.columns.casts'),
 				sort: ColumnSortType.Descending,
 				getValue: (metric: ActionMetrics) => metric.casts,
 				getDisplayString: (metric: ActionMetrics) => metric.casts.toFixed(1),
 			},
 			{
-				name: 'CPM',
+				name: i18n.t('results_tab.details.columns.cpm'),
 				getValue: (metric: ActionMetrics) => metric.castsPerMinute,
 				getDisplayString: (metric: ActionMetrics) => metric.castsPerMinute.toFixed(1),
 			},

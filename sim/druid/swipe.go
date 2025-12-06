@@ -11,10 +11,11 @@ func (druid *Druid) registerSwipeBearSpell() {
 	flatBaseDamage := 0.22499999404 * druid.ClassSpellScaling // ~246.3164
 
 	druid.SwipeBear = druid.RegisterSpell(Bear, core.SpellConfig{
-		ActionID:    core.ActionID{SpellID: 779},
-		SpellSchool: core.SpellSchoolPhysical,
-		ProcMask:    core.ProcMaskMeleeMHSpecial,
-		Flags:       core.SpellFlagAoE | core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ActionID:       core.ActionID{SpellID: 779},
+		SpellSchool:    core.SpellSchoolPhysical,
+		ProcMask:       core.ProcMaskMeleeMHSpecial,
+		Flags:          core.SpellFlagAoE | core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ClassSpellMask: DruidSpellSwipeBear,
 
 		RageCost: core.RageCostOptions{
 			Cost: core.TernaryInt32(druid.Spec == proto.Spec_SpecGuardianDruid, 0, 15),
@@ -30,7 +31,7 @@ func (druid *Druid) registerSwipeBearSpell() {
 			},
 		},
 
-		DamageMultiplier: core.TernaryFloat64(druid.AssumeBleedActive, RendAndTearDamageMultiplier, 1),
+		DamageMultiplier: 1,
 		CritMultiplier:   druid.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 		MaxRange:         8,
@@ -38,8 +39,9 @@ func (druid *Druid) registerSwipeBearSpell() {
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
 			baseDamage := flatBaseDamage + 0.225*spell.MeleeAttackPower()
 
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
-				spell.CalcAndDealDamage(sim, aoeTarget, baseDamage, spell.OutcomeMeleeSpecialHitAndCrit)
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
+				perTargetDamage := baseDamage * core.TernaryFloat64(druid.AssumeBleedActive || (druid.BleedsActive[aoeTarget] > 0), RendAndTearDamageMultiplier, 1)
+				spell.CalcAndDealDamage(sim, aoeTarget, perTargetDamage, spell.OutcomeMeleeSpecialHitAndCrit)
 			}
 		},
 	})
@@ -47,10 +49,11 @@ func (druid *Druid) registerSwipeBearSpell() {
 
 func (druid *Druid) registerSwipeCatSpell() {
 	druid.SwipeCat = druid.RegisterSpell(Cat, core.SpellConfig{
-		ActionID:    core.ActionID{SpellID: 62078},
-		SpellSchool: core.SpellSchoolPhysical,
-		ProcMask:    core.ProcMaskMeleeMHSpecial,
-		Flags:       core.SpellFlagAoE | core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ActionID:       core.ActionID{SpellID: 62078},
+		SpellSchool:    core.SpellSchoolPhysical,
+		ProcMask:       core.ProcMaskMeleeMHSpecial,
+		Flags:          core.SpellFlagAoE | core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ClassSpellMask: DruidSpellSwipeCat,
 
 		EnergyCost: core.EnergyCostOptions{
 			Cost: 45,
@@ -62,24 +65,34 @@ func (druid *Druid) registerSwipeCatSpell() {
 			IgnoreHaste: true,
 		},
 
-		DamageMultiplier: 4.0 * core.TernaryFloat64(druid.AssumeBleedActive, RendAndTearDamageMultiplier, 1),
+		DamageMultiplier: 4.0,
 		CritMultiplier:   druid.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 		BonusCoefficient: 1,
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
-			baseDamage := spell.Unit.MHWeaponDamage(sim, spell.MeleeAttackPower())
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
+				baseDamage := spell.Unit.MHWeaponDamage(sim, spell.MeleeAttackPower())
+
+				if druid.AssumeBleedActive || (druid.BleedsActive[aoeTarget] > 0) {
+					baseDamage *= RendAndTearDamageMultiplier
+				}
+
 				result := spell.CalcAndDealDamage(sim, aoeTarget, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 
-				if result.Landed() && (aoeTarget == druid.CurrentTarget) {
-					druid.AddComboPoints(sim, 1, spell.ComboPointMetrics())
+				if result.Landed() && (aoeTarget == druid.CurrentComboTarget) {
+					druid.AddComboPoints(sim, 1, aoeTarget, spell.ComboPointMetrics())
 				}
 			}
 		},
 
 		ExpectedInitialDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, _ bool) *core.SpellResult {
 			baseDamage := spell.Unit.AutoAttacks.MH().CalculateAverageWeaponDamage(spell.MeleeAttackPower())
+
+			if druid.AssumeBleedActive || (druid.BleedsActive[target] > 0) {
+				baseDamage *= RendAndTearDamageMultiplier
+			}
+
 			return spell.CalcDamage(sim, target, baseDamage, spell.OutcomeExpectedMeleeWeaponSpecialHitAndCrit)
 		},
 	})

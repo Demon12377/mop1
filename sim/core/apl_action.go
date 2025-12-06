@@ -12,6 +12,11 @@ type APLAction struct {
 }
 
 func (action *APLAction) Finalize(rot *APLRotation) {
+	// Defensive check to prevent nil pointer dereference
+	if action == nil || action.impl == nil {
+		return
+	}
+
 	action.impl.Finalize(rot)
 	for _, value := range action.GetAllAPLValues() {
 		value.Finalize(rot)
@@ -28,6 +33,11 @@ func (action *APLAction) Execute(sim *Simulation) {
 
 // Returns this Action, along with all inner Actions.
 func (action *APLAction) GetAllActions() []*APLAction {
+	// Defensive check to prevent nil pointer dereference
+	if action == nil || action.impl == nil {
+		return nil
+	}
+
 	actions := action.impl.GetInnerActions()
 	actions = append(actions, action)
 	return actions
@@ -37,6 +47,11 @@ func (action *APLAction) GetAllActions() []*APLAction {
 func (action *APLAction) GetAllAPLValues() []APLValue {
 	var values []APLValue
 	for _, a := range action.GetAllActions() {
+		// Defensive check to prevent nil pointer dereference
+		if a == nil || a.impl == nil {
+			continue
+		}
+
 		unprocessed := a.impl.GetAPLValues()
 		if a.condition != nil {
 			unprocessed = append(unprocessed, a.condition)
@@ -45,6 +60,9 @@ func (action *APLAction) GetAllAPLValues() []APLValue {
 		for len(unprocessed) > 0 {
 			next := unprocessed[len(unprocessed)-1]
 			unprocessed = unprocessed[:len(unprocessed)-1]
+			if next == nil {
+				continue
+			}
 			values = append(values, next)
 			unprocessed = append(unprocessed, next.GetInnerValues()...)
 		}
@@ -99,6 +117,9 @@ type APLActionImpl interface {
 	// Called only while this action is controlling the rotation.
 	GetNextAction(sim *Simulation) *APLAction
 
+	// Re-resolve variable references with updated group variables.
+	ReResolveVariableRefs(*APLRotation, map[string]*proto.APLValue)
+
 	// Pretty-print string for debugging.
 	String() string
 }
@@ -107,32 +128,36 @@ type APLActionImpl interface {
 type defaultAPLActionImpl struct {
 }
 
-func (impl defaultAPLActionImpl) GetInnerActions() []*APLAction        { return nil }
-func (impl defaultAPLActionImpl) GetAPLValues() []APLValue             { return nil }
-func (impl defaultAPLActionImpl) Finalize(*APLRotation)                {}
-func (impl defaultAPLActionImpl) PostFinalize(*APLRotation)            {}
-func (impl defaultAPLActionImpl) Reset(*Simulation)                    {}
-func (impl defaultAPLActionImpl) GetNextAction(*Simulation) *APLAction { return nil }
+func (impl defaultAPLActionImpl) GetInnerActions() []*APLAction                                  { return nil }
+func (impl defaultAPLActionImpl) GetAPLValues() []APLValue                                       { return nil }
+func (impl defaultAPLActionImpl) Finalize(*APLRotation)                                          {}
+func (impl defaultAPLActionImpl) PostFinalize(*APLRotation)                                      {}
+func (impl defaultAPLActionImpl) Reset(*Simulation)                                              {}
+func (impl defaultAPLActionImpl) GetNextAction(*Simulation) *APLAction                           { return nil }
+func (impl defaultAPLActionImpl) ReResolveVariableRefs(*APLRotation, map[string]*proto.APLValue) {}
 
 func (rot *APLRotation) newAPLAction(config *proto.APLAction) *APLAction {
 	if config == nil {
 		return nil
 	}
 
-	action := &APLAction{
-		condition: rot.coerceTo(rot.newAPLValue(config.Condition), proto.APLValueType_ValueTypeBool),
-		impl:      rot.newAPLActionImpl(config),
+	impl := rot.newAPLActionImpl(config)
+	if impl == nil {
+		// Don't create an action with a nil implementation
+		return nil
 	}
 
-	if action.impl == nil {
-		return nil
-	} else {
-		return action
+	action := &APLAction{
+		condition: rot.coerceTo(rot.newAPLValue(config.Condition), proto.APLValueType_ValueTypeBool),
+		impl:      impl,
 	}
+
+	return action
 }
 
 func (rot *APLRotation) newAPLActionImpl(config *proto.APLAction) APLActionImpl {
 	if config == nil {
+		fmt.Println("newAPLActionImpl called with nil config")
 		return nil
 	}
 
@@ -184,7 +209,7 @@ func (rot *APLRotation) newAPLActionImpl(config *proto.APLAction) APLActionImpl 
 	case *proto.APLAction_ActivateAuraWithStacks:
 		return rot.newActionActivateAuraWithStacks(config.GetActivateAuraWithStacks())
 	case *proto.APLAction_ActivateAllStatBuffProcAuras:
-		return rot.newActionactivateAllStatBuffProcAuras(config.GetActivateAllStatBuffProcAuras())
+		return rot.newActionActivateAllStatBuffProcAuras(config.GetActivateAllStatBuffProcAuras())
 	case *proto.APLAction_CancelAura:
 		return rot.newActionCancelAura(config.GetCancelAura())
 	case *proto.APLAction_TriggerIcd:
@@ -197,6 +222,8 @@ func (rot *APLRotation) newAPLActionImpl(config *proto.APLAction) APLActionImpl 
 		return rot.newActionMoveDuration(config.GetMoveDuration())
 	case *proto.APLAction_CustomRotation:
 		return rot.newActionCustomRotation(config.GetCustomRotation())
+	case *proto.APLAction_GroupReference:
+		return rot.newActionGroupReference(config.GetGroupReference())
 
 	default:
 		return nil

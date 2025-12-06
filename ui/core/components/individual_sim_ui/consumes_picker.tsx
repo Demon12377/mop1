@@ -2,7 +2,7 @@ import { ref } from 'tsx-vanilla';
 
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Player } from '../../player';
-import { ConsumableType } from '../../proto/common';
+import { Class, ConsumableType, Spec } from '../../proto/common';
 import { Consumable } from '../../proto/db';
 import { Database } from '../../proto_utils/database';
 import { TypedEvent } from '../../typed_event';
@@ -13,6 +13,7 @@ import { relevantStatOptions } from '../inputs/stat_options';
 import { IconEnumPicker } from '../pickers/icon_enum_picker';
 import { IconPicker } from '../pickers/icon_picker';
 import { SettingsTab } from './settings_tab';
+import i18n from '../../../i18n/config';
 
 export class ConsumesPicker extends Component {
 	protected settingsTab: SettingsTab;
@@ -54,9 +55,12 @@ export class ConsumesPicker extends Component {
 		);
 		const potionsElem = potionsRef.value!;
 
-		const pots = this.getConsumables(ConsumableType.ConsumableTypePotion);
-		const prePotOptions = ConsumablesInputs.makeConsumableInput(pots, { consumesFieldName: 'prepotId' }, 'Prepop Potion');
-		const potionsOptions = ConsumablesInputs.makeConsumableInput(pots, { consumesFieldName: 'potId' }, 'Combat Potion');
+		let pots = this.getConsumables(ConsumableType.ConsumableTypePotion);
+		if (this.simUI.player.getClass() !== Class.ClassWarrior && this.simUI.player.getSpec() !== Spec.SpecGuardianDruid) {
+			pots = pots.filter(pot => pot.id !== 13442);
+		}
+		const prePotOptions = ConsumablesInputs.makeConsumableInput(pots, { consumesFieldName: 'prepotId' }, i18n.t('settings_tab.consumables.potions.prepop'));
+		const potionsOptions = ConsumablesInputs.makeConsumableInput(pots, { consumesFieldName: 'potId' }, i18n.t('settings_tab.consumables.potions.combat'));
 
 		const prePotPicker = buildIconInput(potionsElem, this.simUI.player, prePotOptions);
 
@@ -129,7 +133,7 @@ export class ConsumesPicker extends Component {
 		);
 		const engiConsumesElem = engiConsumesRef.value!;
 
-		const explosivesoptions = ConsumablesInputs.makeExplosivesInput(relevantStatOptions(ConsumablesInputs.EXPLOSIVE_CONFIG, this.simUI), 'Explosives');
+		const explosivesoptions = ConsumablesInputs.makeExplosivesInput(relevantStatOptions(ConsumablesInputs.EXPLOSIVE_CONFIG, this.simUI), i18n.t('settings_tab.consumables.engineering.explosives'));
 		const explosivePicker = buildIconInput(engiConsumesElem, this.simUI.player, explosivesoptions);
 
 		const events = this.simUI.player.professionChangeEmitter.on(() => this.updateRow(row, [explosivePicker]));
@@ -162,7 +166,7 @@ export class ConsumesPicker extends Component {
 // A simple JSX stateless component for rows.
 const ConsumeRow = ({ label, children }: { label: string; children: JSX.Element }) => (
 	<div className="consumes-row input-root input-inline">
-		<label className="form-label">{label}</label>
+		<label className="form-label">{i18n.t(`settings_tab.consumables.${label.toLowerCase()}.title`)}</label>
 		{children}
 	</div>
 );

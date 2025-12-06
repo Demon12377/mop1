@@ -5,24 +5,11 @@ import * as Mechanics from '../../core/constants/mechanics.js';
 import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_ui';
 import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
-import { APLAction, APLListItem, APLRotation } from '../../core/proto/apl';
-import {
-	Cooldowns,
-	Debuffs,
-	Faction,
-	IndividualBuffs,
-	ItemSlot,
-	PartyBuffs,
-	PseudoStat,
-	Race,
-	RaidBuffs,
-	RotationType,
-	Spec,
-	Stat,
-} from '../../core/proto/common';
-import { BeastMasteryHunter_Rotation, HunterStingType } from '../../core/proto/hunter';
-import * as AplUtils from '../../core/proto_utils/apl_utils';
-import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { APLRotation } from '../../core/proto/apl';
+import { Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
+import { StatCapType } from '../../core/proto/ui';
+import { StatCap, Stats, UnitStat } from '../../core/proto_utils/stats';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as HunterInputs from '../inputs';
 import { sharedHunterDisplayStatsModifiers } from '../shared';
 import * as BMInputs from './inputs';
@@ -36,9 +23,17 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 	warnings: [],
 	// All stats for which EP should be calculated.
 	epStats: [
-		Stat.StatStamina,
 		Stat.StatAgility,
 		Stat.StatRangedAttackPower,
+		Stat.StatHitRating,
+		Stat.StatCritRating,
+		Stat.StatHasteRating,
+		Stat.StatMasteryRating,
+		Stat.StatExpertiseRating,
+	],
+	gemStats: [
+		Stat.StatStamina,
+		Stat.StatAgility,
 		Stat.StatHitRating,
 		Stat.StatCritRating,
 		Stat.StatHasteRating,
@@ -56,24 +51,30 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 	modifyDisplayStats: (player: Player<Spec.SpecBeastMasteryHunter>) => {
 		return sharedHunterDisplayStatsModifiers(player);
 	},
-	itemSwapSlots: [
-		ItemSlot.ItemSlotMainHand,
-		ItemSlot.ItemSlotHands,
-		ItemSlot.ItemSlotTrinket1,
-		ItemSlot.ItemSlotTrinket2,
-		ItemSlot.ItemSlotFinger1,
-		ItemSlot.ItemSlotFinger2,
-	],
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_PRESET_GEAR.gear,
+		gear: Presets.P2_PRESET_GEAR.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.P1_EP_PRESET.epWeights,
+		epWeights: Presets.P2_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
 		statCaps: (() => {
 			return new Stats()
 				.withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5)
 				.withStat(Stat.StatExpertiseRating, 7.5 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION);
+		})(),
+		// Default breakpoint limits - set 19% haste as default target
+		breakpointLimits: (() => {
+			return new Stats().withPseudoStat(PseudoStat.PseudoStatRangedHastePercent, 19);
+		})(),
+		softCapBreakpoints: (() => {
+			return [
+				StatCap.fromPseudoStat(PseudoStat.PseudoStatRangedHastePercent, {
+					breakpoints: [19, 20, 26, 33],
+					capType: StatCapType.TypeSoftCap,
+					postCapEPs: [0.25, 0.2, 0.2, 0.2], // Single value that gets repeated for all breakpoints
+				}),
+			];
 		})(),
 
 		other: Presets.OtherDefaults,
@@ -85,6 +86,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 		specOptions: Presets.BMDefaultOptions,
 		// Default raid/party buffs settings.
 		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
 			blessingOfKings: true,
 			trueshotAura: true,
 			leaderOfThePack: true,
@@ -92,8 +94,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 			commandingShout: true,
 			unholyAura: true,
 			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
 		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
@@ -122,17 +122,17 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET],
+		epWeights: [Presets.P2_EP_PRESET, Presets.P3_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.DefaultTalents],
 		// Preset rotations that the user can quickly select.
 		rotations: [Presets.ROTATION_PRESET_BM, Presets.ROTATION_PRESET_AOE],
 		// Preset gear configurations that the user can quickly select.
-		builds: [Presets.PRERAID_PRESET, Presets.PRERAID_PRESET_CELESTIAL, Presets.P1_PRESET],
-		gear: [Presets.PRERAID_PRESET_GEAR, Presets.PRERAID_CELESTIAL_PRESET_GEAR, Presets.P1_PRESET_GEAR],
+		builds: [Presets.PRERAID_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
+		gear: [Presets.PRERAID_PRESET_GEAR, Presets.P2_PRESET_GEAR, Presets.P3_PRESET_GEAR],
 	},
 
-	autoRotation: (player: Player<Spec.SpecBeastMasteryHunter>): APLRotation => {
+	autoRotation: (_: Player<Spec.SpecBeastMasteryHunter>): APLRotation => {
 		return Presets.ROTATION_PRESET_BM.rotation.rotation!;
 	},
 
@@ -151,10 +151,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.PRERAID_CELESTIAL_PRESET_GEAR.gear,
+					1: Presets.PRERAID_PRESET_GEAR.gear,
+					2: Presets.P2_PRESET_GEAR.gear,
+					3: Presets.P3_PRESET_GEAR.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.PRERAID_CELESTIAL_PRESET_GEAR.gear,
+					1: Presets.PRERAID_PRESET_GEAR.gear,
+					2: Presets.P2_PRESET_GEAR.gear,
+					3: Presets.P3_PRESET_GEAR.gear,
 				},
 			},
 			otherDefaults: Presets.OtherDefaults,
@@ -166,12 +170,19 @@ export class BeastMasteryHunterSimUI extends IndividualSimUI<Spec.SpecBeastMaste
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecBeastMasteryHunter>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				getEPDefaults: (player: Player<Spec.SpecFuryWarrior>) => {
-					return Presets.P1_EP_PRESET.epWeights;
-				},
-			});
+		this.reforger = new ReforgeOptimizer(this, {
+			updateSoftCaps: softCaps => {
+				// Implement stepped EP reduction for haste breakpoints
+				const hasteCap = softCaps.find(v => v.unitStat.equalsPseudoStat(PseudoStat.PseudoStatRangedHastePercent));
+				if (hasteCap) {
+					const hasteWeights = player.getEpWeights().getStat(Stat.StatHasteRating);
+					// Set stepped EP values: 0.27 -> 0.24 -> 0.21 -> 0.18 -> 0.15
+					const baseEP = hasteWeights * Mechanics.HASTE_RATING_PER_HASTE_PERCENT;
+					const reduction = 0.03 * Mechanics.HASTE_RATING_PER_HASTE_PERCENT;
+					hasteCap.postCapEPs = hasteCap.breakpoints.map((_, index) => Math.max(0, baseEP - reduction * (index + 1)));
+				}
+				return softCaps;
+			},
 		});
 	}
 }

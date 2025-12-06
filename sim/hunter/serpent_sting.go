@@ -46,7 +46,7 @@ func (hunter *Hunter) registerSerpentStingSpell() {
 		SpellSchool:    core.SpellSchoolNature,
 		ProcMask:       core.ProcMaskProc,
 		ClassSpellMask: HunterSpellSerpentSting,
-		Flags:          core.SpellFlagAPL,
+		Flags:          core.SpellFlagAPL | core.SpellFlagRanged,
 		MissileSpeed:   40,
 		MinRange:       0,
 		MaxRange:       40,
@@ -87,7 +87,6 @@ func (hunter *Hunter) registerSerpentStingSpell() {
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-
 			result := spell.CalcOutcome(sim, target, spell.OutcomeRangedHit)
 
 			if result.Landed() {
@@ -98,7 +97,6 @@ func (hunter *Hunter) registerSerpentStingSpell() {
 					spell.Dot(target).Apply(sim)
 					spell.DealOutcome(sim, result)
 				})
-
 			}
 		},
 	})

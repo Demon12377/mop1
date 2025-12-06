@@ -9,7 +9,8 @@ import (
 
 // T14
 var ItemSetRegaliaOfTheBurningScroll = core.NewItemSet(core.ItemSet{
-	Name: "Regalia of the Burning Scroll",
+	Name:                    "Regalia of the Burning Scroll",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		// Increases the damage done by your Arcane Missiles spell by 7%,
 		// increases the damage done by your Pyroblast spell by 8%, and increases the damage done by your Ice Lance spell by 12%.
@@ -33,7 +34,6 @@ var ItemSetRegaliaOfTheBurningScroll = core.NewItemSet(core.ItemSet{
 		// reduces the cooldown of Icy Veins by 50%, and reduces the cooldown of Combustion by 20%.
 		4: func(agent core.Agent, setBonusAura *core.Aura) {
 			mage := agent.(MageAgent).GetMage()
-			mage.T14_4pc = setBonusAura
 
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
 				FloatValue: 0.5,
@@ -44,6 +44,19 @@ var ItemSetRegaliaOfTheBurningScroll = core.NewItemSet(core.ItemSet{
 				Kind:       core.SpellMod_Cooldown_Multiplier,
 				ClassMask:  MageSpellCombustion,
 			})
+
+			mage.OnSpellRegistered(func(spell *core.Spell) {
+				if !spell.Matches(MageSpellArcanePower) {
+					return
+				}
+
+				setBonusAura.ApplyOnGain(func(_ *core.Aura, _ *core.Simulation) {
+					mage.ArcanePowerDamageMod.UpdateFloatValue(mage.ArcanePowerDamageMod.GetFloatValue() + 0.1)
+				}).ApplyOnExpire(func(_ *core.Aura, _ *core.Simulation) {
+					mage.ArcanePowerDamageMod.UpdateFloatValue(mage.ArcanePowerDamageMod.GetFloatValue() - 0.1)
+				})
+			})
+
 			setBonusAura.ExposeToAPL(123101)
 		},
 	},
@@ -51,7 +64,8 @@ var ItemSetRegaliaOfTheBurningScroll = core.NewItemSet(core.ItemSet{
 
 // T15
 var ItemSetRegaliaOfTheChromaticHydra = core.NewItemSet(core.ItemSet{
-	Name: "Regalia of the Chromatic Hydra",
+	Name:                    "Regalia of the Chromatic Hydra",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		// When Alter Time expires, you gain 1800 Haste, Crit, and Mastery for 30 sec.
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
@@ -104,7 +118,8 @@ var ItemSetRegaliaOfTheChromaticHydra = core.NewItemSet(core.ItemSet{
 
 // T16
 var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
-	Name: "Chronomancer Regalia",
+	Name:                    "Chronomancer Regalia",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		// Arcane Missiles causes your next Arcane Blast within 10 sec to cost 25% less mana, stacking up to 4 times.
 		// Consuming Brain Freeze increases the damage of your next Ice Lance, Frostbolt, Frostfire Bolt, or Cone of Cold by 20%.
@@ -194,7 +209,9 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				if !spell.Matches(MageSpellFrostbolt) {
 					return
 				}
-
+				if mage.BrainFreezeAura == nil {
+					return
+				}
 				mage.BrainFreezeAura.ApplyOnExpire(func(_ *core.Aura, sim *core.Simulation) {
 					if setBonusAura.IsActive() {
 						frostAura.Activate(sim)
@@ -234,7 +251,9 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 				if !spell.Matches(MageSpellFrostbolt) {
 					return
 				}
-
+				if mage.BrainFreezeAura == nil {
+					return
+				}
 				mage.BrainFreezeAura.ApplyOnExpire(func(_ *core.Aura, sim *core.Simulation) {
 					if setBonusAura.IsActive() {
 						frigidBlast.Cast(sim, mage.CurrentTarget)
@@ -253,10 +272,10 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 			})
 
 			setBonusAura.MakeDependentProcTriggerAura(&mage.Unit, core.ProcTrigger{
-				Name:           "Fiery Adept - Consume",
-				ClassSpellMask: MageSpellPyroblast,
-				Harmful:        true,
-				Callback:       core.CallbackOnSpellHitDealt,
+				Name:               "Fiery Adept - Consume",
+				ClassSpellMask:     MageSpellPyroblast,
+				RequireDamageDealt: true,
+				Callback:           core.CallbackOnSpellHitDealt,
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 					fireAura.Deactivate(sim)
 				},
@@ -272,6 +291,25 @@ var ItemSetChronomancerRegalia = core.NewItemSet(core.ItemSet{
 			})
 
 			setBonusAura.ExposeToAPL(145257)
+		},
+	},
+})
+
+// PVP S12 / S13 / S14
+var ItemSetGladiatorsRegalia = core.NewItemSet(core.ItemSet{
+	Name:                    "Gladiator's Regalia",
+	DisabledInChallengeMode: true,
+	Bonuses: map[int32]core.ApplySetBonus{
+		2: func(agent core.Agent, setBonusAura *core.Aura) {},
+		// Reduces the cooldown on Alter Time by 90 sec.
+		4: func(agent core.Agent, setBonusAura *core.Aura) {
+			setBonusAura.AttachSpellMod(core.SpellModConfig{
+				Kind:      core.SpellMod_Cooldown_Flat,
+				ClassMask: MageSpellAlterTime,
+				TimeValue: -90 * time.Second,
+			})
+
+			setBonusAura.ExposeToAPL(131619)
 		},
 	},
 })

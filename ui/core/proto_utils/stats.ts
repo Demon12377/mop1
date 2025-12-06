@@ -1,9 +1,9 @@
+import { translatePseudoStat, translateStat } from '../../i18n/localization';
 import * as Mechanics from '../constants/mechanics.js';
 import { CURRENT_API_VERSION } from '../constants/other.js';
 import { Class, PseudoStat, Stat, UnitStats } from '../proto/common.js';
 import { StatCapConfig, StatCapType, UIStat as UnitStatProto } from '../proto/ui.js';
 import { getEnumValues } from '../utils.js';
-import { getClassPseudoStatName, getStatName } from './names.js';
 import { migrateOldProto, ProtoConversionMap } from './utils.js';
 
 const STATS_LEN = getEnumValues(Stat).length;
@@ -70,10 +70,12 @@ export class UnitStat {
 	}
 
 	getFullName(playerClass: Class): string {
-		if (this.isStat()) {
-			return getStatName(this.stat!);
+		const fullName = this.isStat() ? translateStat(this.getStat()) : translatePseudoStat(this.getPseudoStat());
+		// Not sure if this is needed anymore, but keeping it for now
+		if (playerClass == Class.ClassHunter) {
+			return fullName.replace('Physical', 'Ranged');
 		} else {
-			return getClassPseudoStatName(this.getPseudoStat(), playerClass);
+			return fullName.replace('Physical', 'Melee');
 		}
 	}
 
@@ -219,7 +221,9 @@ export class UnitStat {
 	}
 
 	toProto(): UnitStatProto {
-		const protoMessage = UnitStatProto.create({});
+		const protoMessage = UnitStatProto.create({
+			apiVersion: CURRENT_API_VERSION,
+		});
 
 		if (this.isStat()) {
 			protoMessage.unitStat = {
@@ -239,12 +243,21 @@ export class UnitStat {
 	}
 
 	static fromProto(protoMessage: UnitStatProto): UnitStat {
+		if (protoMessage) {
+			UnitStat.updateProtoVersion(protoMessage);
+		}
 		if (protoMessage.unitStat.oneofKind == 'stat') {
 			return UnitStat.fromStat(protoMessage.unitStat.stat);
 		} else if (protoMessage.unitStat.oneofKind == 'pseudoStat') {
 			return UnitStat.fromPseudoStat(protoMessage.unitStat.pseudoStat);
 		} else {
 			return new UnitStat(null, null, null);
+		}
+	}
+
+	static updateProtoVersion(proto: UnitStatProto) {
+		if (!(proto.apiVersion < CURRENT_API_VERSION)) {
+			return;
 		}
 	}
 
@@ -472,7 +485,7 @@ export class Stats {
 			statDelta /= this.getPseudoStat(PseudoStat.PseudoStatCastSpeedMultiplier);
 		}
 
-		return statDelta;
+		return statDelta == 0 ? 1e-12 : statDelta;
 	}
 
 	computeStatCapsDelta(statCaps: Stats): Stats {
@@ -484,6 +497,18 @@ export class Stats {
 				return value > 0 ? this.computeGapToCap(UnitStat.fromPseudoStat(key), value) : 0;
 			}),
 		);
+	}
+
+	getBuffedStats(): Map<Stat, number> {
+		const buffedStats = new Map<Stat, number>();
+
+		for (const [statIdx, statValue] of this.stats.entries()) {
+			if (statValue > 0) {
+				buffedStats.set(statIdx, statValue);
+			}
+		}
+
+		return buffedStats;
 	}
 
 	asProtoArray(): Array<number> {
@@ -651,3 +676,29 @@ export function pseudoStatIsCapped(pseudoStat: PseudoStat, hardCaps: Stats, soft
 
 	return false;
 }
+
+export function statIsCapped(stat: Stat, hardCaps: Stats, softCaps: StatCap[]): boolean {
+	if (hardCaps.getStat(stat) != 0) {
+		return true;
+	}
+
+	for (const config of softCaps) {
+		if (config.unitStat.equalsStat(stat)) {
+			return true;
+		}
+	}
+
+	return false;
+}
+
+export const DEFAULT_GEM_STATS = [
+	Stat.StatHitRating,
+	Stat.StatCritRating,
+	Stat.StatHasteRating,
+	Stat.StatMasteryRating,
+	Stat.StatExpertiseRating,
+	Stat.StatPvpPowerRating,
+	Stat.StatPvpResilienceRating,
+];
+export const DEFAULT_CASTER_GEM_STATS = [...DEFAULT_GEM_STATS, Stat.StatIntellect, Stat.StatSpellPower];
+export const DEFAULT_HYBRID_CASTER_GEM_STATS = [...DEFAULT_CASTER_GEM_STATS, Stat.StatSpirit];

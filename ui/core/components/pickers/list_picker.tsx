@@ -1,6 +1,8 @@
 import clsx from 'clsx';
+import i18n from '../../../i18n/config';
 import tippy, { Instance as TippyInstance } from 'tippy.js';
 
+import { translateItemLabel } from '../../../i18n/localization';
 import { Player } from '../../player';
 import { APLValidation } from '../../proto/api';
 import { LogLevel } from '../../proto/common';
@@ -8,6 +10,7 @@ import { ActionId } from '../../proto_utils/action_id';
 import { EventID, TypedEvent } from '../../typed_event.js';
 import { existsInDOM } from '../../utils';
 import { Input, InputConfig } from '../input.js';
+import { TooltipButton } from '../tooltip_button';
 
 export type ListItemAction = 'create' | 'delete' | 'move' | 'copy';
 
@@ -79,12 +82,10 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 		this.config = { ...DEFAULT_CONFIG, ...config };
 		this.itemPickerPairs = [];
 
-		this.rootElem.appendChild(
-			<>
-				{config.title && <label className="list-picker-title form-label">{config.title}</label>}
-				<div className="list-picker-items"></div>
-			</>,
-		);
+		if (config.title) {
+			this.rootElem.appendChild(<label className="list-picker-title form-label">{config.title}</label>);
+		}
+		this.itemsDiv = this.rootElem.appendChild(<div className="list-picker-items hide" />) as HTMLElement;
 
 		if (this.config.hideUi) {
 			this.rootElem.classList.add('d-none');
@@ -95,13 +96,8 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 		}
 
 		if (this.config.titleTooltip) {
-			const titleTooltip = tippy(this.rootElem.querySelector('.list-picker-title') as HTMLElement, {
-				content: this.config.titleTooltip,
-			});
-			this.addOnDisposeCallback(() => titleTooltip?.destroy());
+			new TooltipButton(this.rootElem.querySelector('.list-picker-title') as HTMLElement, this.config.titleTooltip, ['ms-2']);
 		}
-
-		this.itemsDiv = this.rootElem.getElementsByClassName('list-picker-items')[0] as HTMLElement;
 
 		if (this.actionEnabled('create')) {
 			let newItemButton: HTMLElement | null = null;
@@ -110,11 +106,16 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 				newItemButton = ListPicker.makeActionElem('link-success', 'fa-plus');
 				newButtonTooltip = tippy(newItemButton, {
 					allowHTML: false,
-					content: `New ${config.itemLabel}`,
+					content: i18n.t('rotation_tab.apl.floatingActionBar.new', { itemName: config.itemLabel }),
 				});
 				this.addOnDisposeCallback(() => newButtonTooltip?.destroy());
 			} else {
-				newItemButton = (<button className="btn btn-primary">New {config.itemLabel}</button>) as HTMLButtonElement;
+				newItemButton = (
+					<button className="btn btn-primary">
+						<i className="fa fa-plus me-2" />
+						{i18n.t('rotation_tab.apl.floatingActionBar.new', { itemName: config.itemLabel })}
+					</button>
+				) as HTMLButtonElement;
 			}
 			newItemButton.classList.add('list-picker-new-button');
 			newItemButton.addEventListener(
@@ -154,6 +155,12 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 			for (let i = 0; i < numToAdd; i++) {
 				this.addNewPicker();
 			}
+		}
+
+		if (newValue.length === 0) {
+			this.itemsDiv.classList.add('hide');
+		} else if (this.itemsDiv.classList.contains('hide')) {
+			this.itemsDiv.classList.remove('hide');
 		}
 
 		// Set all the values.
@@ -238,7 +245,7 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 
 				const deleteButtonTooltip = tippy(deleteButton, {
 					allowHTML: false,
-					content: `Delete ${this.config.itemLabel}`,
+					content: i18n.t('common.list_picker.delete_item', { itemLabel: translateItemLabel(this.config.itemLabel) }),
 				});
 
 				deleteButton.addEventListener(
@@ -262,7 +269,7 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 			popover.appendChild(copyButton);
 			const copyButtonTooltip = tippy(copyButton, {
 				allowHTML: false,
-				content: `Copy to New ${this.config.itemLabel}`,
+				content: i18n.t('common.list_picker.copy_to_new', { itemLabel: translateItemLabel(this.config.itemLabel) }),
 			});
 
 			copyButton.addEventListener(
@@ -291,7 +298,7 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 
 			const moveButtonTooltip = tippy(moveButton, {
 				allowHTML: false,
-				content: 'Move (Drag+Drop)',
+				content: i18n.t('common.list_picker.move_drag_drop'),
 			});
 
 			moveButton.addEventListener(
@@ -458,12 +465,12 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 
 					const srcIdx = curDragData.item.idx;
 					let dstIdx = index;
-					
+
 					const targetRect = itemContainer.getBoundingClientRect();
 					if (event.clientY > targetRect.top + targetRect.height / 2) {
 						dstIdx++;
 					}
-					
+
 					const newList = this.config.getValue(this.modObject);
 					let arrElem;
 
@@ -537,21 +544,21 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 			LogLevel.Information,
 			{
 				icon: 'fa-info-circle',
-				header: 'Additional Information&#58;',
+				header: i18n.t('common.list_picker.additional_information'),
 			},
 		],
 		[
 			LogLevel.Warning,
 			{
 				icon: 'fa-exclamation-triangle',
-				header: 'This action has warnings, and might not behave as expected.',
+				header: i18n.t('common.list_picker.action_has_warnings'),
 			},
 		],
 		[
 			LogLevel.Error,
 			{
 				icon: 'fa-exclamation-triangle',
-				header: 'This action has errors, and will not behave as expected.',
+				header: i18n.t('common.list_picker.action_has_errors'),
 			},
 		],
 	]);
@@ -561,7 +568,7 @@ export class ListPicker<ModObject, ItemType> extends Input<ModObject, Array<Item
 		validationElem.setAttribute('data-bs-html', 'true');
 		const validationTooltip = tippy(validationElem, {
 			theme: 'dropdown-tooltip',
-			content: 'Warnings',
+			content: i18n.t('common.list_picker.warnings'),
 		});
 
 		itemHeaderElem.appendChild(validationElem);

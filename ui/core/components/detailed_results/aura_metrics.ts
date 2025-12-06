@@ -1,5 +1,6 @@
 import { OtherAction } from '../../proto/common';
 import { AuraMetrics } from '../../proto_utils/sim_result';
+import i18n from '../../../i18n/config';
 import { ColumnSortType, MetricsTable } from './metrics_table/metrics_table';
 import { ResultComponentConfig, SimResultData } from './result_component';
 
@@ -21,17 +22,17 @@ export class AuraMetricsTable extends MetricsTable<AuraMetrics> {
 				};
 			}),
 			{
-				name: 'Procs',
+				name: i18n.t('results_tab.details.columns.procs'),
 				getValue: (metric: AuraMetrics) => metric.averageProcs,
 				getDisplayString: (metric: AuraMetrics) => metric.averageProcs.toFixed(2),
 			},
 			{
-				name: 'PPM',
+				name: i18n.t('results_tab.details.columns.ppm'),
 				getValue: (metric: AuraMetrics) => metric.ppm,
 				getDisplayString: (metric: AuraMetrics) => metric.ppm.toFixed(2),
 			},
 			{
-				name: 'Uptime',
+				name: i18n.t('results_tab.details.columns.uptime'),
 				sort: ColumnSortType.Descending,
 				getValue: (metric: AuraMetrics) => metric.uptimePercent,
 				getDisplayString: (metric: AuraMetrics) => metric.uptimePercent.toFixed(2) + '%',
@@ -69,6 +70,6 @@ export class AuraMetricsTable extends MetricsTable<AuraMetrics> {
 	}
 
 	filterMetrics(metrics: Array<AuraMetrics>): Array<AuraMetrics> {
-		return metrics.filter(aura => !(aura.unit?.isPet && aura.actionId.otherId === OtherAction.OtherActionMove));
+		return metrics.filter(aura => !aura.unit?.isPet);
 	}
 }

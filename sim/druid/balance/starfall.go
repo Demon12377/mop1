@@ -15,7 +15,7 @@ const (
 
 func (moonkin *BalanceDruid) registerStarfallSpell() {
 
-	numberOfTicks := core.TernaryInt32(moonkin.Env.GetNumTargets() > 1, 20, 10)
+	numberOfTicks := core.TernaryInt32(moonkin.Env.TotalTargetCount() > 1, 20, 10)
 	tickLength := time.Second
 
 	starfallTickSpell := moonkin.RegisterSpell(druid.Humanoid|druid.Moonkin, core.SpellConfig{
@@ -39,7 +39,7 @@ func (moonkin *BalanceDruid) registerStarfallSpell() {
 	moonkin.Starfall = moonkin.RegisterSpell(druid.Humanoid|druid.Moonkin, core.SpellConfig{
 		ActionID:    core.ActionID{SpellID: 48505},
 		SpellSchool: core.SpellSchoolArcane,
-		ProcMask:    core.ProcMaskSpellProc,
+		ProcMask:    core.ProcMaskEmpty,
 		Flags:       core.SpellFlagAPL,
 
 		RelatedSelfBuff: moonkin.GetOrRegisterAura(core.Aura{
@@ -69,7 +69,9 @@ func (moonkin *BalanceDruid) registerStarfallSpell() {
 			NumberOfTicks: numberOfTicks,
 			TickLength:    tickLength,
 			OnTick: func(sim *core.Simulation, target *core.Unit, _ *core.Dot) {
-				starfallTickSpell.Cast(sim, target)
+				if sim.CurrentTime > 0 {
+					starfallTickSpell.Cast(sim, target)
+				}
 			},
 		},
 

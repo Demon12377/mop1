@@ -2,10 +2,10 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import { SortDirection } from '../../constants/other';
-import { EP_TOOLTIP } from '../../constants/tooltips';
 import { setItemQualityCssClass } from '../../css_utils';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Player } from '../../player';
+import i18n from '../../../i18n/config';
 import { Class, GemColor, ItemLevelState, ItemQuality, ItemRandomSuffix, ItemSlot, ItemSpec } from '../../proto/common';
 import { DatabaseFilters, RepFaction, UIEnchant as Enchant, UIGem as Gem, UIItem as Item, UIItem_FactionRestriction } from '../../proto/ui';
 import { ActionId } from '../../proto_utils/action_id';
@@ -25,11 +25,11 @@ import {
 	makeShowMatchingGemsSelector,
 } from '../inputs/other_inputs';
 import { ItemNotice } from '../item_notice/item_notice';
-import Toast from '../toast';
 import { Clusterize } from '../virtual_scroll/clusterize';
 import { FiltersMenu } from './filters_menu';
-import { SelectorModalTabs } from './selector_modal';
+import { SelectorModalTabs, getTranslatedTabLabel } from './selector_modal';
 import { createNameDescriptionLabel } from './utils';
+import { trackEvent } from '../../../tracking/utils';
 
 export interface ItemData<T extends ItemListType> {
 	item: T;
@@ -114,7 +114,6 @@ export default class ItemList<T extends ItemListType> {
 		this.currentFilters = this.player.sim.getFilters();
 
 		const selected = label === currentTab;
-		const itemLabel = label === SelectorModalTabs.Reforging ? 'Reforge' : 'Item';
 
 		const sortByIlvl = (event: MouseEvent) => {
 			event.preventDefault();
@@ -135,17 +134,17 @@ export default class ItemList<T extends ItemListType> {
 		const show2hWeaponRef = ref<HTMLDivElement>();
 		const modalListRef = ref<HTMLUListElement>();
 		const removeButtonRef = ref<HTMLButtonElement>();
-		const compareLabelRef = ref<HTMLElement>();
+		const compareLabelRef = ref<HTMLHeadingElement>();
 
 		const showEPOptions = ![ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2].includes(currentSlot);
 
 		this.tabContent = (
 			<div id={this.id} className={`selector-modal-tab-pane tab-pane fade ${selected ? 'active show' : ''}`}>
 				<div className="selector-modal-filters">
-					<input ref={searchRef} className="selector-modal-search form-control" type="text" placeholder="Search..." />
+					<input ref={searchRef} className="selector-modal-search form-control" type="text" placeholder={i18n.t('common.search')} />
 					{label === SelectorModalTabs.Items && (
 						<button ref={filtersButtonRef} className="selector-modal-filters-button btn btn-primary">
-							Filters
+							{i18n.t('gear_tab.gear_picker.filters_button')}
 						</button>
 					)}
 					<div ref={phaseSelectorRef} className="selector-modal-phase-selector" />
@@ -154,34 +153,40 @@ export default class ItemList<T extends ItemListType> {
 					<div ref={matchingGemsRef} className="sim-input selector-modal-boolean-option selector-modal-show-matching-gems" />
 					{showEPOptions && <div ref={showEpValuesRef} className="sim-input selector-modal-boolean-option selector-modal-show-ep-values" />}
 					<button ref={removeButtonRef} className="selector-modal-remove-button btn btn-danger">
-						Unequip Item
+						{i18n.t('gear_tab.gear_picker.unequip_item')}
 					</button>
 				</div>
 				<div className="selector-modal-list-labels">
-					<span className="item-label">
-						<small>{itemLabel}</small>
-					</span>
-					{label === SelectorModalTabs.Items && (
-						<label className="source-label">
-							<small>Source</small>
-						</label>
-					)}
 					{(label === SelectorModalTabs.Items || label === SelectorModalTabs.Upgrades) && (
-						<label className="ilvl-label interactive" onclick={sortByIlvl}>
-							<small>ILvl</small>
-						</label>
+						<h6 className="ilvl-label interactive" onclick={sortByIlvl}>
+							{i18n.t('gear_tab.gear_picker.table_headers.ilvl')}
+						</h6>
 					)}
-					{showEPOptions && (
-						<span className="ep-label interactive" onclick={sortByEP}>
-							<small>EP</small>
-							<i className="fa-solid fa-plus-minus fa-2xs"></i>
-							<button ref={epButtonRef} className="btn btn-link p-0 ms-1">
-								<i className="far fa-question-circle fa-lg"></i>
-							</button>
-						</span>
-					)}
-					<span className="favorite-label"></span>
-					<span ref={compareLabelRef} className="compare-label hide"></span>
+					<h6 className="item-label">
+						{label === SelectorModalTabs.Items
+							? getTranslatedTabLabel(SelectorModalTabs.Items)
+							: label === SelectorModalTabs.Enchants
+								? getTranslatedTabLabel(SelectorModalTabs.Enchants)
+								: [SelectorModalTabs.Gem1, SelectorModalTabs.Gem2, SelectorModalTabs.Gem3].includes(label as SelectorModalTabs)
+									? getTranslatedTabLabel(SelectorModalTabs.Gem1)
+									: label === SelectorModalTabs.Reforging
+										? getTranslatedTabLabel(SelectorModalTabs.Reforging)
+										: label === SelectorModalTabs.Upgrades
+											? getTranslatedTabLabel(SelectorModalTabs.Upgrades)
+											: label === SelectorModalTabs.Tinkers
+												? getTranslatedTabLabel(SelectorModalTabs.Tinkers)
+												: ''}
+					</h6>
+					{label === SelectorModalTabs.Items && <h6 className="source-label">{i18n.t('gear_tab.gear_picker.table_headers.source')}</h6>}
+					<h6 className="ep-label interactive" onclick={sortByEP}>
+						<span>EP</span>
+						<i className="fa-solid fa-plus-minus fa-2xs" />
+						<button ref={epButtonRef} className="btn btn-link p-0 ms-1">
+							<i className="far fa-question-circle fa-lg" />
+						</button>
+					</h6>
+					<h6 className="favorite-label" />
+					<h6 ref={compareLabelRef} className="compare-label hide" />
 				</div>
 				<ul ref={modalListRef} className="selector-modal-list"></ul>
 			</div>
@@ -206,7 +211,7 @@ export default class ItemList<T extends ItemListType> {
 			if (showEpValuesRef.value) makeShowEPValuesSelector(showEpValuesRef.value, player.sim);
 
 			tippy(epButtonRef.value!, {
-				content: EP_TOOLTIP,
+				content: i18n.t('gear_tab.gear_picker.ep_tooltip'),
 			});
 		}
 
@@ -217,7 +222,6 @@ export default class ItemList<T extends ItemListType> {
 			}
 		}
 
-		// TODO: Turn this back on once we have proper phase data
 		if (phaseSelectorRef.value) makePhaseSelector(phaseSelectorRef.value, player.sim);
 
 		if (label === SelectorModalTabs.Items) {
@@ -263,24 +267,24 @@ export default class ItemList<T extends ItemListType> {
 
 			switch (label) {
 				case SelectorModalTabs.Enchants:
-					removeButton.textContent = 'Remove Enchant';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_enchant');
 					break;
 				case SelectorModalTabs.Tinkers:
-					removeButton.textContent = 'Remove Tinkers';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_tinkers');
 					break;
 				case SelectorModalTabs.Reforging:
-					removeButton.textContent = 'Remove Reforge';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_reforge');
 					break;
 				case SelectorModalTabs.RandomSuffixes:
-					removeButton.textContent = 'Remove Random Suffix';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_random_suffix');
 					break;
 				case SelectorModalTabs.Upgrades:
-					removeButton.textContent = 'Remove Upgrade';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_upgrade');
 					break;
 				case SelectorModalTabs.Gem1:
 				case SelectorModalTabs.Gem2:
 				case SelectorModalTabs.Gem3:
-					removeButton.textContent = 'Remove Gem';
+					removeButton.textContent = i18n.t('gear_tab.gear_picker.remove_buttons.remove_gem');
 					break;
 			}
 		}
@@ -389,7 +393,7 @@ export default class ItemList<T extends ItemListType> {
 			return true;
 		});
 
-		if ([ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2].includes(this.slot)) {
+		if ([ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2].includes(this.slot) || this.label === SelectorModalTabs.Upgrades) {
 			// Trinket EP is weird so just sort by ilvl instead.
 			this.sortBy = ItemListSortBy.ILVL;
 		} else {
@@ -482,6 +486,9 @@ export default class ItemList<T extends ItemListType> {
 
 		const listItemElem = (
 			<li className={`selector-modal-list-item ${equippedItemID === itemData.id ? 'active' : ''}`} dataset={{ idx: item.idx.toString() }}>
+				{(this.label === SelectorModalTabs.Items || this.label === SelectorModalTabs.Upgrades) && (
+					<div className="selector-modal-list-item-ilvl-container">{itemData.ilvl || (itemData.item as unknown as Item).ilvl}</div>
+				)}
 				<div className="selector-modal-list-label-cell gap-1" ref={labelCellElem}>
 					<a className="selector-modal-list-item-link" ref={anchorElem} dataset={{ whtticon: 'false' }}>
 						<img className="selector-modal-list-item-icon" ref={iconElem}></img>
@@ -493,9 +500,6 @@ export default class ItemList<T extends ItemListType> {
 				</div>
 				{this.label === SelectorModalTabs.Items && (
 					<div className="selector-modal-list-item-source-container">{this.getSourceInfo(itemData.item as unknown as Item, this.player.sim)}</div>
-				)}
-				{(this.label === SelectorModalTabs.Items || this.label === SelectorModalTabs.Upgrades) && (
-					<div className="selector-modal-list-item-ilvl-container">{itemData.ilvl || (itemData.item as unknown as Item).ilvl}</div>
 				)}
 				{![ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2].includes(this.slot) && (
 					<div className="selector-modal-list-item-ep">
@@ -609,17 +613,11 @@ export default class ItemList<T extends ItemListType> {
 				compareButton.value!.addEventListener('click', () => {
 					const hasItem = checkHasItem();
 					simUI.bt?.[hasItem ? 'removeItem' : 'addItem'](ItemSpec.create({ id: itemData.id }));
-
-					new Toast({
-						delay: 1000,
-						variant: 'success',
-						body: (
-							<>
-								<strong>{itemData.name}</strong> was {hasItem ? <>removed from the batch</> : <>added to the batch</>}.
-							</>
-						),
+					trackEvent({
+						action: 'click',
+						category: 'batch',
+						label: hasItem ? 'remove-item' : 'add-item',
 					});
-					// TODO: should we open the bulk sim UI or should we run in the background showing progress, and then sort the items in the picker?
 				});
 			}
 		}
@@ -795,10 +793,11 @@ export default class ItemList<T extends ItemListType> {
 	}
 
 	private bindToggleCompare(element: Element) {
-		const toggleCompare = () => element.classList[!this.player.sim.getShowExperimental() ? 'add' : 'remove']('hide');
-		toggleCompare();
-		this.player.sim.showExperimentalChangeEmitter.on(() => {
-			toggleCompare();
-		});
+		element.classList['remove']('hide');
+		//const toggleCompare = () => element.classList[!this.player.sim.getShowExperimental() ? 'add' : 'remove']('hide');
+		//toggleCompare();
+		//this.player.sim.showExperimentalChangeEmitter.on(() => {
+		//	toggleCompare();
+		//});
 	}
 }

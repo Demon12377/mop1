@@ -1,6 +1,7 @@
 import { Chart } from 'chart.js';
 
 import { ResultComponent, ResultComponentConfig, SimResultData } from './result_component.js';
+import i18n from '../../../i18n/config';
 
 export class DpsHistogram extends ResultComponent {
 	constructor(config: ResultComponentConfig) {
@@ -52,7 +53,7 @@ export class DpsHistogram extends ResultComponent {
 				plugins: {
 					title: {
 						display: true,
-						text: 'DPS Histogram',
+						text: i18n.t('results_tab.details.damage.dps_histogram'),
 					},
 					legend: {
 						display: false,

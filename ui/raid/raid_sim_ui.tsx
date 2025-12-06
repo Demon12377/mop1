@@ -1,6 +1,6 @@
 import { default as pako } from 'pako';
 
-import { EmbeddedDetailedResults } from '../core/components/detailed_results';
+import { DetailedResults } from '../core/components/detailed_results';
 import { addRaidSimAction, RaidSimResultsManager, ReferenceData } from '../core/components/raid_sim_action';
 import { raidSimStatus } from '../core/launched_sims';
 import { Player } from '../core/player';
@@ -12,6 +12,7 @@ import { getPlayerSpecFromPlayer, makeDefaultBlessings } from '../core/proto_uti
 import { Sim } from '../core/sim';
 import { SimUI } from '../core/sim_ui';
 import { EventID, TypedEvent } from '../core/typed_event';
+import i18n from '../i18n/config';
 import { BlessingsPicker } from './blessings_picker';
 import { RaidJsonExporter } from './components/exporters';
 import { RaidJsonImporter, RaidWCLImporter } from './components/importers';
@@ -28,7 +29,6 @@ const extraKnownIssues: Array<string> = [
 ];
 
 export class RaidSimUI extends SimUI {
-	private readonly config: RaidSimConfig;
 	private raidSimResultsManager: RaidSimResultsManager | null = null;
 	public raidPicker: RaidPicker | null = null;
 	public blessingsPicker: BlessingsPicker | null = null;
@@ -47,8 +47,6 @@ export class RaidSimUI extends SimUI {
 			simStatus: raidSimStatus,
 			knownIssues: (config.knownIssues || []).concat(extraKnownIssues),
 		});
-
-		this.config = config;
 
 		this.sim.raid.compChangeEmitter.on(eventID => this.compChangeEmitter.emit(eventID));
 		[this.compChangeEmitter, this.sim.changeEmitter].forEach(emitter => emitter.on(eventID => this.changeEmitter.emit(eventID)));
@@ -117,9 +115,9 @@ export class RaidSimUI extends SimUI {
 
 	private addDetailedResultsTab() {
 		const detailedResults = (<div className="detailed-results"></div>) as HTMLElement;
-		this.addTab('Results', 'detailed-results-tab', detailedResults);
+		this.addTab(i18n.t('results_tab.title'), 'detailed-results-tab', detailedResults);
 
-		new EmbeddedDetailedResults(detailedResults, this, this.raidSimResultsManager!);
+		new DetailedResults(detailedResults, this, this.raidSimResultsManager!);
 	}
 
 	private recomputeSettingsLayout() {

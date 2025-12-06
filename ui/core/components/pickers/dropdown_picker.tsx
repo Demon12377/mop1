@@ -6,6 +6,7 @@ import { ref } from 'tsx-vanilla';
 import { TypedEvent } from '../../typed_event.js';
 import { existsInDOM } from '../../utils.js';
 import { Input, InputConfig } from '../input.js';
+import i18n from '../../../i18n/config';
 
 export interface DropdownValueConfig<V> {
 	value: V;
@@ -194,7 +195,19 @@ export class DropdownPicker<ModObject, T, V = T> extends Input<ModObject, T, V> 
 		buttonElem.setAttribute('data-bs-toggle', 'dropdown');
 		buttonElem.setAttribute('aria-expanded', 'false');
 
-		if (!buttonElem.childNodes.length) buttonElem.replaceChildren(path[path.length - 1] + ' \u00bb');
+		if (!buttonElem.childNodes.length) {
+			const submenuText = path[path.length - 1];
+			// Only translate if it's a string
+			let translatedText = submenuText;
+			if (typeof submenuText === 'string' && /^[a-z_]+$/.test(submenuText)) {
+				try {
+					translatedText = i18n.t(`rotation_tab.apl.submenus.${submenuText}`);
+				} catch (e) {
+					translatedText = submenuText;
+				}
+			}
+			buttonElem.replaceChildren(translatedText + ' \u00bb');
+		}
 
 		const listRef = ref<HTMLUListElement>();
 

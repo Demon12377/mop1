@@ -1,6 +1,10 @@
 package warlock
 
-import "github.com/wowsims/mop/sim/core"
+import (
+	"time"
+
+	"github.com/wowsims/mop/sim/core"
+)
 
 func (warlock *Warlock) registerCurseOfElements() {
 	warlock.CurseOfElementsAuras = warlock.NewEnemyAuraArray(core.CurseOfElementsAura)
@@ -12,8 +16,15 @@ func (warlock *Warlock) registerCurseOfElements() {
 		Flags:          core.SpellFlagAPL,
 		ClassSpellMask: WarlockSpellCurseOfElements,
 
-		ManaCost: core.ManaCostOptions{BaseCostPercent: 4},
-		Cast:     core.CastConfig{DefaultCast: core.Cast{GCD: core.GCDDefault}},
+		ManaCost: core.ManaCostOptions{
+			BaseCostPercent: 4,
+		},
+		Cast: core.CastConfig{
+			DefaultCast: core.Cast{
+				GCDMin: time.Millisecond * 500,
+				GCD:    core.GCDMin,
+			},
+		},
 
 		ThreatMultiplier: 1,
 

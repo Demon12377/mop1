@@ -213,6 +213,17 @@ var MapWeaponSubClassToWeaponType = map[int]proto.WeaponType{
 	ITEM_SUBCLASS_WEAPON_FISHING_POLE: proto.WeaponType_WeaponTypeUnknown,
 }
 
+var MapMinReputationToRepLevel = map[int]proto.RepLevel{
+	0: proto.RepLevel_RepLevelUnknown,
+	1: proto.RepLevel_RepLevelHostile,
+	2: proto.RepLevel_RepLevelUnfriendly,
+	3: proto.RepLevel_RepLevelNeutral,
+	4: proto.RepLevel_RepLevelFriendly,
+	5: proto.RepLevel_RepLevelHonored,
+	6: proto.RepLevel_RepLevelRevered,
+	7: proto.RepLevel_RepLevelExalted,
+}
+
 type EnchantMetaType struct {
 	ItemType   proto.ItemType
 	WeaponType proto.WeaponType

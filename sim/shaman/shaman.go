@@ -13,8 +13,7 @@ const TotemRefreshTime5M = time.Second * 295
 
 // Damage Done By Caster setup
 const (
-	DDBC_4pcT12 int = iota
-	DDBC_FrostbrandWeapon
+	DDBC_FrostbrandWeapon int = iota
 	DDBC_UnleashedFury
 	DDBC_2PT16
 
@@ -31,10 +30,12 @@ const (
 func NewShaman(character *core.Character, talents string, selfBuffs SelfBuffs, thunderstormRange bool, feleAutocastOptions *proto.FeleAutocastSettings) *Shaman {
 	if feleAutocastOptions == nil {
 		feleAutocastOptions = &proto.FeleAutocastSettings{
-			AutocastFireblast: true,
-			AutocastFirenova:  true,
-			AutocastImmolate:  true,
-			AutocastEmpower:   false,
+			AutocastFireblast:   true,
+			AutocastFirenova:    true,
+			AutocastImmolate:    true,
+			AutocastEmpower:     false,
+			NoImmolateWfunleash: false,
+			NoImmolateDuration:  0,
 		}
 	}
 	shaman := &Shaman{
@@ -71,11 +72,24 @@ func NewShaman(character *core.Character, talents string, selfBuffs SelfBuffs, t
 	return shaman
 }
 
+func (shaman *Shaman) GetImbueProcMask(imbue proto.ShamanImbue) core.ProcMask {
+	var mask core.ProcMask
+	if shaman.SelfBuffs.ImbueMH == imbue || shaman.SelfBuffs.ImbueMHSwap == imbue {
+		mask |= core.ProcMaskMeleeMH
+	}
+	if shaman.SelfBuffs.ImbueOH == imbue {
+		mask |= core.ProcMaskMeleeOH
+	}
+	return mask
+}
+
 // Which buffs this shaman is using.
 type SelfBuffs struct {
-	Shield  proto.ShamanShield
-	ImbueMH proto.ShamanImbue
-	ImbueOH proto.ShamanImbue
+	Shield      proto.ShamanShield
+	ImbueMH     proto.ShamanImbue
+	ImbueOH     proto.ShamanImbue
+	ImbueMHSwap proto.ShamanImbue
+	ImbueOHSwap proto.ShamanImbue
 }
 
 // Indexes into NextTotemDrops for self buffs
@@ -113,14 +127,15 @@ type Shaman struct {
 	LavaBeam          *core.Spell
 	LavaBeamOverloads [2][]*core.Spell
 
-	LavaBurst         *core.Spell
-	LavaBurstOverload [2]*core.Spell
-	FireNova          *core.Spell
-	FireNovas         []*core.Spell
-	LavaLash          *core.Spell
-	Stormstrike       *core.Spell
-	PrimalStrike      *core.Spell
-	Stormblast        *core.Spell
+	LavaBurst             *core.Spell
+	LavaBurstOverload     [2]*core.Spell
+	FireNova              *core.Spell
+	FireNovas             []*core.Spell
+	LavaLash              *core.Spell
+	Stormstrike           *core.Spell
+	PrimalStrike          *core.Spell
+	Stormblast            *core.Spell
+	StormstrikeCastResult *core.SpellResult
 
 	LightningShield       *core.Spell
 	LightningShieldDamage *core.Spell
@@ -155,11 +170,12 @@ type Shaman struct {
 	SearingTotem       *core.Spell
 	TremorTotem        *core.Spell
 
-	UnleashElements *core.Spell
-	UnleashLife     *core.Spell
-	UnleashFlame    *core.Spell
-	UnleashFrost    *core.Spell
-	UnleashWind     *core.Spell
+	UnleashElements     *core.Spell
+	UnleashLife         *core.Spell
+	UnleashFlame        *core.Spell
+	UnleashFrost        *core.Spell
+	UnleashWind         *core.Spell
+	WindfuryUnleashAura *core.Aura
 
 	MaelstromWeaponAura           *core.Aura
 	AncestralSwiftnessInstantAura *core.Aura
@@ -179,8 +195,7 @@ type Shaman struct {
 	Riptide            *core.Spell
 	EarthShield        *core.Spell
 
-	waterShieldManaMetrics   *core.ResourceMetrics
-	VolcanicRegalia4PT12Aura *core.Aura
+	waterShieldManaMetrics *core.ResourceMetrics
 
 	// Item sets
 	T14Ele4pc *core.Aura
@@ -225,6 +240,7 @@ func (shaman *Shaman) Initialize() {
 	shaman.registerShocks()
 	shaman.registerUnleashElements()
 	shaman.registerAscendanceSpell()
+	shaman.registerShamanisticRageSpell()
 
 	shaman.registerBloodlustCD()
 	shaman.registerStormlashCD()
@@ -260,7 +276,9 @@ func (shaman *Shaman) RegisterHealingSpells() {
 }
 
 func (shaman *Shaman) Reset(sim *core.Simulation) {
+}
 
+func (shaman *Shaman) OnEncounterStart(sim *core.Simulation) {
 }
 
 func (shaman *Shaman) calcDamageStormstrikeCritChance(sim *core.Simulation, target *core.Unit, baseDamage float64, spell *core.Spell) *core.SpellResult {
@@ -312,6 +330,8 @@ const (
 	SpellMaskPrimalStrike
 	SpellMaskStormstrikeCast
 	SpellMaskStormstrikeDamage
+	SpellMaskStormblastCast
+	SpellMaskStormblastDamage
 	SpellMaskEarthShield
 	SpellMaskFulmination
 	SpellMaskFrostShock
@@ -325,6 +345,7 @@ const (
 	SpellMaskFeralSpirit
 	SpellMaskElementalMastery
 	SpellMaskAscendance
+	SpellMaskWindLash
 	SpellMaskSpiritwalkersGrace
 	SpellMaskShamanisticRage
 	SpellMaskElementalBlast
@@ -333,6 +354,7 @@ const (
 	SpellMaskBloodlust
 
 	SpellMaskStormstrike  = SpellMaskStormstrikeCast | SpellMaskStormstrikeDamage
+	SpellMaskStormblast   = SpellMaskStormblastCast | SpellMaskStormblastDamage
 	SpellMaskFlameShock   = SpellMaskFlameShockDirect | SpellMaskFlameShockDot
 	SpellMaskFire         = SpellMaskFlameShock | SpellMaskLavaBurst | SpellMaskLavaBurstOverload | SpellMaskLavaLash | SpellMaskFireNova | SpellMaskUnleashFlame | SpellMaskLavaBeam | SpellMaskLavaBeamOverload | SpellMaskElementalBlast | SpellMaskElementalBlastOverload
 	SpellMaskNature       = SpellMaskLightningBolt | SpellMaskLightningBoltOverload | SpellMaskChainLightning | SpellMaskChainLightningOverload | SpellMaskEarthShock | SpellMaskThunderstorm | SpellMaskFulmination | SpellMaskElementalBlast | SpellMaskElementalBlastOverload
@@ -341,4 +363,5 @@ const (
 	SpellMaskShock        = SpellMaskFlameShock | SpellMaskEarthShock | SpellMaskFrostShock
 	SpellMaskTotem        = SpellMaskMagmaTotem | SpellMaskSearingTotem | SpellMaskFireElementalTotem | SpellMaskEarthElementalTotem | SpellMaskStormlashTotem
 	SpellMaskInstantSpell = SpellMaskAscendance | SpellMaskFeralSpirit | SpellMaskUnleashElements | SpellMaskBloodlust
+	SpellMaskImbue        = SpellMaskFrostbrandWeapon | SpellMaskWindfuryWeapon | SpellMaskFlametongueWeapon
 )

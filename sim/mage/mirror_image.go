@@ -73,24 +73,24 @@ func (mage *Mage) NewMirrorImage() *MirrorImage {
 	}
 
 	mirrorImageBaseStats := stats.Stats{
-		stats.Mana: 27020, // Confirmed via ingame bars at 80
+		stats.Mana: 300000, // Confirmed via ingame bars at 90
 	}
 
 	mirrorImage := &MirrorImage{
 		Pet: core.NewPet(core.PetConfig{
-			Name:                     "Mirror Image",
-			Owner:                    &mage.Character,
-			BaseStats:                mirrorImageBaseStats,
-			NonHitExpStatInheritance: mirrorImageStatInheritance,
-			EnabledOnStart:           false,
-			IsGuardian:               true,
+			Name:                           "Mirror Image",
+			Owner:                          &mage.Character,
+			BaseStats:                      mirrorImageBaseStats,
+			NonHitExpStatInheritance:       mirrorImageStatInheritance,
+			EnabledOnStart:                 false,
+			IsGuardian:                     true,
+			HasDynamicCastSpeedInheritance: true,
 		}),
 		mageOwner: mage,
 		hasGlyph:  hasGlyph,
 	}
 
 	mirrorImage.EnableManaBar()
-	mirrorImage.EnableDynamicStats(mirrorImageStatInheritance)
 
 	mage.AddPet(mirrorImage)
 
@@ -120,15 +120,17 @@ func (mi *MirrorImage) Initialize() {
 func (mi *MirrorImage) Reset(_ *core.Simulation) {
 }
 
+func (mi *MirrorImage) OnEncounterStart(_ *core.Simulation) {
+}
+
 func (mi *MirrorImage) ExecuteCustomRotation(sim *core.Simulation) {
 	mi.mainSpell.Cast(sim, mi.CurrentTarget)
 }
 
 func (mi *MirrorImage) registerFrostboltSpell() {
-
-	frostBoltCoefficient := 1.65
-	frostBoltScaling := 1.65
-	frostBoltVariance := 0.1
+	frostBoltCoefficient := 1.64999997616
+	frostBoltScaling := 1.64999997616
+	frostBoltVariance := 0.10000000149
 
 	mi.Frostbolt = mi.RegisterSpell(core.SpellConfig{
 		ActionID:     core.ActionID{SpellID: 59638},
@@ -166,9 +168,9 @@ func (mi *MirrorImage) registerFrostboltSpell() {
 // *******************************************************
 func (mi *MirrorImage) registerFireballSpell() {
 
-	fireBallCoefficient := 1.8
-	fireBallScaling := 1.8
-	fireBallVariance := 0.2
+	fireBallCoefficient := 1.79999995232
+	fireBallScaling := 1.79999995232
+	fireBallVariance := 0.20000000298
 
 	mi.Fireball = mi.RegisterSpell(core.SpellConfig{
 		ActionID:     core.ActionID{SpellID: 88082}, // confirmed via logs
@@ -206,9 +208,9 @@ func (mi *MirrorImage) registerFireballSpell() {
 // *******************************************************
 func (mi *MirrorImage) registerArcaneBlastSpell() {
 
-	arcaneBlastCoefficient := .9
-	arcaneBlastScaling := .9
-	arcaneBlastVariance := 0.15
+	arcaneBlastCoefficient := 0.89999997616
+	arcaneBlastScaling := 0.89999997616
+	arcaneBlastVariance := 0.15000000596
 
 	mi.ArcaneBlast = mi.RegisterSpell(core.SpellConfig{
 		ActionID:       core.ActionID{SpellID: 88084}, //Confirmed via logs
@@ -254,7 +256,7 @@ func (mi *MirrorImage) registerArcaneBlastSpell() {
 
 	mi.arcaneChargesAura = mi.GetOrRegisterAura(core.Aura{
 		Label:     "Mirror Images: Arcane Charges Aura",
-		ActionID:  core.ActionID{SpellID: 36032}, //idk if it gets its own
+		ActionID:  core.ActionID{SpellID: 36032}, //player gets 50% mod, images get 25% mod found on this spellid
 		Duration:  time.Second * 10,
 		MaxStacks: 4,
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
@@ -267,7 +269,7 @@ func (mi *MirrorImage) registerArcaneBlastSpell() {
 		},
 		OnStacksChange: func(aura *core.Aura, sim *core.Simulation, oldStacks int32, newStacks int32) {
 			stacks := float64(newStacks)
-			abDamageMod.UpdateFloatValue(0.5 * stacks * mi.mageOwner.T15_4PC_ArcaneChargeEffect)
+			abDamageMod.UpdateFloatValue(0.25 * stacks * mi.mageOwner.T15_4PC_ArcaneChargeEffect) //Images only gain 25% damage per charge
 			abCostMod.UpdateFloatValue(1.5 * stacks * mi.mageOwner.T15_4PC_ArcaneChargeEffect)
 		},
 	})

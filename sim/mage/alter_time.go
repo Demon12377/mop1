@@ -14,6 +14,7 @@ func (mage *Mage) registerAlterTimeCD() {
 	actionID := core.ActionID{SpellID: 108978}
 	mageSavedMana := 0.0
 	mageSavedHitPoints := 0.0
+	mageSavedIcicles := []float64{}
 	manaMetrics := mage.NewManaMetrics(actionID.WithTag(1))
 	healthMetrics := mage.NewHealthMetrics(actionID.WithTag(1))
 
@@ -30,11 +31,22 @@ func (mage *Mage) registerAlterTimeCD() {
 			mage.GainHealth(sim, math.Abs(healthDiff), healthMetrics)
 		}
 
+		mage.Icicles = mageSavedIcicles
+
 		for _, aura := range allAuras {
 			state := auraState[aura.Label]
 			if state != nil {
+				// Don't restore state for the currently channeled spell as this can break APL state
+				// Let it complete naturally or be interrupted properly by the APL
+				if mage.IsChanneling() && mage.ChanneledDot != nil && mage.ChanneledDot.Aura == aura {
+					continue
+				}
 				aura.RestoreState(*state, sim)
 			} else if aura.IsActive() {
+				// Don't deactivate the currently channeling spell aura
+				if mage.IsChanneling() && mage.ChanneledDot != nil && mage.ChanneledDot.Aura == aura {
+					continue
+				}
 				aura.Deactivate(sim)
 			}
 		}
@@ -52,6 +64,7 @@ func (mage *Mage) registerAlterTimeCD() {
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
 			mageSavedMana = mage.CurrentMana()
 			mageSavedHitPoints = mage.CurrentHealth()
+			mageSavedIcicles = mage.Icicles
 			for _, aura := range allAuras {
 				if aura.IsActive() {
 					state := aura.SaveState(sim)
@@ -102,8 +115,9 @@ func (mage *Mage) registerAlterTimeCD() {
 			return mage.AlterTimeAura.IsActive()
 		},
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
-			mage.AlterTimeAura.Deactivate(sim)
+			//Restore needs to happen before deactivating
 			restoreState(sim)
+			mage.AlterTimeAura.Deactivate(sim)
 		},
 	})
 

@@ -11,6 +11,8 @@ import { ActionId } from '../proto_utils/action_id.js';
 import { Database } from '../proto_utils/database.js';
 import { EventID, TypedEvent } from '../typed_event.js';
 import { stringComparator } from '../utils.js';
+import { getClassI18nKey } from '../../i18n/entity_mapping';
+import i18n from '../../i18n/config';
 
 export type GlyphConfig = {
 	name: string;
@@ -34,7 +36,7 @@ interface GlyphData {
 
 const emptyGlyphData: GlyphData = {
 	id: 0,
-	name: 'Empty',
+	name: i18n.t('talents_tab.glyphs.empty'),
 	description: '',
 	iconUrl: 'https://wow.zamimg.com/images/wow/icons/medium/inventoryslot_empty.jpg',
 	quality: null,
@@ -57,11 +59,11 @@ export class GlyphsPicker extends Component {
 		const minorGlyphs = Object.keys(glyphsConfig.minorGlyphs).map(idStr => Number(idStr));
 
 		const majorGlyphsBlock = new ContentBlock(this.rootElem, 'major-glyphs', {
-			header: { title: 'Major Glyphs', extraCssClasses: ['border-0'] },
+			header: { title: i18n.t('talents_tab.glyphs.major'), extraCssClasses: ['border-0'] },
 		});
 
 		const minorGlyphsBlock = new ContentBlock(this.rootElem, 'minor-glyphs', {
-			header: { title: 'Minor Glyphs', extraCssClasses: ['border-0'] },
+			header: { title: i18n.t('talents_tab.glyphs.minor'), extraCssClasses: ['border-0'] },
 		});
 		this.selectorModal = new GlyphSelectorModal(this.rootElem.closest('.individual-sim-ui')!);
 
@@ -99,12 +101,17 @@ export class GlyphsPicker extends Component {
 	// In case we ever want to parse description from tooltip HTML.
 	//static descriptionRegex = /<a href=\\"\/wotlk.*>(.*)<\/a>/g;
 	getGlyphData(glyph: number, db: Database): GlyphData {
-		const glyphConfig = this.glyphsConfig.majorGlyphs[glyph] || this.glyphsConfig.minorGlyphs[glyph];
+		const glyphType = this.glyphsConfig.majorGlyphs[glyph] ? 'major' : 'minor';
+		const glyphConfig = glyphType === 'major' ? this.glyphsConfig.majorGlyphs[glyph] : this.glyphsConfig.minorGlyphs[glyph];
+		const translationKey = `${getClassI18nKey(this.player.getClass())}.${glyphType}.${glyphConfig.name
+			.toLowerCase()
+			.replace(/[':]/g, '')
+			.replace(/[\s-]+/g, '_')}`;
 
 		return {
 			id: glyph,
-			name: glyphConfig.name,
-			description: glyphConfig.description,
+			name: i18n.t(`${translationKey}.name`, { ns: 'glyphs' }),
+			description: i18n.t(`${translationKey}.description`, { ns: 'glyphs' }),
 			iconUrl: glyphConfig.iconUrl,
 			quality: ItemQuality.ItemQualityCommon,
 			spellId: db.glyphItemToSpellId(glyph),
@@ -205,7 +212,7 @@ class GlyphPicker extends Input<Player<any>, number> {
 			}
 
 			this.iconElem.src = this.selectedGlyph.iconUrl;
-			this.nameElem.textContent = this.selectedGlyph.name.replace(/Glyph of /, '');
+			this.nameElem.textContent = this.selectedGlyph.name;
 		} else {
 			this.clear();
 		}
@@ -227,7 +234,7 @@ class GlyphSelectorModal extends BaseModal {
 	glyphOptions: GlyphData[] = [];
 	glyphPicker: GlyphPicker | null = null;
 	constructor(parent: HTMLElement) {
-		super(parent, 'glyph-modal', { title: 'Glyphs', disposeOnClose: false });
+		super(parent, 'glyph-modal', { title: i18n.t('talents_tab.glyphs.modal.title'), disposeOnClose: false });
 
 		const list = ref<HTMLUListElement>();
 		const search = ref<HTMLInputElement>();
@@ -235,7 +242,7 @@ class GlyphSelectorModal extends BaseModal {
 		this.body.appendChild(
 			<>
 				<div className="input-root">
-					<input ref={search} className="selector-modal-search form-control" type="text" placeholder="Search..." />
+					<input ref={search} className="selector-modal-search form-control" type="text" placeholder={i18n.t('common.search')} />
 				</div>
 				<ul ref={list} className="selector-modal-list"></ul>
 			</>,

@@ -156,7 +156,7 @@ func (action *APLActionStrictSequence) Reset(*Simulation) {
 func (action *APLActionStrictSequence) IsReady(sim *Simulation) bool {
 	action.unit.Rotation.inSequence = true
 
-	if action.unit.GCD.TimeToReady(sim) > MaxSpellQueueWindow {
+	if (action.unit.GCD.TimeToReady(sim) > MaxSpellQueueWindow) && (len(action.subactionSpells) > 0) {
 		action.unit.Rotation.inSequence = false
 		return false
 	}
@@ -192,6 +192,10 @@ func (action *APLActionStrictSequence) GetNextAction(sim *Simulation) *APLAction
 		nextAction := action.subactions[action.curIdx]
 
 		if action.unit.GCD.IsReady(sim) {
+			action.advanceSequence()
+		} else if _, ok := nextAction.impl.(*APLActionWait); ok {
+			action.advanceSequence()
+		} else if _, ok := nextAction.impl.(*APLActionItemSwap); ok {
 			action.advanceSequence()
 		} else {
 			pa := sim.GetConsumedPendingActionFromPool()

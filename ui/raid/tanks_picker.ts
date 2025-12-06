@@ -5,6 +5,7 @@ import { emptyUnitReference } from '../core/proto_utils/utils';
 import { Raid } from '../core/raid';
 import { EventID } from '../core/typed_event';
 import { RaidSimUI } from './raid_sim_ui';
+import i18n from '../i18n/config';
 
 const MAX_TANKS = 4;
 
@@ -23,7 +24,7 @@ export class TanksPicker extends Component {
 			this.rootElem.appendChild(row);
 
 			const labelElem = document.createElement('label');
-			labelElem.textContent = i == 0 ? 'Main Tank' : `Tank ${i + 1}`;
+			labelElem.textContent = i == 0 ? i18n.t('tanks.main_tank') : i18n.t(`tanks.tank_${i + 1}`);
 			labelElem.classList.add('tank-picker-label', 'form-label');
 			row.appendChild(labelElem);
 

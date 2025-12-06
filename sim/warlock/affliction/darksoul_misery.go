@@ -12,7 +12,9 @@ func (affliction *AfflictionWarlock) registerDarkSoulMisery() {
 		Label:    "Dark Soul: Misery",
 		ActionID: core.ActionID{SpellID: 113860},
 		Duration: time.Second * 20,
-	}).AttachMultiplyCastSpeed(1.3)
+	}).
+		AttachMultiplyCastSpeed(1.3).
+		AttachMultiplyAttackSpeed(1.3)
 
 	spell := affliction.RegisterSpell(core.SpellConfig{
 		ActionID:         core.ActionID{SpellID: 113860},

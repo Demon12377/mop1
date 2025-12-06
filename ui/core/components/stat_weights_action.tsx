@@ -2,13 +2,14 @@ import clsx from 'clsx';
 import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
+import i18n from '../../i18n/config.js';
 import { CURRENT_API_VERSION } from '../constants/other';
 import { IndividualSimUI } from '../individual_sim_ui.jsx';
 import { Player } from '../player.js';
 import { ProgressMetrics, StatWeightsResult, StatWeightValues } from '../proto/api';
 import { PseudoStat, Stat, UnitStats } from '../proto/common.js';
 import { SavedStatWeightSettings } from '../proto/ui';
-import { getStatName } from '../proto_utils/names.js';
+import { translateStat } from '../../i18n/localization';
 import { Stats, UnitStat } from '../proto_utils/stats.js';
 import { RequestTypes } from '../sim_signal_manager';
 import { SimUI } from '../sim_ui';
@@ -19,6 +20,7 @@ import { BooleanPicker } from './pickers/boolean_picker.js';
 import { NumberPicker } from './pickers/number_picker.js';
 import { ResultsViewer } from './results_viewer.jsx';
 import { renderSavedEPWeights } from './saved_data_managers/ep_weights';
+import { trackEvent, trackPageView } from '../../tracking/utils';
 export class StatWeightActionSettings {
 	private readonly storageKey: string;
 	readonly changeEmitter = new TypedEvent<void>();
@@ -132,7 +134,8 @@ export class StatWeightActionSettings {
 
 export const addStatWeightsAction = (simUI: IndividualSimUI<any>, settings: StatWeightActionSettings) => {
 	const epWeightsModal = new EpWeightsMenu(simUI, settings);
-	simUI.addAction('Stat Weights', 'ep-weights-action', () => {
+	simUI.addAction(i18n.t('sidebar.buttons.stat_weights.title'), 'ep-weights-action', () => {
+		trackPageView('Stat Weights', '/stat-weights');
 		epWeightsModal.open();
 	});
 
@@ -178,7 +181,7 @@ export class EpWeightsMenu extends BaseModal {
 
 	constructor(simUI: IndividualSimUI<any>, settings: StatWeightActionSettings) {
 		super(simUI.rootElem, 'ep-weights-menu', { ...getModalConfig(simUI), disposeOnClose: false });
-		this.header?.insertAdjacentElement('afterbegin', <h5 className="modal-title">Calculate Stat Weights</h5>);
+		this.header?.insertAdjacentElement('afterbegin', <h5 className="modal-title">{i18n.t('sidebar.buttons.stat_weights.modal.title')}</h5>);
 
 		this.simUI = simUI;
 		this.statsType = 'ep';
@@ -200,7 +203,7 @@ export class EpWeightsMenu extends BaseModal {
 		const calcWeightsButtonRef = ref<HTMLButtonElement>();
 		const allStatsContainerRef = ref<HTMLDivElement>();
 
-		const getNameFromStat = (stat: Stat | undefined) => (stat !== undefined ? getStatName(stat) : '??');
+		const getNameFromStat = (stat: Stat | undefined) => (stat !== undefined ? translateStat(stat) : '??');
 		const getStatFromName = (value: string) => Object.values(this.epStats).find(stat => getNameFromStat(stat) === value);
 		const epRefSelectOptions = (
 			<>
@@ -216,44 +219,44 @@ export class EpWeightsMenu extends BaseModal {
 					<div className="ep-weights-options row">
 						<div className="col col-sm-3">
 							<select ref={typeSelectRef} className="ep-type-select form-select">
-								<option value="ep">EP</option>
-								<option value="weight">Weights</option>
+								<option value="ep">{i18n.t('sidebar.buttons.stat_weights.modal.ep')}</option>
+								<option value="weight">{i18n.t('sidebar.buttons.stat_weights.modal.weights')}</option>
 							</select>
 						</div>
 						<div ref={allStatsContainerRef} className="show-all-stats-container col col-sm-3"></div>
 					</div>
 					<div className="ep-reference-options row">
 						<div className="col col-sm-4 damage-metrics">
-							<span>DPS/TPS reference:</span>
+							<span>{i18n.t('sidebar.buttons.stat_weights.modal.dps_tps_reference')}</span>
 							<select ref={damageMetricsSelectRef} className="ref-stat-select form-select damage-metrics">
 								{epRefSelectOptions.cloneNode(true)}
 							</select>
 						</div>
 						<div className="col col-sm-4 healing-metrics">
-							<span>Healing reference:</span>
+							<span>{i18n.t('sidebar.buttons.stat_weights.modal.healing_reference')}</span>
 							<select ref={healingMetricsSelectRef} className="ref-stat-select form-select healing-metrics">
 								{epRefSelectOptions.cloneNode(true)}
 							</select>
 						</div>
 						<div className="col col-sm-4 threat-metrics">
-							<span>Mitigation reference:</span>
+							<span>{i18n.t('sidebar.buttons.stat_weights.modal.mitigation_reference')}</span>
 							<select ref={threatMetricsSelectRef} className="ref-stat-select form-select threat-metrics">
 								{epRefSelectOptions.cloneNode(true)}
 							</select>
 						</div>
-						<p>The above stat selectors control which reference stat is used for EP normalisation for the different EP columns.</p>
+						<p>{i18n.t('sidebar.buttons.stat_weights.modal.reference_description')}</p>
 					</div>
 					<p>
-						The 'Current EP' column displays the values currently used by the item pickers to sort items.
+						{i18n.t('sidebar.buttons.stat_weights.modal.current_ep_description')}
 						<br />
-						Use the <button className="fa fa-copy" /> icon above the EPs to use newly calculated EPs.
+						{i18n.t('sidebar.buttons.stat_weights.modal.copy_icon_description')}
 					</p>
 					<div ref={containerRef} className="results-ep-table-container modal-scroll-table">
 						<table ref={tableRef} className="results-ep-table">
 							<thead>
 								<tr>
-									<th>Stat</th>
-									<th>Update</th>
+									<th>{i18n.t('sidebar.buttons.stat_weights.modal.column_headers.stat')}</th>
+									<th>{i18n.t('sidebar.buttons.stat_weights.modal.column_headers.update')}</th>
 									{statsTable.map(({ metric, type, label, metricRef }) => {
 										const isAction = type === 'action';
 										return (
@@ -267,7 +270,7 @@ export class EpWeightsMenu extends BaseModal {
 									})}
 								</tr>
 								<tr className="ep-ratios">
-									<td>EP Ratio</td>
+									<td>{i18n.t('sidebar.buttons.stat_weights.modal.column_headers.ep_ratio')}</td>
 									<td></td>
 									{statsTable
 										.filter(({ type }) => type !== 'action')
@@ -277,7 +280,7 @@ export class EpWeightsMenu extends BaseModal {
 									<td className="text-center align-middle">
 										<button ref={computeEpRef} className="btn btn-primary compute-ep">
 											<i className="fas fa-calculator" />
-											<span className="not-tiny">Update </span>EP
+											<span className="not-tiny">{i18n.t('sidebar.buttons.stat_weights.modal.column_headers.update_ep_button')}</span>
 										</button>
 									</td>
 								</tr>
@@ -294,7 +297,7 @@ export class EpWeightsMenu extends BaseModal {
 			<>
 				<button ref={calcWeightsButtonRef} className="btn btn-primary calc-weights">
 					<i className="fas fa-calculator me-1" />
-					Calculate
+					{i18n.t('sidebar.buttons.stat_weights.modal.calculate')}
 				</button>
 			</>,
 		);
@@ -360,6 +363,11 @@ export class EpWeightsMenu extends BaseModal {
 		const calcButton = calcWeightsButtonRef.value;
 		let isRunning = false;
 		calcButton?.addEventListener('click', async () => {
+			trackEvent({
+				action: 'sim',
+				category: 'stat_weights',
+				label: 'calculate',
+			});
 			if (isRunning) return;
 			isRunning = true;
 
@@ -435,7 +443,7 @@ export class EpWeightsMenu extends BaseModal {
 				if (!epRefStat) return labelTooltip;
 
 				const refStatName = getNameFromStat(epRefStat());
-				return `${labelTooltip} Normalized by ${refStatName}.`;
+				return `${labelTooltip} ${i18n.t('sidebar.buttons.stat_weights.modal.tooltips.normalized_by', { refStatName })}`;
 			};
 
 			tippy(label, {
@@ -456,7 +464,7 @@ export class EpWeightsMenu extends BaseModal {
 
 		new BooleanPicker(allStatsContainerRef.value!, this, {
 			id: 'ep-show-all-stats',
-			label: 'Show All Stats',
+			label: i18n.t('sidebar.buttons.stat_weights.modal.show_all_stats'),
 			inline: true,
 			changedEvent: () => new TypedEvent(),
 			getValue: () => this.showAllStats,
@@ -490,7 +498,7 @@ export class EpWeightsMenu extends BaseModal {
 
 		const updateButton = computeEpRef.value!;
 		tippy(updateButton, {
-			content: 'Compute Weighted EP',
+			content: i18n.t('sidebar.buttons.stat_weights.modal.tooltips.compute_weighted_ep'),
 		});
 
 		updateButton.addEventListener('click', () => {
@@ -558,12 +566,12 @@ export class EpWeightsMenu extends BaseModal {
 				<div>
 					{progress.completedSims} / {progress.totalSims}
 					<br />
-					simulations complete
+					{i18n.t('sidebar.buttons.stat_weights.modal.progress.simulations_complete')}
 				</div>
 				<div>
 					{progress.completedIterations} / {progress.totalIterations}
 					<br />
-					iterations complete
+					{i18n.t('sidebar.buttons.stat_weights.modal.progress.iterations_complete')}
 				</div>
 			</div>,
 		);
@@ -649,7 +657,7 @@ export class EpWeightsMenu extends BaseModal {
 			const epStdev = stat.getProtoValue(statWeights.epValuesStdev!);
 			epCell = this.makeTableCellContents(epAvg, epStdev);
 		} else {
-			weightCell = <span className="results-avg notapplicable">N/A</span>;
+			weightCell = <span className="results-avg notapplicable">{i18n.t('sidebar.buttons.stat_weights.modal.not_applicable')}</span>;
 			epCell = weightCell.cloneNode(true) as Element;
 		}
 
@@ -670,7 +678,8 @@ export class EpWeightsMenu extends BaseModal {
 		const epDelta = epTotal - epCurrent;
 
 		const epAvgElem = epRef.value!.querySelector('.type-ep .results-avg')!;
-		if (epDelta.toFixed(2) === '0.00') epAvgElem; // no-op
+		if (epDelta.toFixed(2) === '0.00')
+			epAvgElem; // no-op
 		else if (epDelta > 0) epAvgElem.classList.add('positive');
 		else if (epDelta < 0) epAvgElem.classList.add('negative');
 
@@ -798,7 +807,7 @@ export class EpWeightsMenu extends BaseModal {
 	}
 
 	private buildStatsTable(): StatsTableEntry[] {
-		const copyToCurrentEpText = 'Copy to Current EP';
+		const copyToCurrentEpText = i18n.t('sidebar.buttons.stat_weights.modal.tooltips.copy_to_current_ep');
 		const createRefs = () => ({
 			metricRef: ref<HTMLButtonElement>(),
 			ratioRef: ref<HTMLTableCellElement>(),
@@ -807,8 +816,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'damage',
 				type: 'weight',
-				label: 'DPS Weight',
-				labelTooltip: 'Per-point increase in DPS (Damage Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.dps_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.dps_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().dps!.weights,
 				...createRefs(),
@@ -816,8 +825,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'damage',
 				type: 'ep',
-				label: 'DPS EP',
-				labelTooltip: 'EP (Equivalency Points) for DPS (Damage Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.dps_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.dps_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().dps!.epValues,
 				getEpRefStat: () => this.getDpsEpRefStat(),
@@ -826,8 +835,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'healing',
 				type: 'weight',
-				label: 'HPS Weight',
-				labelTooltip: 'Per-point increase in HPS (Healing Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.hps_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.hps_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().hps!.weights,
 				...createRefs(),
@@ -835,8 +844,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'healing',
 				type: 'ep',
-				label: 'HPS EP',
-				labelTooltip: 'EP (Equivalency Points) for HPS (Healing Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.hps_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.hps_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().hps!.epValues,
 				getEpRefStat: () => this.getHealEpRefStat(),
@@ -845,8 +854,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'weight',
-				label: 'TPS Weight',
-				labelTooltip: 'Per-point increase in TPS (Threat Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.tps_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.tps_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().tps!.weights,
 				...createRefs(),
@@ -854,8 +863,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'ep',
-				label: 'TPS EP',
-				labelTooltip: 'EP (Equivalency Points) for TPS (Threat Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.tps_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.tps_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().tps!.epValues,
 				getEpRefStat: () => this.getDpsEpRefStat(),
@@ -864,8 +873,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'weight',
-				label: 'DTPS Weight',
-				labelTooltip: 'Per-point increase in DTPS (Damage Taken Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.dtps_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.dtps_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().dtps!.weights,
 				...createRefs(),
@@ -873,8 +882,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'ep',
-				label: 'DTPS EP',
-				labelTooltip: 'EP (Equivalency Points) for DTPS (Damage Taken Per Second) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.dtps_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.dtps_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().dtps!.epValues,
 				getEpRefStat: () => this.getTankEpRefStat(),
@@ -883,8 +892,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'weight',
-				label: 'TMI Weight',
-				labelTooltip: 'Per-point decrease in TMI (Theck-Meloree Index) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.tmi_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.tmi_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().tmi!.weights,
 				...createRefs(),
@@ -892,8 +901,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'ep',
-				label: 'TMI EP',
-				labelTooltip: 'EP (Equivalency Points) for TMI (Theck-Meloree Index) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.tmi_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.tmi_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().tmi!.epValues,
 				getEpRefStat: () => this.getTankEpRefStat(),
@@ -902,8 +911,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'weight',
-				label: 'Death Weight',
-				labelTooltip: 'Per-point decrease in p(death) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.death_weight.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.death_weight.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().pDeath!.weights,
 				...createRefs(),
@@ -911,8 +920,8 @@ export class EpWeightsMenu extends BaseModal {
 			{
 				metric: 'threat',
 				type: 'ep',
-				label: 'Death EP',
-				labelTooltip: 'EP (Equivalency Points) for p(death) for each stat.',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.death_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.death_ep.tooltip'),
 				actionTooltip: copyToCurrentEpText,
 				getWeights: () => this.getPrevSimResult().pDeath!.epValues,
 				getEpRefStat: () => this.getTankEpRefStat(),
@@ -920,9 +929,9 @@ export class EpWeightsMenu extends BaseModal {
 			},
 			{
 				type: 'action',
-				label: 'Current EP',
-				labelTooltip: 'Current EP Weights. Used to sort the gear selector menus.',
-				actionTooltip: 'Restore Default EP',
+				label: i18n.t('sidebar.buttons.stat_weights.modal.current_ep.label'),
+				labelTooltip: i18n.t('sidebar.buttons.stat_weights.modal.current_ep.tooltip'),
+				actionTooltip: i18n.t('sidebar.buttons.stat_weights.modal.tooltips.restore_default_ep'),
 				getWeights: () => this.simUI.individualConfig.defaults.epWeights.toProto(),
 				...createRefs(),
 			},

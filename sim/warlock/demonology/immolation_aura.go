@@ -7,8 +7,8 @@ import (
 	"github.com/wowsims/mop/sim/warlock"
 )
 
-const immolationAuraScale = 0.17499999702 * 1.25 // 2025.06.13 Changes to Beta - Immolation Aura damage increased by 25%
-const immolationAuraCoeff = 0.17499999702 * 1.25
+const immolationAuraScale = 0.17499999702
+const immolationAuraCoeff = 0.17499999702
 
 func (demonology *DemonologyWarlock) registerImmolationAura() {
 	var baseDamage = demonology.CalcScalingSpellDmg(immolationAuraScale)
@@ -36,26 +36,24 @@ func (demonology *DemonologyWarlock) registerImmolationAura() {
 
 			TickLength:           time.Second,
 			NumberOfTicks:        8,
+			AffectedByCastSpeed:  true,
 			HasteReducesDuration: true,
 			BonusCoefficient:     immolationAuraCoeff,
 			IsAOE:                true,
 
-			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
-				if !demonology.DemonicFury.CanSpend(core.TernaryInt32(demonology.T15_2pc.IsActive(), 18, 25)) {
+			OnTick: func(sim *core.Simulation, _ *core.Unit, dot *core.Dot) {
+				if !demonology.CanSpendDemonicFury(25) {
 					dot.Deactivate(sim)
 					return
 				}
 
-				demonology.DemonicFury.Spend(sim, core.TernaryInt32(demonology.T15_2pc.IsActive(), 18, 25), dot.Spell.ActionID)
-
-				for _, unit := range sim.Encounter.TargetUnits {
-					dot.Spell.CalcAndDealPeriodicDamage(sim, unit, baseDamage, dot.OutcomeTick)
-				}
+				demonology.SpendDemonicFury(sim, 25, dot.Spell.ActionID)
+				dot.Spell.CalcAndDealPeriodicAoeDamage(sim, baseDamage, dot.OutcomeTick)
 			},
 		},
 
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return demonology.IsInMeta() && demonology.DemonicFury.CanSpend(core.TernaryInt32(demonology.T15_2pc.IsActive(), 18, 25))
+			return demonology.IsInMeta() && demonology.CanSpendDemonicFury(25)
 		},
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			spell.AOEDot().Apply(sim)

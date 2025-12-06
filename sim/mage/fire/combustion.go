@@ -19,9 +19,9 @@ func (fire *FireMage) registerCombustionSpell() {
 
 	actionID := core.ActionID{SpellID: 11129}
 
-	combustionVariance := 0.17   // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "Variance"
-	combustionScaling := 1.0     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "Coefficient"
-	combustionCoefficient := 1.0 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "BonusCoefficient"
+	combustionVariance := 0.17000000179 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11129 Field: "Variance"
+	combustionScaling := 1.0            // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11129 Field: "Coefficient"
+	combustionCoefficient := 1.0        // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11129 Field: "BonusCoefficient"
 
 	fire.Combustion = fire.RegisterSpell(core.SpellConfig{
 		ActionID:       actionID,
@@ -36,30 +36,28 @@ func (fire *FireMage) registerCombustionSpell() {
 				Duration: combustCD,
 			},
 		},
-		DamageMultiplier: 1,
+		DamageMultiplier: combustDamageMultiplier,
 		CritMultiplier:   fire.DefaultCritMultiplier(),
 		BonusCoefficient: combustionCoefficient,
 		ThreatMultiplier: 1,
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			fire.InfernoBlast.CD.Reset()
-			spell.DamageMultiplier *= combustDamageMultiplier
 			baseDamage := fire.CalcAndRollDamageRange(sim, combustionScaling, combustionVariance)
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMagicHitAndCrit)
 			if result.Landed() {
 				spell.RelatedDotSpell.Cast(sim, target)
 			}
-			spell.DamageMultiplier /= combustDamageMultiplier
 		},
 	})
 
 	calculatedDotTick := func(sim *core.Simulation, target *core.Unit) float64 {
-		spell := fire.Ignite
-		dot := spell.Dot(target)
+		dot := fire.Ignite.Dot(target)
 		if !dot.IsActive() {
 			return 0.0
 		}
-		return dot.Spell.CalcPeriodicDamage(sim, target, dot.SnapshotBaseDamage, dot.OutcomeTick).Damage * .5
+
+		return dot.Spell.CalcPeriodicDamage(sim, target, dot.SnapshotBaseDamage, dot.OutcomeTick).Damage * fire.combustionDotDamageMultiplier
 	}
 
 	fire.Combustion.RelatedDotSpell = fire.RegisterSpell(core.SpellConfig{
@@ -127,4 +125,15 @@ func (fire *FireMage) registerCombustionSpell() {
 		updateCombustionTotalDamageEstimate()
 	})
 
+	fire.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Ignite Tracker",
+		RequireDamageDealt: true,
+		Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
+		TriggerImmediately: true,
+
+		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			updateCombustionTickDamageEstimate(sim)
+			updateCombustionTotalDamageEstimate()
+		},
+	})
 }

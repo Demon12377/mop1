@@ -49,7 +49,7 @@ func (druid *Druid) registerRavageSpell() {
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 
 			if result.Landed() {
-				druid.AddComboPoints(sim, 1, spell.ComboPointMetrics())
+				druid.AddComboPoints(sim, 1, target, spell.ComboPointMetrics())
 			} else {
 				spell.IssueRefund(sim)
 			}
@@ -57,6 +57,21 @@ func (druid *Druid) registerRavageSpell() {
 			if sim.IsExecutePhase90() {
 				spell.BonusCritPercent -= highHpCritPercentBonus
 			}
+		},
+
+		ExpectedInitialDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, _ bool) *core.SpellResult {
+			if sim.IsExecutePhase90() {
+				spell.BonusCritPercent += highHpCritPercentBonus
+			}
+
+			baseDamage := flatDamageBonus + spell.Unit.AutoAttacks.MH().CalculateAverageWeaponDamage(spell.MeleeAttackPower())
+			result := spell.CalcDamage(sim, target, baseDamage, spell.OutcomeExpectedMeleeWeaponSpecialHitAndCrit)
+
+			if sim.IsExecutePhase90() {
+				spell.BonusCritPercent -= highHpCritPercentBonus
+			}
+
+			return result
 		},
 	})
 }

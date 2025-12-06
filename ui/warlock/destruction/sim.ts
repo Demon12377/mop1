@@ -2,13 +2,12 @@ import * as BuffDebuffInputs from '../../core/components/inputs/buffs_debuffs';
 import * as OtherInputs from '../../core/components/inputs/other_inputs';
 import { ReforgeOptimizer } from '../../core/components/suggest_reforges_action';
 import { HASTE_RATING_PER_HASTE_PERCENT } from '../../core/constants/mechanics';
-import * as Mechanics from '../../core/constants/mechanics';
 import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_ui';
 import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl';
 import { Faction, ItemSlot, PartyBuffs, PseudoStat, Race, Spec, Stat } from '../../core/proto/common';
-import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { DEFAULT_CASTER_GEM_STATS, Stats, UnitStat } from '../../core/proto_utils/stats';
 import { TypedEvent } from '../../core/typed_event';
 import * as WarlockInputs from '../inputs';
 import * as Presets from './presets';
@@ -54,10 +53,12 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDestructionWarlock, {
 		],
 		[PseudoStat.PseudoStatSpellHitPercent, PseudoStat.PseudoStatSpellCritPercent, PseudoStat.PseudoStatSpellHastePercent],
 	),
+	gemStats: DEFAULT_CASTER_GEM_STATS,
+
 	modifyDisplayStats,
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_PRESET.gear,
+		gear: Presets.P2_PRESET.gear,
 
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.DEFAULT_EP_PRESET.epWeights,
@@ -96,21 +97,21 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDestructionWarlock, {
 	otherInputs: {
 		inputs: [OtherInputs.InputDelay, OtherInputs.DistanceFromTarget, OtherInputs.TankAssignment, OtherInputs.ChannelClipDelay],
 	},
-	itemSwapSlots: [ItemSlot.ItemSlotHands, ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
 		showExecuteProportion: false,
 	},
 
 	presets: {
-		epWeights: [Presets.DEFAULT_EP_PRESET],
+		epWeights: [Presets.DEFAULT_EP_PRESET, Presets.P3_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.DestructionTalents],
 		// Preset rotations that the user can quickly select.
 		rotations: [Presets.DEFAULT_APL],
 
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.P1_PREBIS_PRESET, Presets.P1_PRESET],
+		gear: [Presets.P1_PREBIS_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
 		itemSwaps: [],
 	},
 
@@ -127,15 +128,15 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDestructionWarlock, {
 			defaultFactionRaces: {
 				[Faction.Unknown]: Race.RaceUnknown,
 				[Faction.Alliance]: Race.RaceHuman,
-				[Faction.Horde]: Race.RaceOrc,
+				[Faction.Horde]: Race.RaceTroll,
 			},
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.P1_PRESET.gear,
+					1: Presets.P2_PRESET.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.P1_PRESET.gear,
+					1: Presets.P2_PRESET.gear,
 				},
 			},
 			otherDefaults: Presets.OtherDefaults,
@@ -146,10 +147,24 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDestructionWarlock, {
 export class DestructionWarlockSimUI extends IndividualSimUI<Spec.SpecDestructionWarlock> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecDestructionWarlock>) {
 		super(parentElem, player, SPEC_CONFIG);
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				statSelectionPresets: Presets.DESTRUCTION_BREAKPOINTS,
-			});
+
+		const statSelectionPresets = [
+			{
+				unitStat: UnitStat.fromPseudoStat(PseudoStat.PseudoStatSpellHastePercent),
+				presets: Presets.DESTRUCTION_BREAKPOINTS.presets,
+			},
+		];
+
+		this.reforger = new ReforgeOptimizer(this, {
+			statSelectionPresets,
+			getEPDefaults: player => {
+				const avgIlvl = player.getGear().getAverageItemLevel(false);
+				if (avgIlvl >= 517) {
+					return Presets.P3_EP_PRESET.epWeights;
+				}
+
+				return Presets.DEFAULT_EP_PRESET.epWeights;
+			},
 		});
 	}
 }

@@ -24,13 +24,13 @@ func (bm *BrewmasterMonk) registerBrewmasterTraining() {
 	// Tiger Palm
 	// Tiger Palm no longer costs Chi, and when you deal damage with Tiger Palm the amount of your next Guard is increased by 15%. Lasts 30 sec.
 	// Tiger Palm Chi mod is implemented in tiger_palm.go
-	bm.PowerGuardAura = bm.RegisterAura(core.Aura{
+	bm.PowerGuardAura = core.BlockPrepull(bm.RegisterAura(core.Aura{
 		Label:    "Power Guard",
 		ActionID: core.ActionID{SpellID: 118636},
 		Duration: 30 * time.Second,
-	})
+	}))
 
-	core.MakeProcTriggerAura(&bm.Unit, core.ProcTrigger{
+	bm.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Power Guard Trigger",
 		ClassSpellMask: monk.MonkSpellTigerPalm,
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -44,16 +44,18 @@ func (bm *BrewmasterMonk) registerBrewmasterTraining() {
 	// After you Blackout Kick, you gain Shuffle, increasing your parry chance by 20%
 	// and your Stagger amount by an additional 20% for 6 sec.
 	// Stagger amount is implemented in stagger.go
-	bm.ShuffleAura = bm.RegisterAura(core.Aura{
+	bm.ShuffleAura = core.BlockPrepull(bm.RegisterAura(core.Aura{
 		Label:    "Shuffle",
 		ActionID: core.ActionID{SpellID: 115307},
 		Duration: 6 * time.Second,
-	}).AttachAdditivePseudoStatBuff(&bm.PseudoStats.BaseParryChance, 0.2)
+	})).AttachAdditivePseudoStatBuff(&bm.PseudoStats.BaseParryChance, 0.2)
 
-	core.MakeProcTriggerAura(&bm.Unit, core.ProcTrigger{
-		Name:           "Shuffle Trigger",
-		ClassSpellMask: monk.MonkSpellBlackoutKick,
-		Callback:       core.CallbackOnCastComplete,
+	bm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Shuffle Trigger",
+		ClassSpellMask:     monk.MonkSpellBlackoutKick,
+		Callback:           core.CallbackOnCastComplete,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			if bm.ShuffleAura.IsActive() {
 				bm.ShuffleAura.UpdateExpires(bm.ShuffleAura.ExpiresAt() + 6*time.Second)
@@ -68,30 +70,32 @@ func (bm *BrewmasterMonk) registerElusiveBrew() {
 	buffActionID := core.ActionID{SpellID: 115308}
 	stackActionID := core.ActionID{SpellID: 128938}
 
-	stackingAura := core.MakePermanent(bm.RegisterAura(core.Aura{
+	stackingAura := core.BlockPrepull(core.MakePermanent(bm.RegisterAura(core.Aura{
 		Label:     "Brewing: Elusive Brew" + bm.Label,
 		ActionID:  stackActionID,
 		Duration:  30 * time.Second,
 		MaxStacks: 15,
-	}))
+	})))
 
 	bm.Monk.RegisterOnNewBrewStacks(func(sim *core.Simulation, stacksToAdd int32) {
 		stackingAura.Activate(sim)
 		stackingAura.SetStacks(sim, stackingAura.GetStacks()+stacksToAdd)
 	})
 
-	bm.ElusiveBrewAura = bm.RegisterAura(core.Aura{
+	bm.ElusiveBrewAura = core.BlockPrepull(bm.RegisterAura(core.Aura{
 		Label:    "Elusive Brew" + bm.Label,
 		ActionID: buffActionID,
 		Duration: 0,
-	}).AttachAdditivePseudoStatBuff(&bm.PseudoStats.BaseDodgeChance, 0.3)
+	})).AttachAdditivePseudoStatBuff(&bm.PseudoStats.BaseDodgeChance, 0.3)
 
-	core.MakeProcTriggerAura(&bm.Unit, core.ProcTrigger{
-		Name:     "Brewing: Elusive Brew Proc",
-		ActionID: stackActionID,
-		Outcome:  core.OutcomeCrit,
-		ProcMask: core.ProcMaskMeleeWhiteHit,
-		Callback: core.CallbackOnSpellHitDealt,
+	bm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Brewing: Elusive Brew Proc",
+		ActionID:           stackActionID,
+		Outcome:            core.OutcomeCrit,
+		ProcMask:           core.ProcMaskMeleeWhiteHit,
+		Callback:           core.CallbackOnSpellHitDealt,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			stacks := 0.0
 			if bm.HandType == proto.HandType_HandTypeOneHand {
@@ -155,6 +159,7 @@ func (bm *BrewmasterMonk) registerGiftOfTheOx() {
 	hasGlyph := bm.HasMajorGlyph(proto.MonkMajorGlyph_GlyphOfEnduringHealingSphere)
 	sphereDuration := time.Minute*1 + core.TernaryDuration(hasGlyph, time.Minute*3, 0)
 
+	pendingSpheres := make([]*core.PendingAction, 0)
 	giftOfTheOxStackingAura := bm.RegisterAura(core.Aura{
 		Label:     "Gift Of The Ox" + bm.Label,
 		ActionID:  giftOfTheOxPassiveActionID,
@@ -187,15 +192,21 @@ func (bm *BrewmasterMonk) registerGiftOfTheOx() {
 			heal := bm.CalcScalingSpellDmg(4.5) + spell.MeleeAttackPower()*0.2508
 			spell.CalcAndDealHealing(sim, spell.Unit, heal, spell.OutcomeHealing)
 			giftOfTheOxStackingAura.RemoveStack(sim)
+			pendingSphere := pendingSpheres[0]
+			if pendingSphere != nil {
+				pendingSphere.Cancel(sim)
+			}
 		},
 		RelatedSelfBuff: giftOfTheOxStackingAura,
 	})
 
-	core.MakeProcTriggerAura(&bm.Unit, core.ProcTrigger{
-		Name:     "Gift of The Ox Proc",
-		ActionID: giftOfTheOxPassiveActionID,
-		ProcMask: core.ProcMaskMelee,
-		Callback: core.CallbackOnSpellHitDealt,
+	bm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Gift of The Ox Proc",
+		ActionID:           giftOfTheOxPassiveActionID,
+		ProcMask:           core.ProcMaskMelee,
+		Callback:           core.CallbackOnSpellHitDealt,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			procChance := 0.0
 
@@ -213,10 +224,27 @@ func (bm *BrewmasterMonk) registerGiftOfTheOx() {
 			if sim.Proc(procChance, "Gift of The Ox") {
 				giftOfTheOxStackingAura.Activate(sim)
 				giftOfTheOxStackingAura.AddStack(sim)
+
+				pa := sim.GetConsumedPendingActionFromPool()
+				pa.NextActionAt = sim.CurrentTime + sphereDuration
+				pa.Priority = core.ActionPriorityDOT
+				pa.OnAction = func(sim *core.Simulation) {
+					giftOfTheOxStackingAura.RemoveStack(sim)
+					pendingSpheres = pendingSpheres[:1]
+				}
+				pa.CleanUp = func(sim *core.Simulation) {
+					pendingSpheres = pendingSpheres[:1]
+				}
+
+				sim.AddPendingAction(pa)
+				pendingSpheres = append(pendingSpheres, pa)
 			}
 		},
 	})
 
+	bm.RegisterResetEffect(func(s *core.Simulation) {
+		pendingSpheres = make([]*core.PendingAction, 0)
+	})
 }
 
 func (bm *BrewmasterMonk) registerDesperateMeasures() {
@@ -232,12 +260,14 @@ func (bm *BrewmasterMonk) registerDesperateMeasures() {
 		TimeValue: time.Second * -15,
 	})
 
-	core.MakeProcTriggerAura(&bm.Unit, core.ProcTrigger{
-		Name:     "Desperate Measures Health Monitor" + bm.Label,
-		ActionID: actionID,
-		Duration: 0,
-		Outcome:  core.OutcomeHit,
-		Callback: core.CallbackOnSpellHitTaken,
+	bm.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Desperate Measures Health Monitor" + bm.Label,
+		ActionID:           actionID,
+		Duration:           0,
+		Outcome:            core.OutcomeLanded,
+		Callback:           core.CallbackOnSpellHitTaken,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			if result.Target.CurrentHealthPercent() <= 0.35 {
 				aura.Activate(sim)

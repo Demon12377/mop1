@@ -9,20 +9,23 @@ import (
 
 func (destruction *DestructionWarlock) registerFireAndBrimstoneConflagrate() {
 	destruction.FABConflagrate = destruction.RegisterSpell(core.SpellConfig{
-		ActionID:         core.ActionID{SpellID: 108685},
-		Flags:            core.SpellFlagAoE | core.SpellFlagAPL,
-		SpellSchool:      core.SpellSchoolFire,
-		DamageMultiplier: 1,
-		ThreatMultiplier: 1,
-		ProcMask:         core.ProcMaskSpellDamage,
+		ActionID:       core.ActionID{SpellID: 108685},
+		SpellSchool:    core.SpellSchoolFire,
+		ProcMask:       core.ProcMaskSpellDamage,
+		Flags:          core.SpellFlagAoE | core.SpellFlagAPL,
+		ClassSpellMask: warlock.WarlockSpellFaBConflagrate,
+
 		Cast: core.CastConfig{
 			DefaultCast: core.Cast{
 				GCD: core.GCDDefault,
 			},
 		},
-		Charges:          2,
-		RechargeTime:     time.Second * 12,
-		ClassSpellMask:   warlock.WarlockSpellFaBConflagrate,
+		Charges:      2,
+		RechargeTime: time.Second * 12,
+
+		DamageMultiplier: 1,
+		CritMultiplier:   destruction.DefaultCritMultiplier(),
+		ThreatMultiplier: 1,
 		BonusCoefficient: conflagrateCoeff,
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
 			return destruction.BurningEmbers.CanSpend(10)
@@ -39,7 +42,7 @@ func (destruction *DestructionWarlock) registerFireAndBrimstoneConflagrate() {
 
 			// keep charges in sync
 			destruction.Conflagrate.ConsumeCharge(sim)
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				result := spell.CalcAndDealDamage(
 					sim,
 					aoeTarget,
@@ -57,7 +60,7 @@ func (destruction *DestructionWarlock) registerFireAndBrimstoneConflagrate() {
 					emberGain += 1
 				}
 
-				destruction.BurningEmbers.Gain(sim, emberGain, spell.ActionID)
+				destruction.BurningEmbers.Gain(sim, float64(emberGain), spell.ActionID)
 			}
 			spell.DamageMultiplier /= reduction
 			destruction.BurningEmbers.Spend(sim, 10, spell.ActionID)

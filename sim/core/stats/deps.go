@@ -35,6 +35,7 @@ var safeDepsOrder = []Stat{
 	HitRating,
 	SpellHitPercent,
 	PhysicalHitPercent,
+	MasteryRating,
 }
 
 func isSafeDep(s Stat) bool {

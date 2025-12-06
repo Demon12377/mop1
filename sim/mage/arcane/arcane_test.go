@@ -13,23 +13,26 @@ func init() {
 }
 
 func TestArcane(t *testing.T) {
-	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator(core.CharacterSuiteConfig{
-		Class:      proto.Class_ClassMage,
-		Race:       proto.Race_RaceTroll,
-		OtherRaces: []proto.Race{proto.Race_RaceOrc},
+	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{
+		{
+			Class:      proto.Class_ClassMage,
+			Race:       proto.Race_RaceTroll,
+			OtherRaces: []proto.Race{proto.Race_RaceOrc},
 
-		GearSet: core.GetGearSet("../../../ui/mage/arcane/gear_sets", "p1_bis"),
-		OtherGearSets: []core.GearSetCombo{
-			core.GetGearSet("../../../ui/mage/arcane/gear_sets", "prebis"),
+			GearSet: core.GetGearSet("../../../ui/mage/arcane/gear_sets", "p1_bis"),
+			OtherGearSets: []core.GearSetCombo{
+				core.GetGearSet("../../../ui/mage/arcane/gear_sets", "p1_prebis"),
+			},
+			Talents:         ArcaneTalents,
+			OtherTalentSets: core.GenerateTalentVariationsForRows(ArcaneTalents, ArcaneGlyphs, []int{4, 5}),
+			Glyphs:          ArcaneGlyphs,
+			Consumables:     FullArcaneConsumesSpec,
+
+			SpecOptions: core.SpecOptionsCombo{Label: "Arcane", SpecOptions: PlayerOptionsArcane},
+			Rotation:    core.GetAplRotation("../../../ui/mage/arcane/apls", "default"),
+
+			ItemFilter: ItemFilter,
 		},
-		Talents:     ArcaneTalents,
-		Glyphs:      ArcaneGlyphs,
-		Consumables: FullArcaneConsumesSpec,
-
-		SpecOptions: core.SpecOptionsCombo{Label: "Arcane", SpecOptions: PlayerOptionsArcane},
-		Rotation:    core.GetAplRotation("../../../ui/mage/arcane/apls", "default"),
-
-		ItemFilter: ItemFilter,
 	}))
 }
 
@@ -59,7 +62,9 @@ var ArcaneGlyphs = &proto.Glyphs{
 var PlayerOptionsArcane = &proto.Player_ArcaneMage{
 	ArcaneMage: &proto.ArcaneMage{
 		Options: &proto.ArcaneMage_Options{
-			ClassOptions: &proto.MageOptions{},
+			ClassOptions: &proto.MageOptions{
+				DefaultMageArmor: proto.MageArmor_MageArmorFrostArmor,
+			},
 		},
 	},
 }

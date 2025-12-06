@@ -13,8 +13,9 @@ func (hunter *Hunter) registerFervorSpell() {
 	actionID := core.ActionID{SpellID: 82726}
 
 	focusMetrics := hunter.NewFocusMetrics(actionID)
-	fervorSpell := hunter.RegisterSpell(core.SpellConfig{
+	hunter.RegisterSpell(core.SpellConfig{
 		ClassSpellMask: HunterSpellFervor,
+		Flags:          core.SpellFlagAPL | core.SpellFlagReactive,
 		ActionID:       actionID,
 		FocusCost: core.FocusCostOptions{
 			Cost: 0,
@@ -28,9 +29,6 @@ func (hunter *Hunter) registerFervorSpell() {
 				Duration: time.Second * 30,
 			},
 		},
-		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return hunter.GCD.IsReady(sim)
-		},
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
 			hunter.AddFocus(sim, 50, focusMetrics)
 			if hunter.Pet != nil {
@@ -41,14 +39,11 @@ func (hunter *Hunter) registerFervorSpell() {
 				Period:   time.Second * 1,
 				OnAction: func(sim *core.Simulation) {
 					hunter.AddFocus(sim, 5, focusMetrics)
-					hunter.Pet.AddFocus(sim, 5, focusMetrics)
+					if hunter.Pet != nil {
+						hunter.Pet.AddFocus(sim, 5, focusMetrics)
+					}
 				},
 			})
 		},
-	})
-
-	hunter.AddMajorCooldown(core.MajorCooldown{
-		Spell: fervorSpell,
-		Type:  core.CooldownTypeDPS,
 	})
 }

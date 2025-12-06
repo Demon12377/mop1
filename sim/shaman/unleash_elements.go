@@ -4,14 +4,13 @@ import (
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
-	"github.com/wowsims/mop/sim/core/proto"
 )
 
 func (shaman *Shaman) registerUnleashFlame() {
 
 	spellMask := SpellMaskLavaBurst | SpellMaskFlameShock | SpellMaskFireNova | SpellMaskElementalBlast
 
-	unleashFlameAura := shaman.RegisterAura(core.Aura{
+	unleashFlameAura := core.BlockPrepull(shaman.RegisterAura(core.Aura{
 		Label:    "Unleash Flame",
 		ActionID: core.ActionID{SpellID: 73683},
 		Duration: time.Second * 8,
@@ -30,7 +29,7 @@ func (shaman *Shaman) registerUnleashFlame() {
 				sim.AddPendingAction(pa)
 			}
 		},
-	}).AttachSpellMod(core.SpellModConfig{
+	})).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
 		ClassMask:  spellMask,
 		FloatValue: 0.3,
@@ -42,7 +41,7 @@ func (shaman *Shaman) registerUnleashFlame() {
 		ProcMask:         core.ProcMaskSpellDamage,
 		CritMultiplier:   shaman.DefaultCritMultiplier(),
 		ClassSpellMask:   SpellMaskUnleashFlame,
-		Flags:            SpellFlagFocusable | core.SpellFlagPassiveSpell,
+		Flags:            SpellFlagFocusable | core.SpellFlagPassiveSpell | SpellFlagShamanSpell,
 		DamageMultiplier: 1,
 		BonusCoefficient: 0.42899999022,
 		ThreatMultiplier: 1,
@@ -61,7 +60,7 @@ func (shaman *Shaman) registerUnleashFrost() {
 		SpellSchool:      core.SpellSchoolFrost,
 		ProcMask:         core.ProcMaskSpellDamage,
 		ClassSpellMask:   SpellMaskUnleashFrost,
-		Flags:            core.SpellFlagPassiveSpell,
+		Flags:            core.SpellFlagPassiveSpell | SpellFlagShamanSpell,
 		CritMultiplier:   shaman.DefaultCritMultiplier(),
 		DamageMultiplier: 1,
 		BonusCoefficient: 0.38600000739,
@@ -77,7 +76,7 @@ func (shaman *Shaman) registerUnleashWind() {
 
 	speedMultiplier := 1 + 0.5
 
-	unleashWindAura := shaman.RegisterAura(core.Aura{
+	shaman.WindfuryUnleashAura = core.BlockPrepull(shaman.RegisterAura(core.Aura{
 		Label:     "Unleash Wind",
 		ActionID:  core.ActionID{SpellID: 73681},
 		Duration:  time.Second * 12,
@@ -94,7 +93,7 @@ func (shaman *Shaman) registerUnleashWind() {
 				aura.RemoveStack(sim)
 			}
 		},
-	})
+	}))
 
 	shaman.UnleashWind = shaman.RegisterSpell(core.SpellConfig{
 		ActionID:         core.ActionID{SpellID: 73681},
@@ -107,7 +106,7 @@ func (shaman *Shaman) registerUnleashWind() {
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			damage := spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())
 			spell.CalcAndDealDamage(sim, target, damage, spell.OutcomeRangedHitAndCrit)
-			unleashWindAura.Activate(sim)
+			shaman.WindfuryUnleashAura.Activate(sim)
 		},
 	})
 }
@@ -187,25 +186,27 @@ func (shaman *Shaman) registerUnleashElements() {
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			switch shaman.SelfBuffs.ImbueMH {
-			case proto.ShamanImbue_FlametongueWeapon:
+			mh := shaman.GetMHWeapon()
+			switch mh.TempEnchant {
+			case flametongueEnchantID:
 				shaman.UnleashFlame.Cast(sim, target)
-			case proto.ShamanImbue_WindfuryWeapon:
+			case windfuryEnchantID:
 				shaman.UnleashWind.Cast(sim, target)
-			case proto.ShamanImbue_EarthlivingWeapon:
+			case earthlivingEnchantID:
 				shaman.UnleashLife.Cast(sim, target)
-			case proto.ShamanImbue_FrostbrandWeapon:
+			case frostbrandEnchantID:
 				shaman.UnleashFrost.Cast(sim, target)
 			}
-			if shaman.SelfBuffs.ImbueOH != proto.ShamanImbue_NoImbue && shaman.SelfBuffs.ImbueOH != shaman.SelfBuffs.ImbueMH {
-				switch shaman.SelfBuffs.ImbueOH {
-				case proto.ShamanImbue_FlametongueWeapon:
+			oh := shaman.GetOHWeapon()
+			if oh != nil && oh.TempEnchant != mh.TempEnchant {
+				switch oh.TempEnchant {
+				case flametongueEnchantID:
 					shaman.UnleashFlame.Cast(sim, target)
-				case proto.ShamanImbue_WindfuryWeapon:
+				case windfuryEnchantID:
 					shaman.UnleashWind.Cast(sim, target)
-				case proto.ShamanImbue_EarthlivingWeapon:
+				case earthlivingEnchantID:
 					shaman.UnleashLife.Cast(sim, target)
-				case proto.ShamanImbue_FrostbrandWeapon:
+				case frostbrandEnchantID:
 					shaman.UnleashFrost.Cast(sim, target)
 				}
 			}

@@ -153,11 +153,14 @@ message FeleAutocastSettings {
     bool autocast_firenova = 2;
     bool autocast_immolate = 3;
     bool autocast_empower = 4;
+    bool no_immolate_wfunleash = 5;
+    double no_immolate_duration = 6;
 }
 
 message ShamanOptions {
 	ShamanShield shield = 1;
 	ShamanImbue imbue_mh = 2;
+    ShamanImbue imbue_mh_swap = 4;
 
     FeleAutocastSettings fele_autocast = 3;
 }
@@ -187,6 +190,7 @@ message EnhancementShaman {
 		ShamanOptions class_options = 1;
 		ShamanSyncType sync_type = 2;
 		ShamanImbue imbue_oh = 3;
+        ShamanImbue imbue_oh_swap = 4;
 	}
 
 	Options options = 3;

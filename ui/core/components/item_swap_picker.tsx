@@ -1,5 +1,6 @@
 import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
+import i18n from '../../i18n/config';
 
 import { Player } from '../player';
 import { ItemSlot, ItemSpec, ItemSwap, Spec } from '../proto/common';
@@ -95,8 +96,8 @@ export class ItemSwapPicker<SpecType extends Spec> extends Component {
 		new BooleanPicker(this.rootElem, player, {
 			id: 'enable-item-swap',
 			reverse: true,
-			label: 'Enable Item Swapping',
-			labelTooltip: 'Allows configuring an Item Swap Set which is used with the <b>Item Swap</b> APL action.',
+			label: i18n.t('settings_tab.other.enable_item_swap.label'),
+			labelTooltip: i18n.t('settings_tab.other.enable_item_swap.tooltip'),
 			extraCssClasses: ['input-inline'],
 			getValue: (player: Player<SpecType>) => player.itemSwapSettings.getEnableItemSwap(),
 			setValue(eventID: EventID, player: Player<SpecType>, newValue: boolean) {
@@ -113,7 +114,7 @@ export class ItemSwapPicker<SpecType extends Spec> extends Component {
 		this.rootElem.appendChild(
 			<>
 				<div ref={swapPickerContainerRef} className="input-root input-inline input-item-swap-container">
-					<label className="form-label">Item Swap</label>
+					<label className="form-label">{i18n.t('settings_tab.other.item_swap.label')}</label>
 					<button ref={swapButtonRef} className="gear-swap-icon">
 						<i className="fas fa-arrows-rotate me-1"></i>
 					</button>
@@ -142,7 +143,7 @@ export class ItemSwapPicker<SpecType extends Spec> extends Component {
 		if (swapButtonRef.value) {
 			swapButtonRef.value.addEventListener('click', _event => this.swapWithGear(TypedEvent.nextEventID(), player));
 			tippy(swapButtonRef.value, {
-				content: 'Swap with equipped items',
+				content: i18n.t('settings_tab.other.item_swap.tooltip'),
 			});
 		}
 

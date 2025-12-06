@@ -80,13 +80,16 @@ func (spell *Spell) CanQueue(sim *Simulation, target *Unit) bool {
 		return false
 	}
 
-	// Same extra cast conditions apply as if we were casting right now
-	if spell.ExtraCastCondition != nil && !spell.ExtraCastCondition(sim, target) {
+	if !spell.CanCompleteCast(sim, target, false) {
+		return false
+	}
+
+	if spell.Flags.Matches(SpellFlagSwapped) {
 		return false
 	}
 
 	// Apply SQW leniency to any pending hardcasts
-	if spell.Unit.Hardcast.Expires > sim.CurrentTime+MaxSpellQueueWindow {
+	if (spell.Unit.Hardcast.Expires > sim.CurrentTime+MaxSpellQueueWindow) || (spell.Unit.IsCastingDuringChannel() && !spell.CanCastDuringChannel(sim)) {
 		return false
 	}
 
@@ -98,14 +101,6 @@ func (spell *Spell) CanQueue(sim *Simulation, target *Unit) bool {
 	// Spells that are within one SQW of coming off cooldown can also be queued
 	if MaxTimeToReady(spell.CD.Timer, spell.SharedCD.Timer, sim) > MaxSpellQueueWindow {
 		return false
-	}
-
-	// By contrast, spells that are waiting on resources to cast *cannot* be queued
-	if spell.Cost != nil {
-		spell.CurCast.Cost = spell.Cost.GetCurrentCost()
-		if !spell.Cost.MeetsRequirement(sim, spell) {
-			return false
-		}
 	}
 
 	return true

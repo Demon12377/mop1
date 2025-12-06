@@ -61,7 +61,7 @@ export default class IconItemSwapPicker extends Component {
 				<>
 					{newItem.allSocketColors().map((socketColor, gemIdx) => {
 						const gemContainer = createGemContainer(socketColor, newItem.gems[gemIdx], gemIdx);
-						if (gemIdx === newItem.numPossibleSockets - 1 && [ItemType.ItemTypeWrist, ItemType.ItemTypeHands].includes(newItem.item.type)) {
+						if (gemIdx === newItem.numPossibleSockets - 1 && newItem.couldHaveExtraSocket()) {
 							const updateProfession = () => {
 								gemContainer.classList[this.player.isBlacksmithing() ? 'remove' : 'add']('hide');
 							};

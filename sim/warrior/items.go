@@ -9,7 +9,8 @@ import (
 
 // T14 - DPS
 var ItemSetBattleplateOfResoundingRings = core.NewItemSet(core.ItemSet{
-	Name: "Battleplate of Resounding Rings",
+	Name:                    "Battleplate of Resounding Rings",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
@@ -34,7 +35,8 @@ var ItemSetBattleplateOfResoundingRings = core.NewItemSet(core.ItemSet{
 
 // T14 - Tank
 var ItemSetPlateOfResoundingRings = core.NewItemSet(core.ItemSet{
-	Name: "Plate of Resounding Rings",
+	Name:                    "Plate of Resounding Rings",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			setBonusAura.AttachSpellMod(core.SpellModConfig{
@@ -63,7 +65,8 @@ var ItemSetPlateOfResoundingRings = core.NewItemSet(core.ItemSet{
 
 // T15 - DPS
 var ItemSetBattleplateOfTheLastMogu = core.NewItemSet(core.ItemSet{
-	Name: "Battleplate of the Last Mogu",
+	Name:                    "Battleplate of the Last Mogu",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			war := agent.(WarriorAgent).GetWarrior()
@@ -75,7 +78,7 @@ var ItemSetBattleplateOfTheLastMogu = core.NewItemSet(core.ItemSet{
 				DPM: war.NewSetBonusRPPMProcManager(138120, setBonusAura, core.ProcMaskMeleeWhiteHit, core.RPPMConfig{
 					PPM: 1.1,
 				}.WithSpecMod(-0.625, proto.Spec_SpecFuryWarrior)),
-				Outcome:  core.OutcomeHit,
+				Outcome:  core.OutcomeLanded,
 				Callback: core.CallbackOnSpellHitDealt,
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 					war.EnrageAura.Deactivate(sim)
@@ -95,12 +98,16 @@ var ItemSetBattleplateOfTheLastMogu = core.NewItemSet(core.ItemSet{
 				FloatValue: 35,
 			})
 
-			war.OnSpellRegistered(func(spell *core.Spell) {
-				if !spell.Matches(SpellMaskSkullBanner) {
-					return
-				}
-
-				war.SkullBannerAura.AttachDependentAura(aura)
+			setBonusAura.AttachProcTrigger(core.ProcTrigger{
+				Name:           "Item - Warrior T15 DPS 4P Bonus",
+				ClassSpellMask: SpellMaskRecklessness,
+				Callback:       core.CallbackOnCastComplete,
+				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
+					if war.StanceMatches(DefensiveStance) {
+						return
+					}
+					aura.Activate(sim)
+				},
 			})
 
 			setBonusAura.ExposeToAPL(138126)
@@ -110,7 +117,8 @@ var ItemSetBattleplateOfTheLastMogu = core.NewItemSet(core.ItemSet{
 
 // T15 - Tank
 var ItemSetPlaceOfTheLastMogu = core.NewItemSet(core.ItemSet{
-	Name: "Plate of the Last Mogu",
+	Name:                    "Plate of the Last Mogu",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			war := agent.(WarriorAgent).GetWarrior()
@@ -119,7 +127,7 @@ var ItemSetPlaceOfTheLastMogu = core.NewItemSet(core.ItemSet{
 				ActionID:       core.ActionID{SpellID: 138279},
 				ClassSpellMask: SpellMaskRevenge | SpellMaskShieldSlam,
 				ProcChance:     0.1,
-				Outcome:        core.OutcomeHit,
+				Outcome:        core.OutcomeLanded,
 				Callback:       core.CallbackOnSpellHitDealt,
 				Duration:       15 * time.Second,
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
@@ -140,7 +148,8 @@ var ItemSetPlaceOfTheLastMogu = core.NewItemSet(core.ItemSet{
 
 // T16 - DPS
 var ItemSetBattleplateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
-	Name: "Battleplate of the Prehistoric Marauder",
+	Name:                    "Battleplate of the Prehistoric Marauder",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			war := agent.(WarriorAgent).GetWarrior()
@@ -151,7 +160,7 @@ var ItemSetBattleplateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
 				Name:     "Colossal Rage",
 				ActionID: actionID,
 				ProcMask: core.ProcMaskMeleeSpecial,
-				Outcome:  core.OutcomeHit,
+				Outcome:  core.OutcomeLanded,
 				Callback: core.CallbackOnSpellHitDealt,
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 					if war.ColossusSmashAuras.Get(result.Target).IsActive() {
@@ -183,10 +192,12 @@ var ItemSetBattleplateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
 				costMod.Deactivate()
 			})
 
-			core.MakeProcTriggerAura(&war.Unit, core.ProcTrigger{
-				Name:           "Death Sentence - Consume",
-				ClassSpellMask: SpellMaskExecute,
-				Callback:       core.CallbackOnCastComplete,
+			war.MakeProcTriggerAura(core.ProcTrigger{
+				Name:               "Death Sentence - Consume",
+				ClassSpellMask:     SpellMaskExecute,
+				Callback:           core.CallbackOnCastComplete,
+				TriggerImmediately: true,
+
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 					war.T16Dps4P.Deactivate(sim)
 				},
@@ -196,7 +207,7 @@ var ItemSetBattleplateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
 				Name:           "Death Sentence - Trigger",
 				ActionID:       core.ActionID{SpellID: 144442},
 				ClassSpellMask: SpellMaskMortalStrike | SpellMaskBloodthirst,
-				Outcome:        core.OutcomeHit,
+				Outcome:        core.OutcomeLanded,
 				ProcChance:     0.1,
 				Callback:       core.CallbackOnSpellHitDealt,
 				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
@@ -211,7 +222,8 @@ var ItemSetBattleplateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
 
 // T16 - Tank
 var ItemSetPlateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
-	Name: "Plate of the Prehistoric Marauder",
+	Name:                    "Plate of the Prehistoric Marauder",
+	DisabledInChallengeMode: true,
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			// TODO: You heal for 30% of all damage blocked with a shield
@@ -225,8 +237,10 @@ var ItemSetPlateOfThePrehistoricMarauder = core.NewItemSet(core.ItemSet{
 
 				war.ShieldBarrierAura.Aura.ApplyOnStacksChange(func(aura *core.Aura, sim *core.Simulation, oldStacks int32, newStacks int32) {
 					if setBonusAura.IsActive() {
-						absorbLoss := float64(oldStacks - newStacks)
-						war.GainHealth(sim, absorbLoss*0.3, healthMetrics)
+						absorbLoss := max(0, float64(oldStacks-newStacks))
+						if absorbLoss > 0 {
+							war.GainHealth(sim, absorbLoss*0.3, healthMetrics)
+						}
 					}
 				})
 			})

@@ -74,13 +74,14 @@ type CastFunc func(*Simulation, *Unit)
 type CastSuccessFunc func(*Simulation, *Unit) bool
 
 func (spell *Spell) castFailureHelper(sim *Simulation, message string, vals ...any) bool {
+	formatString := spell.ActionID.String() + " failed to cast: " + message
+
 	if sim.CurrentTime < 0 && spell.Unit.Rotation != nil {
-		spell.Unit.Rotation.ValidationMessage(proto.LogLevel_Warning, fmt.Sprintf(spell.ActionID.String()+" failed to cast: "+message, vals...))
-	} else {
-		if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
-			spell.Unit.Log(sim, fmt.Sprintf(spell.ActionID.String()+" failed to cast: "+message, vals...))
-		}
+		spell.Unit.Rotation.ValidationMessage(proto.LogLevel_Warning, formatString, vals)
+	} else if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
+		spell.Unit.Log(sim, fmt.Sprintf(formatString, vals...))
 	}
+
 	return false
 }
 
@@ -96,6 +97,14 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 				// does not invoke ModifyCast.
 				panic("May not modify cost in ModifyCast!")
 			}
+		}
+
+		if target == nil {
+			return spell.castFailureHelper(sim, "target is not set")
+		}
+
+		if !target.IsEnabled() {
+			return spell.castFailureHelper(sim, "target disabled")
 		}
 
 		if spell.Flags.Matches(SpellFlagSwapped) {
@@ -146,6 +155,10 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 			return spell.castFailureHelper(sim, "casting/channeling %v for %s, curTime = %s", hc.ActionID, hc.Expires-sim.CurrentTime, sim.CurrentTime)
 		}
 
+		if spell.Unit.IsCastingDuringChannel() && !spell.CanCastDuringChannel(sim) {
+			return spell.castFailureHelper(sim, "cannot interrupt in-progress channel of %v with a cast of %v", spell.Unit.ChanneledDot.ActionID, spell.ActionID)
+		}
+
 		if effectiveTime := spell.CurCast.EffectiveTime(); effectiveTime != 0 {
 
 			// do not add channeled time here as they have variable cast length
@@ -174,6 +187,10 @@ func (spell *Spell) makeCastFunc(config CastConfig) CastSuccessFunc {
 				OnComplete: func(sim *Simulation, target *Unit) {
 					if sim.Log != nil && !spell.Flags.Matches(SpellFlagNoLogs) {
 						spell.Unit.Log(sim, "Completed cast %s", spell.ActionID)
+					}
+
+					if !spell.CanCompleteCast(sim, target, true) {
+						return
 					}
 
 					if spell.Cost != nil {
@@ -254,6 +271,14 @@ func (spell *Spell) triggerCooldown(sim *Simulation) {
 
 func (spell *Spell) makeCastFuncSimple() CastSuccessFunc {
 	return func(sim *Simulation, target *Unit) bool {
+		if target == nil {
+			return spell.castFailureHelper(sim, "target is not set")
+		}
+
+		if !target.IsEnabled() {
+			return spell.castFailureHelper(sim, "target disabled")
+		}
+
 		if spell.Flags.Matches(SpellFlagSwapped) {
 			return spell.castFailureHelper(sim, "spell attached to an un-equipped item")
 		}

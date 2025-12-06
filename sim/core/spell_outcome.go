@@ -56,14 +56,24 @@ func (dot *Dot) OutcomeTickPhysicalCrit(sim *Simulation, result *SpellResult, at
 	}
 }
 
-func (dot *Dot) OutcomeTickMagicCrit(sim *Simulation, result *SpellResult, attackTable *AttackTable) {
+func (dot *Dot) OutcomeTickMagicCrit(sim *Simulation, result *SpellResult, _ *AttackTable) {
+	dot.outcomeTickMagicCrit(sim, result, nil, true)
+}
+func (dot *Dot) OutcomeTickMagicCritNoHitCounter(sim *Simulation, result *SpellResult, _ *AttackTable) {
+	dot.outcomeTickMagicCrit(sim, result, nil, false)
+}
+func (dot *Dot) outcomeTickMagicCrit(sim *Simulation, result *SpellResult, attackTable *AttackTable, countHits bool) {
 	if dot.Spell.MagicCritCheck(sim, result.Target) {
 		result.Outcome = OutcomeCrit
 		result.Damage *= dot.Spell.CritDamageMultiplier()
-		dot.Spell.SpellMetrics[result.Target.UnitIndex].CritTicks++
+		if countHits {
+			dot.Spell.SpellMetrics[result.Target.UnitIndex].CritTicks++
+		}
 	} else {
 		result.Outcome = OutcomeHit
-		dot.Spell.SpellMetrics[result.Target.UnitIndex].Ticks++
+		if countHits {
+			dot.Spell.SpellMetrics[result.Target.UnitIndex].Ticks++
+		}
 	}
 }
 
@@ -906,6 +916,17 @@ func (spell *Spell) OutcomeExpectedMagicHitAndCrit(_ *Simulation, result *SpellR
 	result.Damage *= averageMultiplier
 }
 
+func (spell *Spell) OutcomeExpectedPhysicalCrit(_ *Simulation, result *SpellResult, attackTable *AttackTable) {
+	if spell.CritMultiplier == 0 {
+		panic("Spell " + spell.ActionID.String() + " missing CritMultiplier")
+	}
+
+	averageMultiplier := 1.0
+	averageMultiplier += spell.PhysicalCritChance(attackTable) * (spell.CritDamageMultiplier() - 1)
+
+	result.Damage *= averageMultiplier
+}
+
 func (spell *Spell) OutcomeExpectedMeleeWhite(_ *Simulation, result *SpellResult, attackTable *AttackTable) {
 	missChance := spell.GetPhysicalMissChance(attackTable)
 	dodgeChance := TernaryFloat64(spell.Flags.Matches(SpellFlagCannotBeDodged), 0, max(0, attackTable.BaseDodgeChance-spell.DodgeSuppression()))
@@ -929,7 +950,7 @@ func (spell *Spell) OutcomeExpectedMeleeWeaponSpecialHitAndCrit(_ *Simulation, r
 	result.Damage *= averageMultiplier
 }
 
-func (dot *Dot) OutcomeExpectedMagicSnapshotCrit(_ *Simulation, result *SpellResult, _ *AttackTable) {
+func (dot *Dot) OutcomeExpectedSnapshotCrit(_ *Simulation, result *SpellResult, _ *AttackTable) {
 	if dot.Spell.CritMultiplier == 0 {
 		panic("Spell " + dot.Spell.ActionID.String() + " missing CritMultiplier")
 	}

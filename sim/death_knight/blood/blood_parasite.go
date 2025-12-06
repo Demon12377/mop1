@@ -21,7 +21,7 @@ func (bdk *BloodDeathKnight) registerBloodParasite() {
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
 			// Summon Bloodworm
-			for _, worm := range bdk.Bloodworm {
+			for _, worm := range bdk.Bloodworms {
 				if worm.IsActive() {
 					continue
 				}
@@ -38,7 +38,7 @@ func (bdk *BloodDeathKnight) registerBloodParasite() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&bdk.Unit, core.ProcTrigger{
+	bdk.MakeProcTriggerAura(core.ProcTrigger{
 		Name:       "Blood Parasite Trigger" + bdk.Label,
 		ActionID:   core.ActionID{SpellID: 49542},
 		Callback:   core.CallbackOnSpellHitDealt,

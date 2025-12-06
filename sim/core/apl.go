@@ -12,6 +12,8 @@ type APLRotation struct {
 	unit           *Unit
 	prepullActions []*APLAction
 	priorityList   []*APLAction
+	groups         []*APLGroup
+	valueVariables []*APLValueVariable
 
 	// Action currently controlling this rotation (only used for certain actions, such as StrictSequence).
 	controllingActions []APLActionImpl
@@ -37,11 +39,25 @@ type APLRotation struct {
 	curValidations          []*proto.APLValidation
 	prepullValidations      [][]*proto.APLValidation
 	priorityListValidations [][]*proto.APLValidation
+	groupListValidations    [][][]*proto.APLValidation
 	uuidValidations         map[*proto.UUID][]*proto.APLValidation
 
 	// Maps indices in filtered sim lists to indices in configs.
 	prepullIdxMap      []int
 	priorityListIdxMap []int
+	groupListIdxMap    [][]int
+}
+
+type APLGroup struct {
+	name         string
+	actions      []*APLAction
+	variables    map[string]*proto.APLValue
+	referencedBy *APLActionGroupReference
+}
+
+type APLValueVariable struct {
+	name  string
+	value *proto.APLValue
 }
 
 func (rot *APLRotation) ValidationMessage(log_level proto.LogLevel, message string, vals ...interface{}) {
@@ -92,11 +108,21 @@ func (unit *Unit) newAPLRotation(config *proto.APLRotation) *APLRotation {
 		return nil
 	}
 
+	groupsConfig := config.Groups
 	rotation := &APLRotation{
 		unit:                    unit,
 		prepullValidations:      make([][]*proto.APLValidation, len(config.PrepullActions)),
 		priorityListValidations: make([][]*proto.APLValidation, len(config.PriorityList)),
+		groupListValidations:    make([][][]*proto.APLValidation, len(groupsConfig)),
 		uuidValidations:         make(map[*proto.UUID][]*proto.APLValidation),
+	}
+
+	// Parse value variables FIRST, before any actions that might reference them
+	for _, condVar := range config.ValueVariables {
+		rotation.valueVariables = append(rotation.valueVariables, &APLValueVariable{
+			name:  condVar.Name,
+			value: condVar.Value,
+		})
 	}
 
 	// Parse prepull actions
@@ -141,12 +167,87 @@ func (unit *Unit) newAPLRotation(config *proto.APLRotation) *APLRotation {
 		})
 	}
 
+	// Parse groups
+	for groupIdx := 0; groupIdx < len(groupsConfig); groupIdx++ {
+		groupConfig := groupsConfig[groupIdx]
+		group := &APLGroup{
+			name:      groupConfig.Name,
+			variables: make(map[string]*proto.APLValue),
+		}
+
+		for _, varConfig := range groupConfig.Variables {
+			group.variables[varConfig.Name] = varConfig.Value
+		}
+
+		if rotation.groupListValidations[groupIdx] == nil {
+			rotation.groupListValidations[groupIdx] = make([][]*proto.APLValidation, len(groupConfig.Actions))
+			rotation.groupListIdxMap = append(rotation.groupListIdxMap, []int{})
+		}
+
+		// Parse actions in the group
+		for i, aplItem := range groupConfig.Actions {
+			rotation.doAndRecordWarnings(&rotation.groupListValidations[groupIdx][i], false, func() {
+				if !aplItem.Hide {
+					// Don't pass group.variables here - placeholders should remain as placeholders
+					// until the group is actually referenced with specific variable values
+					action := rotation.newAPLActionWithGroupVars(aplItem.Action, nil)
+					if action != nil {
+						group.actions = append(group.actions, action)
+						rotation.groupListIdxMap[groupIdx] = append(rotation.groupListIdxMap[groupIdx], i)
+					}
+				}
+			})
+		}
+
+		rotation.groups = append(rotation.groups, group)
+
+		// Duplicate the group if it is referenced more than once in the priority list.
+		foundReference := false
+
+		for _, action := range rotation.priorityList {
+			if groupReferenceAction, ok := action.impl.(*APLActionGroupReference); ok {
+				if (groupReferenceAction.groupName == group.name) && !groupReferenceAction.matched {
+					if foundReference {
+						groupsConfig = append(groupsConfig, groupConfig)
+						rotation.groupListValidations = append(rotation.groupListValidations, nil)
+					}
+
+					foundReference = true
+					groupReferenceAction.matched = true
+					group.referencedBy = groupReferenceAction
+				}
+			}
+		}
+
+		// Duplicate any other groups referenced by this group's actions.
+		for _, action := range group.actions {
+			if groupReferenceAction, ok := action.impl.(*APLActionGroupReference); ok {
+				for _, groupConfig := range groupsConfig {
+					if (groupReferenceAction.groupName == groupConfig.Name) && !groupReferenceAction.matched {
+						groupsConfig = append(groupsConfig, groupConfig)
+						rotation.groupListValidations = append(rotation.groupListValidations, nil)
+						groupReferenceAction.matched = true
+					}
+				}
+			}
+		}
+	}
+
 	// Finalize
 	for i, action := range rotation.prepullActions {
 		rotation.doAndRecordWarnings(&rotation.prepullValidations[rotation.prepullIdxMap[i]], true, func() {
 			action.Finalize(rotation)
 		})
 	}
+
+	for groupIdx, group := range rotation.groups {
+		for actionIdx, action := range group.actions {
+			rotation.doAndRecordWarnings(&rotation.groupListValidations[groupIdx][rotation.groupListIdxMap[groupIdx][actionIdx]], false, func() {
+				action.Finalize(rotation)
+			})
+		}
+	}
+
 	for i, action := range rotation.priorityList {
 		rotation.doAndRecordWarnings(&rotation.priorityListValidations[rotation.priorityListIdxMap[i]], false, func() {
 			action.Finalize(rotation)
@@ -207,6 +308,7 @@ func (unit *Unit) newAPLRotation(config *proto.APLRotation) *APLRotation {
 
 	return rotation
 }
+
 func (rot *APLRotation) getStats() *proto.APLStats {
 	// Perform one final round of validation after post-finalize effects.
 	for i, action := range rot.prepullActions {
@@ -214,6 +316,17 @@ func (rot *APLRotation) getStats() *proto.APLStats {
 			action.impl.PostFinalize(rot)
 		})
 	}
+
+	// Parse groups
+	for groupIdx, group := range rot.groups {
+		// Parse actions in the group
+		for actionIdx, action := range group.actions {
+			rot.doAndRecordWarnings(&rot.groupListValidations[groupIdx][rot.groupListIdxMap[groupIdx][actionIdx]], false, func() {
+				action.impl.PostFinalize(rot)
+			})
+		}
+	}
+
 	for i, action := range rot.priorityList {
 		rot.doAndRecordWarnings(&rot.priorityListValidations[rot.priorityListIdxMap[i]], false, func() {
 			action.impl.PostFinalize(rot)
@@ -236,6 +349,11 @@ func (rot *APLRotation) getStats() *proto.APLStats {
 		}),
 		PriorityList: MapSlice(rot.priorityListValidations, func(validations []*proto.APLValidation) *proto.APLActionStats {
 			return &proto.APLActionStats{Validations: validations}
+		}),
+		Groups: MapSlice(rot.groupListValidations, func(validations [][]*proto.APLValidation) *proto.APLGroupStats {
+			return &proto.APLGroupStats{Actions: MapSlice(validations, func(validations []*proto.APLValidation) *proto.APLActionStats {
+				return &proto.APLActionStats{Validations: validations}
+			})}
 		}),
 		UuidValidations: uuidValidationsArr,
 	}
@@ -282,7 +400,7 @@ func (apl *APLRotation) DoNextAction(sim *Simulation) {
 		return
 	}
 
-	if apl.unit.ChanneledDot != nil {
+	if apl.unit.IsChanneling() && !apl.unit.ChanneledDot.Spell.Flags.Matches(SpellFlagCastWhileChanneling) {
 		return
 	}
 
@@ -347,25 +465,17 @@ func (apl *APLRotation) popControllingAction(ca APLActionImpl) {
 func (apl *APLRotation) shouldInterruptChannel(sim *Simulation) bool {
 	channeledDot := apl.unit.ChanneledDot
 
-	if channeledDot.remainingTicks == 0 {
-		// Channel has ended, but apl.unit.ChanneledDot hasn't been cleared yet meaning the aura is still active.
-		return false
-	}
-
-	if apl.interruptChannelIf == nil || !apl.interruptChannelIf.GetBool(sim) {
-		// Continue the channel.
+	if !channeledDot.ChannelCanBeInterrupted(sim) {
 		return false
 	}
 
 	// Allow next action to interrupt the channel, but if the action is the same action then it still needs to continue.
 	nextAction := apl.getNextAction(sim)
-	if nextAction == nil {
-		return false
-	}
-
-	if channelAction, ok := nextAction.impl.(*APLActionChannelSpell); ok && channelAction.spell == channeledDot.Spell {
-		// Newly selected action is channeling the same spell, so continue the channel unless recast is allowed.
-		return apl.allowChannelRecastOnInterrupt
+	if nextAction != nil {
+		if channelAction, ok := nextAction.impl.(*APLActionChannelSpell); ok && channelAction.spell == channeledDot.Spell {
+			// Newly selected action is channeling the same spell, so continue the channel unless recast is allowed.
+			return apl.allowChannelRecastOnInterrupt
+		}
 	}
 
 	return true
@@ -378,4 +488,66 @@ func APLRotationFromJsonString(jsonString string) *proto.APLRotation {
 		panic(err)
 	}
 	return apl
+}
+
+// Add newAPLActionWithGroupVars to propagate groupVars to action condition and impl
+func (rot *APLRotation) newAPLActionWithGroupVars(config *proto.APLAction, groupVars map[string]*proto.APLValue) *APLAction {
+	if config == nil {
+		return nil
+	}
+
+	action := &APLAction{
+		condition: rot.coerceTo(rot.newAPLValueWithContext(config.Condition, groupVars), proto.APLValueType_ValueTypeBool),
+		impl:      rot.newAPLActionImpl(config),
+	}
+
+	if action.impl == nil {
+		return nil
+	} else {
+		return action
+	}
+}
+
+// Re-resolve variable references in an APLValue with updated group variables
+func (rot *APLRotation) reResolveVariableRefs(value APLValue, groupVars map[string]*proto.APLValue) APLValue {
+	if value == nil {
+		return nil
+	}
+
+	// Check if this is a variable reference that needs re-resolving
+	if varRef, ok := value.(*APLValueVariableRef); ok {
+		// Re-resolve the variable reference with the updated group variables
+		if groupVars != nil {
+			if val, ok := groupVars[varRef.name]; ok {
+				resolved := rot.newAPLValue(val)
+				if resolved != nil {
+					// Update the original variable reference instead of creating a new one
+					varRef.resolved = resolved
+					return varRef
+				}
+			}
+		}
+
+		// Fall back to global value variables
+		for _, condVar := range rot.valueVariables {
+			if condVar.name == varRef.name {
+				resolved := rot.newAPLValue(condVar.value)
+				if resolved != nil {
+					// Update the original variable reference instead of creating a new one
+					varRef.resolved = resolved
+					return varRef
+				}
+			}
+		}
+	}
+
+	// For other value types, recursively re-resolve their inner values
+	innerValues := value.GetInnerValues()
+	if len(innerValues) > 0 {
+		for i, innerValue := range innerValues {
+			innerValues[i] = rot.reResolveVariableRefs(innerValue, groupVars)
+		}
+	}
+
+	return value
 }

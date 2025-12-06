@@ -6,8 +6,8 @@ import (
 	"github.com/wowsims/mop/sim/core"
 )
 
-const SwpScaleCoeff = 0.743 // Revert 5.4 changes due to Beta changes from June 16th
-const SwpSpellCoeff = 0.366
+const SwpScaleCoeff = 0.629660992297
+const SwpSpellCoeff = 0.310169488695
 
 func (priest *Priest) registerShadowWordPainSpell() {
 	priest.ShadowWordPain = priest.RegisterSpell(core.SpellConfig{
@@ -53,17 +53,23 @@ func (priest *Priest) registerShadowWordPainSpell() {
 
 		ThreatMultiplier: 1,
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			result := spell.CalcPeriodicDamage(sim, target, priest.CalcScalingSpellDmg(SwpScaleCoeff), spell.OutcomeMagicHitAndCrit)
+			result := spell.CalcAndDealOutcome(sim, target, spell.OutcomeMagicHit)
 			if result.Landed() {
-				spell.Dot(target).Apply(sim)
-				spell.DealOutcome(sim, result)
+				dot := spell.Dot(target)
+				dot.Apply(sim)
+				dot.TickOnce(sim)
+
+				// Custom code for tracking T15 2PC extension logic
+				// which recalculates the snapshot if you extend after
+				// the initial duration.
+				priest.T15_2PC_ExtensionTracker[target.Index].Swp = spell.Dot(target).ExpiresAt()
 			}
 		},
 
 		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
 			dot := spell.Dot(target)
 			if useSnapshot {
-				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedMagicSnapshotCrit)
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
 				result.Damage /= dot.TickPeriod().Seconds()
 				return result
 			} else {

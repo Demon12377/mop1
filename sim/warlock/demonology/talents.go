@@ -50,14 +50,11 @@ func (demonlogy *DemonologyWarlock) registerGrimoireOfSupremacy() {
 		ThreatMultiplier: 1,
 		CritMultiplier:   2,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
 			baseDmg := spell.Unit.MHWeaponDamage(sim, spell.MeleeAttackPower()) * 1.95
-			baseDmg /= float64(sim.Environment.GetNumTargets())
-
-			for _, target := range sim.Encounter.TargetUnits {
-				spell.CalcAndDealDamage(sim, target, baseDmg, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
-			}
-
+			baseDmg /= float64(sim.Environment.ActiveTargetCount())
+			spell.CalcAndDealAoeDamage(sim, baseDmg, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
+			// Pets are not affected by Fury gain modifiers
 			demonlogy.DemonicFury.Gain(sim, 12, core.ActionID{SpellID: 30213})
 		},
 	})
@@ -72,6 +69,7 @@ func (demonology *DemonologyWarlock) registerGrimoireOfService() {
 
 	felGuard := demonology.registerFelguardWithName("Grimoire: Felguard", false, true, true)
 	felGuard.MinEnergy = 90
+
 	demonology.BuildAndRegisterSummonSpell(111898, felGuard)
 }
 

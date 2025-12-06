@@ -19,6 +19,7 @@ var ConsumableOverrides = []*proto.Consumable{
 	{Id: 62290, BuffsMainStat: true, Stats: stats.Stats{stats.Stamina: 90}.ToProtoArray()},
 	{Id: 62649, BuffsMainStat: true, Stats: stats.Stats{stats.Stamina: 90}.ToProtoArray()},
 	{Id: 86125, Type: proto.ConsumableType_ConsumableTypePotion},
+	{Id: 86569, Type: proto.ConsumableType_ConsumableTypeFlask},
 }
 var ItemOverrides = []*proto.UIItem{
 	// Boosted 359 green weapon damage stats are way off
@@ -183,40 +184,73 @@ var ItemOverrides = []*proto.UIItem{
 	{Id: 72881, Phase: 4}, // Treads of the Past
 	{Id: 72884, Phase: 4}, // Writhing Wand
 }
+var ItemUpgradesDisallowList = map[int32]struct{}{
+	// World Boss - Oondasta
+	95147: {}, // Fancifully Frilled Tunic
+	95148: {}, // Vest of the Bordomorono
+	95149: {}, // Gorgoraptor Scale Chest
+	95150: {}, // Mail of the Mosschopper
+	95151: {}, // Scorched Spiritfire Drape
+	95152: {}, // Breastplate of the Iguanocolossus
+	95153: {}, // Tyrant King Battleplate
+	95163: {}, // Ring of Shamuru
+	95164: {}, // Eye of Oondasta
+	95165: {}, // Achillobator Ring
+	95166: {}, // Forzarra's Last Meal
+	95167: {}, // Ring of King Kangrom
+	95177: {}, // Choker of Stygimolochy
+	95178: {}, // Lootraptor's Amulet
+	95179: {}, // Necklace of the Hazillosaurus
+	95180: {}, // Overcompensating Chain of the Alpha Male
+	95181: {}, // Amulet of the Titanorex
+	95182: {}, // Robes of Zalmoxes
+	95183: {}, // Waistband of Elder Falcarius
+	95184: {}, // Girdle of Dimorphodontics
+	95185: {}, // Terrorful Weave
+	95186: {}, // Belt of Crushed Dreams
+	95187: {}, // Girdle of the Derrodoccus
+	95188: {}, // Belt of the Arch Avimimus
+	95189: {}, // Belt of the Dying Diemetradon
+	95190: {}, // Waistband of Furious Stomping
+	95191: {}, // Voolar's Bloodied Belt
+	95192: {}, // Belt of the Tyrannotitan
+	95193: {}, // Gloves of Varsoon the Greater
+	95194: {}, // Gloves of Tyranomancy
+	95195: {}, // Gloves of Unliving Fossil
+	95196: {}, // Gloves of Gastric Rumbling
+	95197: {}, // Therapsid Scale Gloves
+	95198: {}, // Vulcanodon Gauntlets
+	95199: {}, // Carnotaur Battlegloves
+	95200: {}, // Orndo Mando's Gloves
+	95201: {}, // Skullsmashing Gauntlets
+
+	// Crafted - ToT
+	94263: {}, // Haunted Steel Greaves
+	94264: {}, // Haunted Steel Headcover
+	94265: {}, // Haunted Steel Treads
+	94266: {}, // Haunted Steel Greathelm
+	94267: {}, // Haunted Steel Warboots
+	94268: {}, // Haunted Steel Headguard
+	94269: {}, // Quilen Hide Boots
+	94270: {}, // Quilen Hide Helm
+	94271: {}, // Dreadrunner Sabatons
+	94272: {}, // Dreadrunner Helm
+	94273: {}, // Spirit Keeper Footguards
+	94274: {}, // Spirit Keeper Helm
+	94275: {}, // Cloud Serpent Sabatons
+	94276: {}, // Cloud Serpent Helm
+	94277: {}, // Falling Blossom Treads
+	94278: {}, // Falling Blossom Cowl
+	94279: {}, // Falling Blossom Sandals
+	94280: {}, // Falling Blossom Hood
+}
 
 // Keep these sorted by item ID.
 var ItemAllowList = map[int32]struct{}{
 	2140: {},
 	2505: {},
 
-	12590: {}, // Felstriker
-
-	//Shaman Dungeon Set 3 Tidefury
-	27510: {}, // Tidefury Gauntlets
-	27802: {}, // Tidefury Shoulderguards
-	27909: {}, // Tidefury Kilt
-	28231: {}, // Tidefury Chestpiece
-	28349: {}, // Tidefury Helm
-
-	29309: {}, // Band of the Eternal Restorer
-
-	29996: {}, // Rod of the Sun King
-
-	31026: {}, // Slayer's Handguards
-	31027: {}, // Slayer's Helm
-	31028: {}, // Slayer's Chestguard
-	31029: {}, // Slayer's Legguards
-	31030: {}, // Slayer's Shoulderpads
-	34448: {}, // Slayer's Bracers
-	34558: {}, // Slayer's Belt
-	34575: {}, // Slayer's Boots
-
-	34677: {}, // Shattered Sun Pendant of Restoration
-
 	45703: {}, // Spark of Hope
-
-	49982: {}, // Heartpierce N
-	50641: {}, // Heartpierce H
 }
 
 // Keep these sorted by item ID.
@@ -710,11 +744,77 @@ var ItemDenyList = map[int32]struct{}{
 	103050: {},
 
 	// MOP
+	// MSV / HOF / TOES
 	87080: {}, // HC Trash Jade Magistrate Figurine - 502
 	87079: {}, // HC Trash Jade Bandit Figurine - 502
 	87082: {}, // HC Trash Jade Charioteer Figurine - 502
 	87081: {}, // HC Trash Jade Courteasan Figurine - 502
 	87083: {}, // HC Trash Jade Warlord Figurine - 502
+
+	// TOT - Trash loot - Heroic (Thunderforged)
+	96702: {}, // Necklace of the Terra-Cotta Archer (Heroic)
+	96703: {}, // Spiderweb Tabi (Heroic)
+	96704: {}, // Scalehide Spurs (Heroic)
+	96705: {}, // Abandoned Zandalari Firecord (Heroic)
+	96706: {}, // Abandoned Zandalari Shadowgirdle (Heroic)
+	96707: {}, // Silentflame Sandals (Heroic)
+	96708: {}, // Necklace of the Terra-Cotta Invoker (Heroic)
+	96709: {}, // Home-Warding Slippers (Heroic)
+	96710: {}, // Deeproot Treads (Heroic)
+	96711: {}, // Spiritbound Boots (Heroic)
+	96712: {}, // Vaultwalker Sabatons (Heroic)
+	96713: {}, // Necklace of the Terra-Cotta Mender (Heroic)
+	96714: {}, // Abandoned Zandalari Silentbelt (Heroic)
+	96715: {}, // Abandoned Zandalari Moonstrap (Heroic)
+	96716: {}, // Abandoned Zandalari Arrowlinks (Heroic)
+	96717: {}, // Abandoned Zandalari Waterchain (Heroic)
+	96718: {}, // Abandoned Zandalari Greatbelt (Heroic)
+	96719: {}, // Abandoned Zandalari Goreplate (Heroic)
+	96720: {}, // Abandoned Zandalari Bucklebreaker (Heroic)
+	96721: {}, // Necklace of the Terra-Cotta Vanquisher (Heroic)
+	96722: {}, // Locksmasher Greaves (Heroic)
+	96723: {}, // Columnbreaker Stompers (Heroic)
+	96724: {}, // Necklace of the Terra-Cotta Protector (Heroic)
+	97074: {}, // Necklace of the Terra-Cotta Archer (Heroic Thunderforged)
+	97075: {}, // Spiderweb Tabi (Heroic Thunderforged)
+	97076: {}, // Scalehide Spurs (Heroic Thunderforged)
+	97077: {}, // Abandoned Zandalari Firecord (Heroic Thunderforged)
+	97078: {}, // Abandoned Zandalari Shadowgirdle (Heroic Thunderforged)
+	97079: {}, // Silentflame Sandals (Heroic Thunderforged)
+	97080: {}, // Necklace of the Terra-Cotta Invoker (Heroic Thunderforged)
+	97081: {}, // Home-Warding Slippers (Heroic Thunderforged)
+	97082: {}, // Deeproot Treads (Heroic Thunderforged)
+	97083: {}, // Spiritbound Boots (Heroic Thunderforged)
+	97084: {}, // Vaultwalker Sabatons (Heroic Thunderforged)
+	97085: {}, // Necklace of the Terra-Cotta Mender (Heroic Thunderforged)
+	97086: {}, // Abandoned Zandalari Silentbelt (Heroic Thunderforged)
+	97087: {}, // Abandoned Zandalari Moonstrap (Heroic Thunderforged)
+	97088: {}, // Abandoned Zandalari Arrowlinks (Heroic Thunderforged)
+	97089: {}, // Abandoned Zandalari Waterchain (Heroic Thunderforged)
+	97090: {}, // Abandoned Zandalari Greatbelt (Heroic Thunderforged)
+	97091: {}, // Abandoned Zandalari Goreplate (Heroic Thunderforged)
+	97092: {}, // Abandoned Zandalari Bucklebreaker (Heroic Thunderforged)
+	97093: {}, // Necklace of the Terra-Cotta Vanquisher (Heroic Thunderforged)
+	97094: {}, // Locksmasher Greaves (Heroic Thunderforged)
+	97095: {}, // Columnbreaker Stompers (Heroic Thunderforged)
+	97096: {}, // Necklace of the Terra-Cotta Protector (Heroic Thunderforged)
+
+	// MOP - Brewfest - Old items
+	87571:  {}, // Brawler's Statue
+	87572:  {}, // Mithril Wristwatch
+	87573:  {}, // Thousand-Year Pickled Egg
+	87574:  {}, // Coren's Cold Chromium Coaster
+	87575:  {}, // Bubbliest Brightbrew Charm
+	87576:  {}, // Bitterest Balebrew Charm
+	107217: {}, // Direbrew's Bloodied Shanker
+
+	// MOP - Hallows End - Old items
+	87569: {}, // The Horseman's Horrific Hood
+	87570: {}, // The Horseman's Sinister Slicer
+	88166: {}, // Wicked Witch's Signet
+	88167: {}, // Band of the Petrified Pumpkin
+	88168: {}, // Seal of Ghoulish Glee
+	88169: {}, // The Horseman's Ring
 }
 
 // Item icons to include in the DB, so they don't need to be separately loaded in the UI.
@@ -885,7 +985,7 @@ var SharedSpellsIcons = []int32{
 	// Registered CD's
 	49016,
 	57933,
-	64382,
+	1249459,
 	10060,
 	16190,
 	29166,
@@ -1091,32 +1191,6 @@ var GemAllowList = map[int32]struct{}{
 	//36766: {}, // Bright Dragon's Eye
 	//36767: {}, // Solid Dragon's Eye
 }
-var EnchantDenyListSpells = map[int32]struct{}{
-	141168: {},
-	141973: {},
-	142173: {},
-	142175: {},
-	141170: {},
-	141974: {},
-	142177: {},
-	141868: {},
-	141984: {},
-	141177: {},
-	141981: {},
-	141176: {},
-	141978: {},
-	141173: {},
-	141975: {},
-	141862: {},
-	141983: {},
-	141175: {},
-	141977: {},
-}
-var EnchantDenyListItems = map[int32]struct{}{
-	87583: {},
-	89717: {},
-	79061: {},
-}
 var GemDenyList = map[int32]struct{}{
 	// pvp non-unique gems not in game currently.
 	32735: {},
@@ -1176,11 +1250,64 @@ var GemDenyList = map[int32]struct{}{
 	77141: {},
 	77138: {},
 	77136: {},
+	76655: {},
+}
+
+var EnchantDenyListSpells = map[int32]struct{}{
+	141168: {},
+	141973: {},
+	142173: {},
+	142175: {},
+	141170: {},
+	141974: {},
+	142177: {},
+	141868: {},
+	141984: {},
+	141177: {},
+	141981: {},
+	141176: {},
+	141978: {},
+	141173: {},
+	141975: {},
+	141862: {},
+	141983: {},
+	141175: {},
+	141977: {},
+}
+var EnchantDenyListItems = map[int32]struct{}{
+	87583: {},
+	89717: {},
+	79061: {},
 }
 
 var EnchantDenyList = map[int32]struct{}{
 	4671: {}, // Kyle's Test Enchantment
 	4687: {}, // Enchant Weapon - Ninja (TEST VERSION)
 	4717: {}, // Enchant Weapon - Pandamonium (DNT)
+	5029: {}, // Custom - Jaina - Crackling Lightning
 	5110: {}, // Lightweave Embroidery - Junk
+}
+
+// Note: EffectId is required for all enchants, because they are
+// used by various importers/exporters
+var EnchantOverrides = []*proto.UIEnchant{
+	{EffectId: 4419, SpellId: 104395}, // Enchant Chest - Glorious Stats
+	{EffectId: 4428, SpellId: 104409}, // Enchant Boots - Blurred Speed
+	{EffectId: 4429, SpellId: 104414}, // Enchant Boots - Pandaren's Step
+	{EffectId: 4441, SpellId: 104425}, // Enchant Weapon - Windsong
+	{EffectId: 4442, SpellId: 104427}, // Enchant Weapon - Jade Spirit
+	{EffectId: 4443, SpellId: 104430}, // Enchant Weapon - Elemental Force
+	{EffectId: 4444, SpellId: 104434}, // Enchant Weapon - Dancing Steel
+	{EffectId: 4445, SpellId: 104040}, // Enchant Weapon - Colossus
+	{EffectId: 4446, SpellId: 104442}, // Enchant Weapon - River's Song
+
+	{EffectId: 4892, SpellId: 125481}, // Lightweave Embroidery (Rank 3)
+	{EffectId: 4893, SpellId: 125482}, // Darkglow Embroidery (Rank 3)
+	{EffectId: 4894, SpellId: 125483}, // Swordguard Embroidery (Rank 3)
+	{EffectId: 4895, SpellId: 125496}, // Master's Spellthread (Rank 3)
+	{EffectId: 4896, SpellId: 125497}, // Sanctified Spellthread (Rank 3)
+	{EffectId: 4898, SpellId: 126731}, // Synapse Springs (Mark II)
+
+	{EffectId: 5124, SpellId: 142469}, // Enchant Weapon - Spirit of Conquest
+	{EffectId: 5125, SpellId: 142468}, // Enchant Weapon - Bloody Dancing Steel
 }

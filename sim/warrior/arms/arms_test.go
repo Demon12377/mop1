@@ -13,28 +13,29 @@ func init() {
 }
 
 func TestArms(t *testing.T) {
-	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator(core.CharacterSuiteConfig{
-		Class:            proto.Class_ClassWarrior,
-		Race:             proto.Race_RaceOrc,
-		OtherRaces:       []proto.Race{proto.Race_RaceWorgen},
-		StartingDistance: 9,
+	core.RunTestSuite(t, t.Name(), core.FullCharacterTestSuiteGenerator([]core.CharacterSuiteConfig{
+		{
+			Class:            proto.Class_ClassWarrior,
+			Race:             proto.Race_RaceOrc,
+			OtherRaces:       []proto.Race{proto.Race_RaceWorgen},
+			StartingDistance: 25,
 
-		GearSet: core.GetGearSet("../../../ui/warrior/arms/gear_sets", "p1_arms_bis"),
-		OtherGearSets: []core.GearSetCombo{
-			core.GetGearSet("../../../ui/warrior/arms/gear_sets", "p1_prebis_rich"),
-			core.GetGearSet("../../../ui/warrior/arms/gear_sets", "p1_prebis_poor"),
+			GearSet: core.GetGearSet("../../../ui/warrior/arms/gear_sets", "p1_arms_bis"),
+			OtherGearSets: []core.GearSetCombo{
+				core.GetGearSet("../../../ui/warrior/arms/gear_sets", "p1_prebis"),
+			},
+			Talents:     ArmsTalents,
+			Glyphs:      ArmsDefaultGlyphs,
+			Consumables: FullConsumesSpec,
+			SpecOptions: core.SpecOptionsCombo{Label: "Basic", SpecOptions: PlayerOptionsArms},
+			Rotation:    core.GetAplRotation("../../../ui/warrior/arms/apls", "arms"),
+
+			ItemFilter: ItemFilter,
 		},
-		Talents:     ArmsTalents,
-		Glyphs:      ArmsDefaultGlyphs,
-		Consumables: FullConsumesSpec,
-		SpecOptions: core.SpecOptionsCombo{Label: "Basic", SpecOptions: PlayerOptionsArms},
-		Rotation:    core.GetAplRotation("../../../ui/warrior/arms/apls", "arms"),
-
-		ItemFilter: ItemFilter,
 	}))
 }
 
-var ArmsTalents = "113332"
+var ArmsTalents = "113132"
 var ArmsDefaultGlyphs = &proto.Glyphs{
 	Major1: int32(proto.WarriorMajorGlyph_GlyphOfBullRush),
 	Major2: int32(proto.WarriorMajorGlyph_GlyphOfUnendingRage),
@@ -44,9 +45,7 @@ var ArmsDefaultGlyphs = &proto.Glyphs{
 var PlayerOptionsArms = &proto.Player_ArmsWarrior{
 	ArmsWarrior: &proto.ArmsWarrior{
 		Options: &proto.ArmsWarrior_Options{
-			ClassOptions: &proto.WarriorOptions{
-				StartingRage: 0,
-			},
+			ClassOptions: &proto.WarriorOptions{},
 		},
 	},
 }

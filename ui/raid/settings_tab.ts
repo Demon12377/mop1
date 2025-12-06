@@ -3,7 +3,6 @@ import { EncounterPicker } from '../core/components/encounter_picker';
 import { IconPicker } from '../core/components/pickers/icon_picker';
 import { SavedDataManager } from '../core/components/saved_data_manager';
 import { SimTab } from '../core/components/sim_tab';
-import * as Tooltips from '../core/constants/tooltips.js';
 import { Encounter } from '../core/encounter';
 import { RaidBuffs } from '../core/proto/common';
 import { SavedEncounter } from '../core/proto/ui';
@@ -14,6 +13,7 @@ import { AssignmentsPicker } from './assignments_picker';
 import { BlessingsPicker } from './blessings_picker';
 import { RaidSimUI } from './raid_sim_ui';
 import { TanksPicker } from './tanks_picker';
+import i18n from '../i18n/config';
 
 export class SettingsTab extends SimTab {
 	protected simUI: RaidSimUI;
@@ -26,7 +26,7 @@ export class SettingsTab extends SimTab {
 	readonly column3: HTMLElement = this.buildColumn(3, 'raid-settings-col');
 
 	constructor(parentElem: HTMLElement, simUI: RaidSimUI) {
-		super(parentElem, simUI, { identifier: 'raid-settings-tab', title: 'Settings' });
+		super(parentElem, simUI, { identifier: 'raid-settings-tab', title: i18n.t('settings_tab.title') });
 		this.simUI = simUI;
 
 		this.leftPanel = document.createElement('div');
@@ -59,7 +59,7 @@ export class SettingsTab extends SimTab {
 
 	private buildEncounterSettings() {
 		const contentBlock = new ContentBlock(this.column1, 'encounter-settings', {
-			header: { title: 'Encounter' },
+			header: { title: i18n.t('settings_tab.encounter.title') },
 		});
 
 		new EncounterPicker(contentBlock.bodyElement, this.simUI.sim.encounter, { showExecuteProportion: true }, this.simUI);
@@ -67,7 +67,7 @@ export class SettingsTab extends SimTab {
 
 	private buildConsumesSettings() {
 		const contentBlock = new ContentBlock(this.column1, 'consumes-settings', {
-			header: { title: 'Consumables' },
+			header: { title: i18n.t('settings_tab.consumables.title') },
 		});
 
 		const container = document.createElement('div');
@@ -87,7 +87,7 @@ export class SettingsTab extends SimTab {
 
 	private buildOtherSettings() {
 		const contentBlock = new ContentBlock(this.column2, 'other-settings', {
-			header: { title: 'Other' },
+			header: { title: i18n.t('settings_tab.other.title') },
 		});
 
 		// new BooleanPicker(contentBlock.bodyElement, this.simUI.sim.raid, {
@@ -103,7 +103,7 @@ export class SettingsTab extends SimTab {
 
 	private buildTankSettings() {
 		const contentBlock = new ContentBlock(this.column2, 'tanks-settings', {
-			header: { title: 'Tanks' },
+			header: { title: i18n.t('common.tanks.title') },
 		});
 
 		new TanksPicker(contentBlock.bodyElement, this.simUI);
@@ -111,7 +111,7 @@ export class SettingsTab extends SimTab {
 
 	private buildAssignmentSettings() {
 		const contentBlock = new ContentBlock(this.column2, 'assignments-settings', {
-			header: { title: 'External Buffs' },
+			header: { title: i18n.t('settings_tab.external_buffs.title') },
 		});
 
 		new AssignmentsPicker(contentBlock.bodyElement, this.simUI);
@@ -119,7 +119,7 @@ export class SettingsTab extends SimTab {
 
 	private buildBlessingsPicker() {
 		const contentBlock = new ContentBlock(this.column3, 'blessings-settings', {
-			header: { title: 'Blessings', tooltip: Tooltips.BLESSINGS_SECTION },
+			header: { title: i18n.t('settings_tab.blessings.title'), tooltip: i18n.t('settings_tab.blessings.tooltip') },
 		});
 
 		this.simUI.blessingsPicker = new BlessingsPicker(contentBlock.bodyElement, this.simUI);
@@ -128,8 +128,8 @@ export class SettingsTab extends SimTab {
 
 	private buildSavedDataPickers() {
 		const savedEncounterManager = new SavedDataManager<Encounter, SavedEncounter>(this.rightPanel, this.simUI.sim.encounter, {
-			label: 'Encounter',
-			header: { title: 'Saved Encounters' },
+			label: i18n.t('settings_tab.saved_encounters.encounter'),
+			header: { title: i18n.t('settings_tab.saved_encounters.title') },
 			storageKey: this.simUI.getSavedEncounterStorageKey(),
 			getData: (encounter: Encounter) => SavedEncounter.create({ encounter: encounter.toProto() }),
 			setData: (eventID: EventID, encounter: Encounter, newEncounter: SavedEncounter) => encounter.fromProto(eventID, newEncounter.encounter!),

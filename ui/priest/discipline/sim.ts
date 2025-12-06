@@ -6,7 +6,7 @@ import { Player } from '../../core/player.js';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl.js';
 import { Faction, PartyBuffs, PseudoStat, Race, Spec, Stat } from '../../core/proto/common.js';
-import { Stats, UnitStat } from '../../core/proto_utils/stats.js';
+import { DEFAULT_HYBRID_CASTER_GEM_STATS, Stats, UnitStat } from '../../core/proto_utils/stats.js';
 import * as PriestInputs from '../inputs';
 import * as Presets from './presets.js';
 
@@ -34,6 +34,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDisciplinePriest, {
 		[Stat.StatHealth, Stat.StatMana, Stat.StatStamina, Stat.StatIntellect, Stat.StatSpirit, Stat.StatSpellPower, Stat.StatMP5, Stat.StatMasteryRating],
 		[PseudoStat.PseudoStatSpellHitPercent, PseudoStat.PseudoStatSpellCritPercent, PseudoStat.PseudoStatSpellHastePercent],
 	),
+	gemStats: DEFAULT_HYBRID_CASTER_GEM_STATS,
 	// modifyDisplayStats: (player: Player<Spec.SpecDisciplinePriest>) => {
 	// 	let stats = new Stats();
 	// 	stats = stats.addStat(Stat.StatSpellHit, player.getTalents().shadowFocus * 1 * Mechanics.SPELL_HIT_RATING_PER_HIT_CHANCE);
@@ -45,7 +46,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDisciplinePriest, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P4_PRESET.gear,
+		gear: Presets.P1_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.P1_EP_PRESET.epWeights,
 		// Default consumes settings.
@@ -84,20 +85,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDisciplinePriest, {
 		epWeights: [Presets.P1_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.StandardTalents, Presets.EnlightenmentTalents],
-		rotations: [Presets.ROTATION_PRESET_DEFAULT, Presets.ROTATION_PRESET_AOE24, Presets.ROTATION_PRESET_AOE4PLUS],
+		rotations: [Presets.ROTATION_PRESET_DEFAULT],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P2_PRESET, Presets.P3_PRESET, Presets.P4_PRESET],
+		gear: [
+			Presets.P1_PRESET],
 	},
 
 	autoRotation: (player: Player<Spec.SpecDisciplinePriest>): APLRotation => {
-		const numTargets = player.sim.encounter.targets.length;
-		if (numTargets > 4) {
-			return Presets.ROTATION_PRESET_AOE4PLUS.rotation.rotation!;
-		} else if (numTargets > 1) {
-			return Presets.ROTATION_PRESET_AOE24.rotation.rotation!;
-		} else {
-			return Presets.ROTATION_PRESET_DEFAULT.rotation.rotation!;
-		}
+		return Presets.ROTATION_PRESET_DEFAULT.rotation.rotation!;
 	},
 
 	raidSimPresets: [
@@ -115,15 +110,9 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDisciplinePriest, {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
 					1: Presets.P1_PRESET.gear,
-					2: Presets.P2_PRESET.gear,
-					3: Presets.P3_PRESET.gear,
-					4: Presets.P4_PRESET.gear,
 				},
 				[Faction.Horde]: {
 					1: Presets.P1_PRESET.gear,
-					2: Presets.P2_PRESET.gear,
-					3: Presets.P3_PRESET.gear,
-					4: Presets.P4_PRESET.gear,
 				},
 			},
 		},

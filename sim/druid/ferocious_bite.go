@@ -20,10 +20,11 @@ func (druid *Druid) registerFerociousBiteSpell() {
 	dmgPerComboPoint := resourceCoefficient * druid.ClassSpellScaling
 
 	druid.FerociousBite = druid.RegisterSpell(Cat, core.SpellConfig{
-		ActionID:    core.ActionID{SpellID: 22568},
-		SpellSchool: core.SpellSchoolPhysical,
-		ProcMask:    core.ProcMaskMeleeMHSpecial,
-		Flags:       core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ActionID:       core.ActionID{SpellID: 22568},
+		SpellSchool:    core.SpellSchoolPhysical,
+		ProcMask:       core.ProcMaskMeleeMHSpecial,
+		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ClassSpellMask: DruidSpellFerociousBite,
 
 		EnergyCost: core.EnergyCostOptions{
 			Cost:   25,
@@ -39,7 +40,6 @@ func (druid *Druid) registerFerociousBiteSpell() {
 			return druid.ComboPoints() > 0
 		},
 
-		BonusCritPercent: core.TernaryFloat64(druid.AssumeBleedActive, RendAndTearBonusCritPercent, 0),
 		DamageMultiplier: 1,
 		CritMultiplier:   druid.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
@@ -56,6 +56,12 @@ func (druid *Druid) registerFerociousBiteSpell() {
 				attackPower*scalingPerComboPoint*comboPoints
 			baseDamage *= 1.0 + excessEnergy/25
 
+			hasBleed := druid.AssumeBleedActive || (druid.BleedsActive[target] > 0)
+
+			if hasBleed {
+				spell.BonusCritPercent += RendAndTearBonusCritPercent
+			}
+
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMeleeSpecialHitAndCrit)
 
 			if result.Landed() {
@@ -66,11 +72,15 @@ func (druid *Druid) registerFerociousBiteSpell() {
 				ripDot := druid.Rip.Dot(target)
 
 				if sim.IsExecutePhase25() && ripDot.IsActive() {
-					ripDot.BaseTickCount = RipBaseNumTicks
+					ripDot.BaseTickCount = druid.RipBaseNumTicks
 					ripDot.ApplyRollover(sim)
 				}
 			} else {
 				spell.IssueRefund(sim)
+			}
+
+			if hasBleed {
+				spell.BonusCritPercent -= RendAndTearBonusCritPercent
 			}
 		},
 
@@ -82,6 +92,11 @@ func (druid *Druid) registerFerociousBiteSpell() {
 			result := spell.CalcDamage(sim, target, baseDamage, spell.OutcomeExpectedMagicAlwaysHit)
 			attackTable := spell.Unit.AttackTables[target.UnitIndex]
 			critChance := spell.PhysicalCritChance(attackTable)
+
+			if druid.AssumeBleedActive || (druid.BleedsActive[target] > 0) {
+				critChance += RendAndTearBonusCritPercent / 100
+			}
+
 			critMod := critChance * (spell.CritMultiplier - 1)
 			result.Damage *= 1 + critMod
 			return result

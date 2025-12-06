@@ -19,7 +19,7 @@ func (uhdk *UnholyDeathKnight) registerFesteringStrike() {
 		ActionID:       FesteringStrikeActionID.WithTag(1),
 		SpellSchool:    core.SpellSchoolPhysical,
 		ProcMask:       core.ProcMaskMeleeMHSpecial,
-		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: death_knight.DeathKnightSpellFesteringStrike,
 
 		MaxRange: core.MaxMeleeRange,
@@ -46,6 +46,7 @@ func (uhdk *UnholyDeathKnight) registerFesteringStrike() {
 
 			result := spell.CalcDamage(sim, target, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 
+			// TODO: Handle reaping correctly if using Unholy (Death) runes, research needed
 			spell.SpendRefundableCostAndConvertBloodOrFrostRune(sim, result.Landed())
 
 			if result.Landed() {

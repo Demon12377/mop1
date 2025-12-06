@@ -1,6 +1,7 @@
+import i18n from '../i18n/config';
 import { CharacterStats, StatMods, StatWrites } from './components/character_stats';
 import { ContentBlock } from './components/content_block';
-import { EmbeddedDetailedResults } from './components/detailed_results';
+import { DetailedResults } from './components/detailed_results';
 import { EncounterPickerConfig } from './components/encounter_picker';
 import * as IconInputs from './components/icon_inputs';
 import { BulkTab } from './components/individual_sim_ui/bulk_tab';
@@ -20,6 +21,7 @@ import {
 	IndividualLinkImporter,
 	IndividualWowheadGearPlannerImporter,
 } from './components/individual_sim_ui/importers';
+import { PresetConfigurationPicker } from './components/individual_sim_ui/preset_configuration_picker';
 import { RotationTab } from './components/individual_sim_ui/rotation_tab';
 import { SettingsTab } from './components/individual_sim_ui/settings_tab';
 import { TalentsTab } from './components/individual_sim_ui/talents_tab';
@@ -29,12 +31,12 @@ import { ItemNotice } from './components/item_notice/item_notice';
 import { addRaidSimAction, RaidSimResultsManager } from './components/raid_sim_action';
 import { SavedDataConfig } from './components/saved_data_manager';
 import { addStatWeightsAction, EpWeightsMenu, StatWeightActionSettings } from './components/stat_weights_action';
+import { ReforgeOptimizer } from './components/suggest_reforges_action';
 import { SimSettingCategories } from './constants/sim_settings';
-import * as Tooltips from './constants/tooltips';
-import { getSpecLaunchStatus, LaunchStatus, simLaunchStatuses } from './launched_sims';
+import { simLaunchStatuses } from './launched_sims';
 import { Player, PlayerConfig, registerSpecConfig as registerPlayerConfig } from './player';
 import { PlayerSpecs } from './player_specs';
-import { PresetBuild, PresetEpWeights, PresetGear, PresetItemSwap, PresetRotation } from './preset_utils';
+import { PresetBuild, PresetEpWeights, PresetGear, PresetItemSwap, PresetRotation, PresetSettings } from './preset_utils';
 import { StatWeightsResult } from './proto/api';
 import { APLRotation, APLRotation_Type as APLRotationType } from './proto/apl';
 import {
@@ -57,15 +59,16 @@ import {
 	Spec,
 	Stat,
 } from './proto/common';
-import { Consumable } from './proto/db';
-import { IndividualSimSettings, SavedTalents } from './proto/ui';
+import { IndividualSimSettings, ReforgeSettings, SavedTalents } from './proto/ui';
 import { getMetaGemConditionDescription } from './proto_utils/gems';
 import { armorTypeNames, professionNames } from './proto_utils/names';
 import { pseudoStatIsCapped, StatCap, Stats, UnitStat } from './proto_utils/stats';
-import { getTalentPoints, SpecOptions, SpecRotation } from './proto_utils/utils';
+import { getTalentPoints, migrateOldProto, ProtoConversionMap, SpecOptions, SpecRotation } from './proto_utils/utils';
+import { hasRequiredTalents, getMissingTalentRows, getRequiredTalentRows } from './talents/required_talents';
 import { SimUI, SimWarning } from './sim_ui';
 import { EventID, TypedEvent } from './typed_event';
 import { isDevMode } from './utils';
+import { CURRENT_API_VERSION } from './constants/other';
 
 const SAVED_GEAR_STORAGE_KEY = '__savedGear__';
 const SAVED_EP_WEIGHTS_STORAGE_KEY = '__savedEPWeights__';
@@ -88,8 +91,10 @@ export interface OtherDefaults {
 	profession2?: Profession;
 	distanceFromTarget?: number;
 	channelClipDelay?: number;
+	reactionTime?: number;
 	highHpThreshold?: number;
 	iterationCount?: number;
+	race?: Race;
 }
 
 export interface RaidSimPreset<SpecType extends Spec> {
@@ -107,6 +112,8 @@ export interface RaidSimPreset<SpecType extends Spec> {
 }
 
 export interface IndividualSimUIConfig<SpecType extends Spec> extends PlayerConfig<SpecType> {
+	// Override for required talent rows. If not specified, defaults to requiring all rows [0, 1, 2, 3, 4, 5]
+	requiredTalentRows?: number[];
 	// Additional css class to add to the root element.
 	cssClass: string;
 	// Used to generate schemed components. E.g. 'shaman', 'druid', 'raid'
@@ -123,8 +130,13 @@ export interface IndividualSimUIConfig<SpecType extends Spec> extends PlayerConf
 	modifyDisplayStats?: (player: Player<SpecType>) => StatMods;
 	overwriteDisplayStats?: (player: Player<SpecType>) => StatWrites;
 
+	// This can be used as a shorthand for setting "defaults".
+	// Useful for when the defaults should be the same as the preset build options
+	defaultBuild?: PresetBuild;
 	defaults: {
 		gear: EquipmentSpec;
+		itemSwap?: ItemSwap;
+
 		epWeights: Stats;
 		// Used for Reforge Optimizer
 		statCaps?: Stats;
@@ -159,8 +171,6 @@ export interface IndividualSimUIConfig<SpecType extends Spec> extends PlayerConf
 		simpleRotation?: SpecRotation<SpecType>;
 
 		other?: OtherDefaults;
-
-		itemSwap?: ItemSwap;
 	};
 
 	playerInputs?: InputSection;
@@ -185,6 +195,7 @@ export interface IndividualSimUIConfig<SpecType extends Spec> extends PlayerConf
 		gear: Array<PresetGear>;
 		talents: Array<SavedDataConfig<Player<SpecType>, SavedTalents>>;
 		rotations: Array<PresetRotation>;
+		settings?: Array<PresetSettings>;
 		builds?: Array<PresetBuild>;
 		itemSwaps?: Array<PresetItemSwap>;
 	};
@@ -214,7 +225,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 	readonly individualConfig: IndividualSimUIConfig<SpecType>;
 	private readonly statWeightActionSettings: StatWeightActionSettings;
 
-	private raidSimResultsManager: RaidSimResultsManager | null;
+	raidSimResultsManager: RaidSimResultsManager | null;
 	epWeightsModal: EpWeightsMenu | null = null;
 
 	prevEpIterations: number;
@@ -224,6 +235,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 	tankRefStat?: Stat;
 
 	readonly bt: BulkTab | null = null;
+	reforger: ReforgeOptimizer | null = null;
 
 	constructor(parentElem: HTMLElement, player: Player<SpecType>, config: IndividualSimUIConfig<SpecType>) {
 		super(parentElem, player.sim, {
@@ -241,11 +253,6 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		this.prevEpSimResult = null;
 		this.statWeightActionSettings = new StatWeightActionSettings(this);
 
-		if (!isDevMode() && getSpecLaunchStatus(this.player) === LaunchStatus.Unlaunched) {
-			this.handleSimUnlaunched();
-			return;
-		}
-
 		if ((config.itemSwapSlots || []).length > 0 && !itemSwapEnabledSpecs.includes(player.getSpec())) {
 			itemSwapEnabledSpecs.push(player.getSpec());
 		}
@@ -258,7 +265,10 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 				}
 
 				const metaGem = this.player.getGear().getMetaGem()!;
-				return `Meta gem disabled (${metaGem.name}): ${getMetaGemConditionDescription(metaGem)}`;
+				return i18n.t('sidebar.warnings.meta_gem_disabled', {
+					gemName: metaGem.name,
+					description: getMetaGemConditionDescription(metaGem),
+				});
 			},
 		});
 		this.addWarning({
@@ -269,30 +279,42 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 					return '';
 				}
 
-				return failedProfReqs.map(fpr => `${fpr.name} requires ${professionNames.get(fpr.requiredProfession)!}, but it is not selected.`);
+				return failedProfReqs.map(fpr =>
+					i18n.t('sidebar.warnings.profession_requirement', {
+						itemName: fpr.name,
+						professionName: professionNames.get(fpr.requiredProfession)!,
+					}),
+				);
 			},
 		});
 		this.addWarning({
 			updateOn: this.player.gearChangeEmitter,
 			getContent: () => {
 				const jcGems = this.player.getGear().getJCGems(this.player.isBlacksmithing());
-				if (jcGems.length <= 3) {
+				if (jcGems.length <= 2) {
 					return '';
 				}
 
-				return `Only 3 Jewelcrafting Gems are allowed, but ${jcGems.length} are equipped.`;
+				return i18n.t('sidebar.warnings.too_many_jc_gems', {
+					count: jcGems.length,
+				});
 			},
 		});
 		this.addWarning({
 			updateOn: this.player.talentsChangeEmitter,
 			getContent: () => {
 				const talentPoints = getTalentPoints(this.player.getTalentsString());
+				const requiredRows = getRequiredTalentRows(this.player.getSpecConfig());
 
-				if (talentPoints == 0) {
-					// Just return here, so we don't show a warning during page load.
+				// Only skip warning during initial load if there are no required talents
+				if (talentPoints == 0 && requiredRows.length == 0) {
 					return '';
-				} else if (talentPoints < 6) {
-					return 'Unspent talent points.';
+				} else if (!hasRequiredTalents(this.player.getSpecConfig(), this.player.getTalentsString())) {
+					const missingRows = getMissingTalentRows(this.player.getSpecConfig(), this.player.getTalentsString());
+					const missingRowNumbers = missingRows.map(row => row + 1).join(', ');
+					return i18n.t('sidebar.warnings.unspent_talent_points', {
+						rowNumbers: missingRowNumbers,
+					});
 				} else {
 					return '';
 				}
@@ -306,9 +328,9 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 				}
 
 				if (this.player.hasArmorSpecializationBonus()) {
-					return `Equip ${armorTypeNames.get(
-						this.player.armorSpecializationArmorType,
-					)} gear in each slot for the Armor Specialization (5% primary stat) effect.`;
+					return i18n.t('sidebar.warnings.armor_specialization', {
+						armorType: armorTypeNames.get(this.player.armorSpecializationArmorType),
+					});
 				} else {
 					return '';
 				}
@@ -323,7 +345,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 						this.player.getEquippedItem(ItemSlot.ItemSlotOffHand) != null) ||
 						this.player.getEquippedItem(ItemSlot.ItemSlotOffHand)?.item.handType == HandType.HandTypeTwoHand)
 				) {
-					return "Dual wielding two-handed weapon(s) without Titan's Grip spec.";
+					return i18n.t('sidebar.warnings.dual_wield_2h_without_titans_grip');
 				} else {
 					return '';
 				}
@@ -339,7 +361,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 				this.loadSettings();
 
 				if (this.player.getPlayerSpec().isHealingSpec && !isDevMode()) {
-					alert(Tooltips.HEALING_SIM_DISCLAIMER);
+					alert(i18n.t('sim.healing_sim_disclaimer'));
 				}
 			});
 		}
@@ -354,11 +376,11 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 			this.addDetailedResultsTab();
 		}
 
-		// TODO: Fix intermittent memory leak in the Calculate Combos
-		// request so that this can be re-enabled.
-		//this.bt = this.addBulkTab();
+		this.bt = this.addBulkTab();
 
-		this.addTopbarComponents();
+		this.sim.waitForInit().then(() => {
+			this.addTopbarComponents();
+		});
 	}
 
 	applyDefaultConfigOptions(config: IndividualSimUIConfig<SpecType>): IndividualSimUIConfig<SpecType> {
@@ -376,7 +398,6 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 			if (savedSettings != null) {
 				try {
 					const settings = IndividualSimSettings.fromJsonString(savedSettings, { ignoreUnknownFields: true });
-
 					this.fromProto(initEventID, settings);
 				} catch (e) {
 					console.warn('Failed to parse saved settings: ' + e);
@@ -398,7 +419,9 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 			this.player.setName(initEventID, 'Player');
 
 			// This needs to go last so it doesn't re-store things as they are initialized.
-			this.changeEmitter.on(_eventID => {
+			const events = [this.changeEmitter];
+			if (this.reforger?.changeEmitter) events.push(this.reforger.changeEmitter);
+			TypedEvent.onAny(events).on(_eventID => {
 				const jsonStr = IndividualSimSettings.toJsonString(this.toProto());
 				window.localStorage.setItem(this.getSettingsStorageKey(), jsonStr);
 			});
@@ -415,31 +438,11 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 		new CharacterStats(
 			this.rootElem.querySelector('.sim-sidebar-stats') as HTMLElement,
+			this,
 			this.player,
 			this.individualConfig.displayStats,
 			this.individualConfig.modifyDisplayStats,
 			this.individualConfig.overwriteDisplayStats,
-		);
-	}
-
-	private handleSimUnlaunched() {
-		this.rootElem.classList.add('sim-ui--is-unlaunched');
-		this.simMain?.replaceChildren(
-			<div className="sim-ui-unlaunched-container d-flex flex-column align-items-center text-center mt-auto mb-auto ms-auto me-auto">
-				<i className="fas fa-ban fa-3x"></i>
-				<p className="mt-4">
-					This sim is currently not supported.
-					<br />
-					Want to contribute? Make sure to join our{' '}
-					<a href="https://discord.gg/p3DgvmnDCS" target="_blank">
-						Discord
-					</a>
-					!
-				</p>
-				<p>
-					You can check out our other sims <a href="/mop/">here</a>
-				</p>
-			</div>,
 		);
 	}
 
@@ -450,10 +453,10 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 	private addBulkTab(): BulkTab {
 		const bulkTab = new BulkTab(this.simTabContentsContainer, this);
-		bulkTab.navLink.hidden = !this.sim.getShowExperimental();
-		this.sim.showExperimentalChangeEmitter.on(() => {
-			bulkTab.navLink.hidden = !this.sim.getShowExperimental();
-		});
+		//bulkTab.navLink.hidden = !this.sim.getShowExperimental();
+		//this.sim.showExperimentalChangeEmitter.on(() => {
+		//	bulkTab.navLink.hidden = !this.sim.getShowExperimental();
+		//});
 		return bulkTab;
 	}
 
@@ -471,9 +474,9 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 	private addDetailedResultsTab() {
 		const detailedResults = (<div className="detailed-results"></div>) as HTMLElement;
-		this.addTab('Results', 'detailed-results-tab', detailedResults);
+		this.addTab(i18n.t('results_tab.title'), 'detailed-results-tab', detailedResults);
 
-		new EmbeddedDetailedResults(detailedResults, this, this.raidSimResultsManager!);
+		new DetailedResults(detailedResults, this, this.raidSimResultsManager!);
 	}
 
 	private addTopbarComponents() {
@@ -526,13 +529,43 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		});
 	}
 
+	static updateProtoVersion(settingsProto: IndividualSimSettings) {
+		if (!(settingsProto.apiVersion < CURRENT_API_VERSION)) {
+			return;
+		}
+
+		const conversionMap: ProtoConversionMap<IndividualSimSettings> = new Map([
+			[
+				2,
+				(oldProto: IndividualSimSettings) => {
+					oldProto.apiVersion = 2;
+
+					oldProto.reforgeSettings = ReforgeSettings.create({
+						useCustomEpValues: oldProto.settings?.useCustomEpValues,
+						useSoftCapBreakpoints: oldProto.settings?.useSoftCapBreakpoints,
+						statCaps: oldProto.statCaps,
+						breakpointLimits: oldProto.breakpointLimits,
+					});
+
+					return oldProto;
+				},
+			],
+		]);
+
+		// Run the migration utility using the above map.
+		migrateOldProto<IndividualSimSettings>(settingsProto, settingsProto.apiVersion, conversionMap);
+
+		// Flag the version as up-to-date once all migrations are done.
+		settingsProto.apiVersion = CURRENT_API_VERSION;
+	}
+
 	applyDefaults(eventID: EventID) {
 		TypedEvent.freezeAllAndDo(() => {
 			const tankSpec = this.player.getPlayerSpec().isTankSpec;
 			const healingSpec = this.player.getPlayerSpec().isHealingSpec;
 
 			this.player.applySharedDefaults(eventID);
-			this.player.setRace(eventID, this.player.getPlayerClass().races[0]);
+			this.player.setRace(eventID, this.individualConfig.defaults.other?.race || this.player.getPlayerClass().races[0]);
 			this.player.setGear(eventID, this.sim.db.lookupEquipmentSpec(this.individualConfig.defaults.gear));
 			this.player.setConsumes(eventID, this.individualConfig.defaults.consumables);
 			this.applyDefaultRotation(eventID);
@@ -553,10 +586,6 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 			const defaultRatios = this.player.getDefaultEpRatios(tankSpec, healingSpec);
 			this.player.setEpRatios(eventID, defaultRatios);
-			if (this.individualConfig.defaults.statCaps) this.player.setStatCaps(eventID, this.individualConfig.defaults.statCaps);
-			if (this.individualConfig.defaults.softCapBreakpoints)
-				this.player.setSoftCapBreakpoints(eventID, this.individualConfig.defaults.softCapBreakpoints);
-			this.player.setBreakpointLimits(eventID, this.individualConfig.defaults.breakpointLimits || new Stats());
 			this.player.setProfession1(eventID, this.individualConfig.defaults.other?.profession1 || Profession.Engineering);
 
 			if (this.individualConfig.defaults.other?.profession2 === undefined) {
@@ -567,6 +596,9 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 			this.player.setDistanceFromTarget(eventID, this.individualConfig.defaults.other?.distanceFromTarget || 0);
 			this.player.setChannelClipDelay(eventID, this.individualConfig.defaults.other?.channelClipDelay || 0);
+			this.player.setReactionTime(eventID, this.individualConfig.defaults.other?.reactionTime || 100);
+
+			this.reforger?.applyDefaults(eventID);
 
 			if (this.isWithinRaidSim) {
 				this.sim.raid.setTargetDummies(eventID, 0);
@@ -589,34 +621,11 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 				this.statWeightActionSettings.applyDefaults(eventID);
 			}
+
+			if (this.individualConfig.defaultBuild) {
+				PresetConfigurationPicker.applyBuild(eventID, this.individualConfig.defaultBuild, this);
+			}
 		});
-	}
-
-	getSavedGearStorageKey(): string {
-		return this.getStorageKey(SAVED_GEAR_STORAGE_KEY);
-	}
-
-	getSavedEPWeightsStorageKey(): string {
-		return this.getStorageKey(SAVED_EP_WEIGHTS_STORAGE_KEY);
-	}
-
-	getSavedRotationStorageKey(): string {
-		return this.getStorageKey(SAVED_ROTATION_STORAGE_KEY);
-	}
-
-	getSavedSettingsStorageKey(): string {
-		return this.getStorageKey(SAVED_SETTINGS_STORAGE_KEY);
-	}
-
-	getSavedTalentsStorageKey(): string {
-		return this.getStorageKey(SAVED_TALENTS_STORAGE_KEY);
-	}
-
-	// Returns the actual key to use for local storage, based on the given key part and the site context.
-	getStorageKey(keyPart: string): string {
-		// Local storage is shared by all sites under the same domain, so we need to use
-		// different keys for each spec site.
-		return PlayerSpecs.getLocalStorageKey(this.player.getPlayerSpec()) + keyPart;
 	}
 
 	toProto(exportCategories?: Array<SimSettingCategories>): IndividualSimSettings {
@@ -624,6 +633,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 		const proto = IndividualSimSettings.create({
 			player: this.player.toProto(true, false, exportCategories),
+			apiVersion: CURRENT_API_VERSION,
 		});
 
 		if (exportCategory(SimSettingCategories.Miscellaneous)) {
@@ -649,11 +659,10 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 				settings: this.sim.toProto(),
 				epWeightsStats: this.player.getEpWeights().toProto(),
 				epRatios: this.player.getEpRatios(),
-				statCaps: this.player.getStatCaps().toProto(),
-				breakpointLimits: this.player.getBreakpointLimits().toProto(),
 				dpsRefStat: this.dpsRefStat,
 				healRefStat: this.healRefStat,
 				tankRefStat: this.tankRefStat,
+				reforgeSettings: this.reforger?.toProto(),
 			});
 		}
 
@@ -671,6 +680,8 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		const healingSpec = this.player.getPlayerSpec().isHealingSpec;
 
 		TypedEvent.freezeAllAndDo(() => {
+			IndividualSimUI.updateProtoVersion(settings);
+
 			if (!settings.player) {
 				return;
 			}
@@ -707,12 +718,8 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 					this.player.setEpRatios(eventID, defaultRatios);
 				}
 
-				if (settings.statCaps) {
-					this.player.setStatCaps(eventID, Stats.fromProto(settings.statCaps));
-				}
-
-				if (settings.breakpointLimits) {
-					this.player.setBreakpointLimits(eventID, Stats.fromProto(settings.breakpointLimits));
+				if (settings.reforgeSettings && this.reforger) {
+					this.reforger.fromProto(eventID, settings.reforgeSettings);
 				}
 
 				if (settings.dpsRefStat) {
@@ -740,7 +747,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 	hasCapForPseudoStat(pseudoStat: PseudoStat): boolean {
 		// Check both default and currently stored hard caps.
 		const defaultHardCaps = this.individualConfig.defaults.statCaps || new Stats();
-		const currentHardCaps = this.player.getStatCaps();
+		const currentHardCaps = this.reforger?.statCaps || new Stats();
 
 		// Also check all configured soft caps
 		const defaultSoftCaps: StatCap[] = this.individualConfig.defaults.softCapBreakpoints || [];
@@ -758,5 +765,32 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 		}
 
 		return false;
+	}
+
+	getSavedGearStorageKey(): string {
+		return this.getStorageKey(SAVED_GEAR_STORAGE_KEY);
+	}
+
+	getSavedEPWeightsStorageKey(): string {
+		return this.getStorageKey(SAVED_EP_WEIGHTS_STORAGE_KEY);
+	}
+
+	getSavedRotationStorageKey(): string {
+		return this.getStorageKey(SAVED_ROTATION_STORAGE_KEY);
+	}
+
+	getSavedSettingsStorageKey(): string {
+		return this.getStorageKey(SAVED_SETTINGS_STORAGE_KEY);
+	}
+
+	getSavedTalentsStorageKey(): string {
+		return this.getStorageKey(SAVED_TALENTS_STORAGE_KEY);
+	}
+
+	// Returns the actual key to use for local storage, based on the given key part and the site context.
+	getStorageKey(keyPart: string): string {
+		// Local storage is shared by all sites under the same domain, so we need to use
+		// different keys for each spec site.
+		return PlayerSpecs.getLocalStorageKey(this.player.getPlayerSpec()) + keyPart;
 	}
 }

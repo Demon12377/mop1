@@ -9,13 +9,13 @@ var HowlingBlastActionID = core.ActionID{SpellID: 49184}
 
 // Blast the target with a frigid wind, dealing (<mastery> * (573 + 0.848 * <AP>)) Frost damage to that foe, and (0.5 * <mastery> * (573 + 0.848 * <AP>)) Frost damage to all other enemies within 10 yards, infecting all targets with Frost Fever.
 func (fdk *FrostDeathKnight) registerHowlingBlast() {
-	results := make([]*core.SpellResult, fdk.Env.GetNumTargets())
+	results := make([]*core.SpellResult, fdk.Env.TotalTargetCount())
 
 	fdk.RegisterSpell(core.SpellConfig{
 		ActionID:       HowlingBlastActionID,
 		SpellSchool:    core.SpellSchoolFrost,
 		ProcMask:       core.ProcMaskSpellDamage,
-		Flags:          core.SpellFlagAoE | core.SpellFlagAPL,
+		Flags:          core.SpellFlagAoE | core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: death_knight.DeathKnightSpellHowlingBlast,
 
 		MaxRange: 30,
@@ -36,7 +36,8 @@ func (fdk *FrostDeathKnight) registerHowlingBlast() {
 		ThreatMultiplier: 1,
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			for idx, aoeTarget := range sim.Encounter.TargetUnits {
+			// First we have to calculate all damage done
+			for idx, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				baseDamage := fdk.CalcScalingSpellDmg(0.46000000834) + 0.848*spell.MeleeAttackPower()
 				damageMultiplier := spell.DamageMultiplier
 
@@ -55,12 +56,16 @@ func (fdk *FrostDeathKnight) registerHowlingBlast() {
 				}
 			}
 
-			for _, result := range results {
-				spell.DealDamage(sim, result)
-
-				if result.Landed() {
-					fdk.FrostFeverSpell.Cast(sim, result.Target)
+			// Then we have to apply all frost fever debuffs, to make sure no procs happen from targets getting hit
+			for idx := range sim.Encounter.ActiveTargetUnits {
+				if results[idx].Landed() {
+					fdk.FrostFeverSpell.Cast(sim, results[idx].Target)
 				}
+			}
+
+			// And then finally hit all targets
+			for idx := range sim.Encounter.ActiveTargetUnits {
+				spell.DealDamage(sim, results[idx])
 			}
 		},
 	})

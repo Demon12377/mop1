@@ -24,6 +24,7 @@ type Warlock struct {
 	Shadowburn           *core.Spell
 	Hellfire             *core.Spell
 	DrainLife            *core.Spell
+	SiphonLife           *core.Spell
 
 	ActivePet *WarlockPet
 	Felhunter *WarlockPet
@@ -34,13 +35,10 @@ type Warlock struct {
 
 	Doomguard *DoomguardPet
 	Infernal  *InfernalPet
-	// EbonImp   *EbonImpPet
-	FieryImp *FieryImpPet
 
 	serviceTimer *core.Timer
 
 	// Item sets
-	T13_4pc      *core.Aura
 	T15_2pc      *core.Aura
 	T15_4pc      *core.Aura
 	T16_2pc_buff *core.Aura
@@ -70,7 +68,7 @@ func (warlock *Warlock) Initialize() {
 	warlock.registerSummonDoomguard(doomguardInfernalTimer)
 	warlock.registerSummonInfernal(doomguardInfernalTimer)
 	warlock.registerLifeTap()
-	warlock.registerEternalResolve()
+	warlock.registerGlyphs()
 
 	// Fel Armor 10% Stamina
 	core.MakePermanent(
@@ -92,6 +90,9 @@ func (warlock *Warlock) AddRaidBuffs(raidBuffs *proto.RaidBuffs) {
 func (warlock *Warlock) Reset(sim *core.Simulation) {
 }
 
+func (warlock *Warlock) OnEncounterStart(_ *core.Simulation) {
+}
+
 func NewWarlock(character *core.Character, options *proto.Player, warlockOptions *proto.WarlockOptions) *Warlock {
 	warlock := &Warlock{
 		Character: *character,
@@ -102,10 +103,8 @@ func NewWarlock(character *core.Character, options *proto.Player, warlockOptions
 	warlock.EnableManaBar()
 	warlock.AddStatDependency(stats.Strength, stats.AttackPower, 1)
 
-	// warlock.EbonImp = warlock.NewEbonImp()
 	warlock.Infernal = warlock.NewInfernalPet()
 	warlock.Doomguard = warlock.NewDoomguardPet()
-	warlock.FieryImp = warlock.NewFieryImp()
 
 	warlock.serviceTimer = character.NewTimer()
 	warlock.registerPets()
@@ -186,12 +185,14 @@ const (
 	WarlockSpellCarrionSwarm
 	WarlockSpellDoom
 	WarlockSpellVoidray
+	WarlockSpellSiphonLife
+	WarlockSpellHavoc
 	WarlockSpellAll int64 = 1<<iota - 1
 
 	WarlockShadowDamage = WarlockSpellCorruption | WarlockSpellUnstableAffliction | WarlockSpellHaunt |
 		WarlockSpellDrainSoul | WarlockSpellDrainLife | WarlockSpellAgony |
 		WarlockSpellShadowBolt | WarlockSpellSeedOfCorruptionExposion | WarlockSpellHandOfGuldan |
-		WarlockSpellShadowflame | WarlockSpellFelFlame | WarlockSpellChaosBolt | WarlockSpellShadowBurn
+		WarlockSpellShadowflame | WarlockSpellFelFlame | WarlockSpellChaosBolt | WarlockSpellShadowBurn | WarlockSpellHavoc
 
 	WarlockPeriodicShadowDamage = WarlockSpellCorruption | WarlockSpellUnstableAffliction | WarlockSpellDrainSoul |
 		WarlockSpellDrainLife | WarlockSpellAgony
@@ -239,7 +240,7 @@ func (warlock *Warlock) ApplyDotWithPandemic(dot *core.Dot, sim *core.Simulation
 }
 
 // Called to handle custom resources
-type WarlockSpellCastedCallback func(resultList []core.SpellResult, spell *core.Spell, sim *core.Simulation)
+type WarlockSpellCastedCallback func(resultList core.SpellResultSlice, spell *core.Spell, sim *core.Simulation)
 
 type SecondaryResourceCost struct {
 	SecondaryCost int
@@ -261,20 +262,20 @@ func (s *SecondaryResourceCost) CostFailureReason(_ *core.Simulation, spell *cor
 // IssueRefund implements core.ResourceCostImpl.
 func (s *SecondaryResourceCost) IssueRefund(sim *core.Simulation, spell *core.Spell) {
 	curCost := spell.Cost.PercentModifier * float64(s.SecondaryCost)
-	spell.Unit.GetSecondaryResourceBar().Gain(sim, int32(curCost), spell.ActionID)
+	spell.Unit.GetSecondaryResourceBar().Gain(sim, curCost, spell.ActionID)
 }
 
 // MeetsRequirement implements core.ResourceCostImpl.
 func (s *SecondaryResourceCost) MeetsRequirement(_ *core.Simulation, spell *core.Spell) bool {
 	spell.CurCast.Cost = spell.Cost.PercentModifier * float64(s.SecondaryCost)
-	return spell.Unit.GetSecondaryResourceBar().CanSpend(int32(spell.CurCast.Cost))
+	return spell.Unit.GetSecondaryResourceBar().CanSpend(spell.CurCast.Cost)
 }
 
 // SpendCost implements core.ResourceCostImpl.
 func (s *SecondaryResourceCost) SpendCost(sim *core.Simulation, spell *core.Spell) {
 
 	// during some hard casts resourc might tick down, make sure spells don't execute on exhaustion
-	if spell.Unit.GetSecondaryResourceBar().CanSpend(int32(spell.CurCast.Cost)) {
-		spell.Unit.GetSecondaryResourceBar().Spend(sim, int32(spell.CurCast.Cost), spell.ActionID)
+	if spell.Unit.GetSecondaryResourceBar().CanSpend(spell.CurCast.Cost) {
+		spell.Unit.GetSecondaryResourceBar().Spend(sim, spell.CurCast.Cost, spell.ActionID)
 	}
 }

@@ -539,6 +539,9 @@ func (character *Character) GetOHWeapon() *Item {
 func (character *Character) HasOHWeapon() bool {
 	return character.GetOHWeapon() != nil
 }
+func (character *Character) HasOH() bool {
+	return character.OffHand().ID != 0
+}
 
 func (character *Character) HasRangedWeapon() bool {
 	return character.Ranged() != nil
@@ -566,6 +569,12 @@ func (character *Character) getCurrentProcMaskForWeaponEnchant(effectID int32) P
 	})
 }
 
+func (character *Character) getCurrentProcMaskForWeaponTempEnchant(effectID int32) ProcMask {
+	return character.getCurrentProcMaskFor(func(weapon *Item) bool {
+		return weapon.TempEnchant == effectID
+	})
+}
+
 func (character *Character) GetDynamicProcMaskForWeaponEffect(itemID int32) *ProcMask {
 	return character.getDynamicProcMaskPointer(func() ProcMask {
 		return character.getCurrentProcMaskForWeaponEffect(itemID)
@@ -578,9 +587,25 @@ func (character *Character) getCurrentProcMaskForWeaponEffect(itemID int32) Proc
 	})
 }
 
+func (character *Character) GetDynamicProcMaskForTypes(weaponTypes ...proto.WeaponType) *ProcMask {
+	return character.getDynamicProcMaskPointer(func() ProcMask {
+		return character.getCurrentProcMaskFor(func(weapon *Item) bool {
+			return weapon != nil && slices.Contains(weaponTypes, weapon.WeaponType)
+		})
+	})
+}
+
 func (character *Character) GetProcMaskForTypes(weaponTypes ...proto.WeaponType) ProcMask {
 	return character.getCurrentProcMaskFor(func(weapon *Item) bool {
 		return weapon != nil && slices.Contains(weaponTypes, weapon.WeaponType)
+	})
+}
+
+func (character *Character) GetDynamicProcMaskForTypesAndHand(twohand bool, weaponTypes ...proto.WeaponType) *ProcMask {
+	return character.getDynamicProcMaskPointer(func() ProcMask {
+		return character.getCurrentProcMaskFor(func(weapon *Item) bool {
+			return weapon != nil && (weapon.HandType == proto.HandType_HandTypeTwoHand) == twohand && slices.Contains(weaponTypes, weapon.WeaponType)
+		})
 	})
 }
 
@@ -704,7 +729,6 @@ func (character *Character) AddStatProcBuff(effectID int32, procAura *StatBuffAu
 	character.RegisterItemSwapCallback(eligibleSlots, func(sim *Simulation, slot proto.ItemSlot) {
 		procAura.IsSwapped = !hasEquippedCheck(effectID, eligibleSlots)
 	})
-
 }
 
 func (character *Character) GetMatchingItemProcAuras(statTypesToMatch []stats.Stat, minIcd time.Duration) []*StatBuffAura {

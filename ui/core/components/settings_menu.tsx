@@ -1,8 +1,8 @@
 import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
-import { wowheadSupportedLanguages } from '../constants/lang.js';
-import { setCurrentLang } from '../locale_service';
+import { setLang, supportedLanguages } from '../../i18n/locale_service';
+import i18n from '../../i18n/config';
 import { Sim } from '../sim.js';
 import { SimUI } from '../sim_ui.js';
 import { EventID, TypedEvent } from '../typed_event.js';
@@ -11,12 +11,13 @@ import { BooleanPicker } from './pickers/boolean_picker.js';
 import { EnumPicker, EnumValueConfig } from './pickers/enum_picker.js';
 import { NumberPicker } from './pickers/number_picker.js';
 import Toast from './toast';
+import { trackEvent } from '../../tracking/utils';
 
 export class SettingsMenu extends BaseModal {
 	private readonly simUI: SimUI;
 
 	constructor(parent: HTMLElement, simUI: SimUI) {
-		super(parent, 'settings-menu', { title: 'Options', footer: true, disposeOnClose: false });
+		super(parent, 'settings-menu', { title: i18n.t('info.options.title'), footer: true, disposeOnClose: false });
 		this.simUI = simUI;
 
 		const restoreDefaultsButton = ref<HTMLButtonElement>();
@@ -36,7 +37,7 @@ export class SettingsMenu extends BaseModal {
 					<div className="fixed-rng-seed-container">
 						<div ref={fixedRngSeed} className="fixed-rng-seed"></div>
 						<div className="form-text">
-							<span>Last used RNG seed:</span>&nbsp;
+							<span>{i18n.t('info.options.fixed_rng_seed.last_used')}</span>&nbsp;
 							<span ref={lastUsedRngSeed} className="last-used-rng-seed">
 								0
 							</span>
@@ -59,7 +60,7 @@ export class SettingsMenu extends BaseModal {
 
 		const footer = (
 			<button ref={restoreDefaultsButton} className="restore-defaults-button btn btn-primary">
-				Restore Defaults
+				{i18n.t('info.options.restore_defaults.button')}
 			</button>
 		);
 		if (this.footer) {
@@ -69,13 +70,18 @@ export class SettingsMenu extends BaseModal {
 
 		if (restoreDefaultsButton.value) {
 			tippy(restoreDefaultsButton.value, {
-				content: 'Restores all default settings (gear, consumes, buffs, talents, EP weights, etc). Saved settings are preserved.',
+				content: i18n.t('info.options.restore_defaults.tooltip'),
 			});
 			restoreDefaultsButton.value.addEventListener('click', () => {
+				trackEvent({
+					action: 'settings',
+					category: 'restore-defaults',
+					label: 'restore',
+				});
 				this.simUI.applyDefaults(TypedEvent.nextEventID());
 				new Toast({
 					variant: 'success',
-					body: 'Restored to default settings.',
+					body: i18n.t('info.options.restore_defaults.success_message'),
 				});
 			});
 		}
@@ -83,9 +89,8 @@ export class SettingsMenu extends BaseModal {
 		if (fixedRngSeed.value)
 			new NumberPicker(fixedRngSeed.value, this.simUI.sim, {
 				id: 'simui-fixed-rng-seed',
-				label: 'Fixed RNG Seed',
-				labelTooltip:
-					'Seed value for the random number generator used during sims, or 0 to use different randomness each run. Use this to share exact sim results or for debugging.',
+				label: i18n.t('info.options.fixed_rng_seed.label'),
+				labelTooltip: i18n.t('info.options.fixed_rng_seed.tooltip'),
 				extraCssClasses: ['mb-0'],
 				changedEvent: (sim: Sim) => sim.fixedRngSeedChangeEmitter,
 				getValue: (sim: Sim) => sim.getFixedRngSeed(),
@@ -102,15 +107,15 @@ export class SettingsMenu extends BaseModal {
 		}
 
 		if (language.value) {
-			const langs = Object.keys(wowheadSupportedLanguages);
+			const langs = Object.keys(supportedLanguages);
 			const defaultLang = langs.indexOf('en');
 			const languagePicker = new EnumPicker(language.value, this.simUI.sim, {
 				id: 'simui-language-picker',
-				label: 'Language',
-				labelTooltip: 'Controls the language for Wowhead tooltips.',
+				label: i18n.t('info.options.language.label'),
+				labelTooltip: i18n.t('info.options.language.tooltip'),
 				values: langs.map((lang, i) => {
 					return {
-						name: wowheadSupportedLanguages[lang],
+						name: supportedLanguages[lang],
 						value: i,
 					};
 				}),
@@ -120,18 +125,24 @@ export class SettingsMenu extends BaseModal {
 					return idx == -1 ? defaultLang : idx;
 				},
 				setValue: (eventID: EventID, sim: Sim, newValue: number) => {
+					trackEvent({
+						action: 'settings',
+						category: 'language',
+						label: 'update',
+						value: langs[newValue],
+					});
 					sim.setLanguage(eventID, langs[newValue] || 'en');
-					setCurrentLang(langs[newValue] || 'en');
+					setLang(langs[newValue] || 'en');
 				},
 			});
 			// Refresh page after language change, to apply the changes.
-			languagePicker.changeEmitter.on(() => setTimeout(() => location.reload(), 100));
+			languagePicker.changeEmitter.on(() => setTimeout(() => location.reload(), 300));
 		}
 
 		if (showThreatMetrics.value)
 			new BooleanPicker(showThreatMetrics.value, this.simUI.sim, {
 				id: 'simui-show-threat-metrics',
-				label: 'Show Threat/Tank Options',
+				label: i18n.t('info.options.feature_toggles.show_threat_metrics'),
 				labelTooltip: 'Shows all options and metrics relevant to tanks, like TPS/DTPS.',
 				inline: true,
 				changedEvent: (sim: Sim) => sim.showThreatMetricsChangeEmitter,
@@ -144,19 +155,25 @@ export class SettingsMenu extends BaseModal {
 		if (showExperimental.value)
 			new BooleanPicker(showExperimental.value, this.simUI.sim, {
 				id: 'simui-show-experimental',
-				label: 'Show Experimental',
+				label: i18n.t('info.options.feature_toggles.show_experimental'),
 				labelTooltip: 'Shows experimental options, if there are any active experiments.',
 				inline: true,
 				changedEvent: (sim: Sim) => sim.showExperimentalChangeEmitter,
 				getValue: (sim: Sim) => sim.getShowExperimental(),
 				setValue: (eventID: EventID, sim: Sim, newValue: boolean) => {
+					trackEvent({
+						action: 'settings',
+						category: 'show-experimental',
+						label: 'update',
+						value: newValue,
+					});
 					sim.setShowExperimental(eventID, newValue);
 				},
 			});
 		if (showQuickSwap.value)
 			new BooleanPicker(showQuickSwap.value, this.simUI.sim, {
 				id: 'simui-show-quick-swap',
-				label: 'Show quick swap interface',
+				label: i18n.t('info.options.feature_toggles.show_quick_swap'),
 				labelTooltip: 'Allows you to quickly swap between Gems/Enchants through your favorites. (Disabled on touch devices)',
 				inline: true,
 				changedEvent: (sim: Sim) => sim.showQuickSwapChangeEmitter,
@@ -174,11 +191,19 @@ export class SettingsMenu extends BaseModal {
 
 			new EnumPicker<Sim>(useConcurrentWorkers.value, this.simUI.sim, {
 				id: 'simui-concurrent-workers-picker',
-				label: 'Use Multiple CPU Cores',
+				label: i18n.t('info.options.use_multiple_cpu_cores.label'),
 				labelTooltip: 'Use web workers to spread sim workload over multiple CPU cores.',
 				changedEvent: (sim: Sim) => sim.wasmConcurrencyChangeEmitter,
 				getValue: (sim: Sim) => sim.getWasmConcurrency(),
-				setValue: (eventID, sim, newValue) => sim.setWasmConcurrency(eventID, newValue),
+				setValue: (eventID, sim, newValue) => {
+					trackEvent({
+						action: 'settings',
+						category: 'concurrency',
+						label: 'update',
+						value: newValue,
+					});
+					sim.setWasmConcurrency(eventID, newValue);
+				},
 				values: values,
 			});
 

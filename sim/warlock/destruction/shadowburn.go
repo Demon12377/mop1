@@ -25,7 +25,7 @@ func (destruction *DestructionWarlock) registerShadowBurnSpell() {
 			},
 		},
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return sim.IsExecutePhase20() && destruction.BurningEmbers.CanSpend(core.TernaryInt32(destruction.T15_2pc.IsActive(), 8, 10))
+			return sim.IsExecutePhase20() && destruction.BurningEmbers.CanSpend(core.TernaryFloat64(destruction.T15_2pc.IsActive(), 8, 10))
 		},
 
 		DamageMultiplierAdditive: 1,
@@ -36,8 +36,11 @@ func (destruction *DestructionWarlock) registerShadowBurnSpell() {
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			baseDamage := destruction.CalcAndRollDamageRange(sim, shadowBurnScale, shadowBurnVariance)
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMagicHitAndCrit)
-			if result.Landed() {
-				destruction.BurningEmbers.Spend(sim, core.TernaryInt32(destruction.T15_2pc.IsActive(), 8, 10), spell.ActionID)
+
+			if spell.Flags.Matches(SpellFlagDestructionHavoc) {
+				//Havoc Spell doesn't spend resources as it was a duplicate
+			} else if result.Landed() {
+				destruction.BurningEmbers.Spend(sim, core.TernaryFloat64(destruction.T15_2pc.IsActive(), 8, 10), spell.ActionID)
 			}
 
 			pa := sim.GetConsumedPendingActionFromPool()

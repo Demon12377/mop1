@@ -37,14 +37,14 @@ func init() {
 
 		auras := []*core.StatBuffAura{haste, crit, mastery}
 
-		core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
+		character.MakeProcTriggerAura(core.ProcTrigger{
 			Name:     "Enchant Weapon - Windsong",
 			Callback: core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt | core.CallbackOnHealDealt | core.CallbackOnPeriodicHealDealt,
-			Harmful:  true,
 			ActionID: core.ActionID{SpellID: 104561},
 			DPM: character.NewRPPMProcManager(
 				4441,
 				true,
+				false,
 				core.ProcMaskDirect|core.ProcMaskProc,
 				core.RPPMConfig{
 					PPM: 2.2,
@@ -59,13 +59,14 @@ func init() {
 
 		for _, aura := range auras {
 			character.AddStatProcBuff(4441, aura, true, core.AllWeaponSlots())
+			character.ItemSwap.RegisterWeaponEnchantBuff(aura.Aura, 4441)
 		}
 	})
 
 	// Permanently enchants a melee weapon to sometimes increase your Intellect by 0 when healing or dealing
 	// damage with spells. If less than 25% of your mana remains when the effect is triggered, your Spirit will
 	// also increase by 0.
-	newJadeSpiritEnchant := func(name string, effectId int32, procEffectId int32, buffEffectId int32, icd time.Duration) {
+	newJadeSpiritEnchant := func(name string, effectId int32, procEffectId int32, buffEffectId int32) {
 		core.NewEnchantEffect(effectId, func(agent core.Agent, _ proto.ItemLevelState) {
 			character := agent.GetCharacter()
 			duration := time.Second * 12
@@ -83,15 +84,15 @@ func init() {
 				duration,
 			)
 
-			core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
+			character.MakeProcTriggerAura(core.ProcTrigger{
 				Name:     "Enchant Weapon - " + name,
 				Callback: core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt | core.CallbackOnHealDealt | core.CallbackOnPeriodicHealDealt,
-				Harmful:  true,
 				ActionID: core.ActionID{SpellID: procEffectId},
-				ICD:      icd,
+				ICD:      3 * time.Second,
 				DPM: character.NewRPPMProcManager(
-					4442,
+					effectId,
 					true,
+					false,
 					core.ProcMaskDirect|core.ProcMaskProc,
 					core.RPPMConfig{
 						PPM: 2.2,
@@ -106,13 +107,13 @@ func init() {
 				},
 			})
 
-			character.AddStatProcBuff(4442, intellect, true, core.AllWeaponSlots())
+			character.AddStatProcBuff(effectId, intellect, true, core.AllWeaponSlots())
+			character.ItemSwap.RegisterWeaponEnchantBuff(intellect.Aura, effectId)
 		})
 	}
 
-	newJadeSpiritEnchant("Jade Spirit", 4442, 120033, 104993, 3*time.Second)
-	// TODO: Currently the PVP variant has no ICD, TBD if this is intended.
-	newJadeSpiritEnchant("Spirit of Conquest", 5124, 142536, 142535, 0)
+	newJadeSpiritEnchant("Jade Spirit", 4442, 120033, 104993)
+	newJadeSpiritEnchant("Spirit of Conquest", 5124, 142536, 142535)
 
 	// Permanently enchants a melee weapon to sometimes increase your Strength or Agility by 0 when dealing melee
 	// damage. Your highest stat is always chosen.
@@ -139,7 +140,7 @@ func init() {
 				)
 				for _, aura := range auras {
 					character.AddStatProcBuff(effectId, aura, true, []proto.ItemSlot{slot})
-					character.AddStatProcBuff(effectId, aura, true, []proto.ItemSlot{slot})
+					character.ItemSwap.RegisterWeaponEnchantBuff(aura.Aura, effectId)
 				}
 				return auras
 			}
@@ -147,14 +148,14 @@ func init() {
 			mhAuras := createDancingSteelAuras(1)
 			ohAuras := createDancingSteelAuras(2)
 
-			core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
+			character.MakeProcTriggerAura(core.ProcTrigger{
 				Name:     "Enchant Weapon - " + name,
 				Callback: core.CallbackOnSpellHitDealt,
-				Harmful:  true,
 				ActionID: core.ActionID{SpellID: procEffectId},
 				DPM: character.NewRPPMProcManager(
 					effectId,
 					true,
+					false,
 					core.ProcMaskMelee|core.ProcMaskMeleeProc,
 					core.RPPMConfig{
 						PPM: 2.53,
@@ -188,14 +189,15 @@ func init() {
 			},
 		})
 
-		core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
-			Name:     "Enchant Weapon - Colossus",
-			Callback: core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
-			Harmful:  true,
-			ActionID: core.ActionID{SpellID: 118314},
+		character.MakeProcTriggerAura(core.ProcTrigger{
+			Name:               "Enchant Weapon - Colossus",
+			Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
+			RequireDamageDealt: true,
+			ActionID:           core.ActionID{SpellID: 118314},
 			DPM: character.NewRPPMProcManager(
 				4445,
 				true,
+				false,
 				core.ProcMaskDirect|core.ProcMaskProc,
 				core.RPPMConfig{
 					PPM: 5.5,
@@ -206,6 +208,8 @@ func init() {
 				shield.Activate(sim)
 			},
 		})
+
+		character.ItemSwap.RegisterWeaponEnchantBuff(shield.Aura, 4445)
 	})
 
 	// Permanently enchants a melee weapon to sometimes increase your dodge by 1650 for 7s when dealing melee
@@ -221,15 +225,16 @@ func init() {
 			duration,
 		)
 
-		core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
-			Name:     "Enchant Weapon - River's Song",
-			Callback: core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
-			Harmful:  true,
-			ActionID: core.ActionID{SpellID: 104441},
-			ICD:      time.Millisecond * 100,
+		character.MakeProcTriggerAura(core.ProcTrigger{
+			Name:               "Enchant Weapon - River's Song",
+			Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
+			RequireDamageDealt: true,
+			ActionID:           core.ActionID{SpellID: 104441},
+			ICD:                time.Millisecond * 250,
 			DPM: character.NewRPPMProcManager(
 				4446,
 				true,
+				false,
 				core.ProcMaskDirect|core.ProcMaskProc,
 				core.RPPMConfig{
 					PPM:         3.67,
@@ -241,11 +246,63 @@ func init() {
 				aura.Activate(sim)
 			},
 		})
+
+		character.ItemSwap.RegisterWeaponEnchantBuff(aura.Aura, 4446)
+	})
+
+	// Permanently enchants a melee weapon to sometimes inflict 3000 additional Elemental damage
+	// when dealing damage with spells and melee attacks.
+	core.NewEnchantEffect(4443, func(agent core.Agent, _ proto.ItemLevelState) {
+		character := agent.GetCharacter()
+
+		elementalForceSpell := character.RegisterSpell(core.SpellConfig{
+			ActionID:    core.ActionID{SpellID: 116616},
+			SpellSchool: core.SpellSchoolElemental,
+			Flags:       core.SpellFlagNoOnCastComplete | core.SpellFlagPassiveSpell,
+			ProcMask:    core.ProcMaskEmpty,
+
+			DamageMultiplier: 1,
+			CritMultiplier:   character.DefaultCritMultiplier(),
+			ThreatMultiplier: 1,
+
+			ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+				baseDamage := sim.Roll(2775, 2775+450)
+				spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMagicHitAndCrit)
+			},
+		})
+
+		character.MakeProcTriggerAura(core.ProcTrigger{
+			Name:               "Enchant Weapon - Elemental Force",
+			Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
+			RequireDamageDealt: true,
+			ActionID:           core.ActionID{SpellID: 104428},
+
+			DPM: character.NewRPPMProcManager(
+				4443,
+				true,
+				false,
+				core.ProcMaskDirect|core.ProcMaskProc,
+				core.RPPMConfig{
+					PPM:         9.17,
+					Coefficient: 1.0,
+				}.WithHasteMod(),
+			),
+
+			Outcome:            core.OutcomeLanded,
+			TriggerImmediately: true,
+
+			Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
+				elementalForceSpell.Cast(sim, result.Target)
+			},
+		})
 	})
 
 	// Synapse Springs
 	core.NewEnchantEffect(4898, func(agent core.Agent, _ proto.ItemLevelState) {
 		character := agent.GetCharacter()
+		if !character.HasProfession(proto.Profession_Engineering) {
+			return
+		}
 
 		bonus := stats.Stats{}
 		bonus[character.GetHighestStatType([]stats.Stat{
@@ -274,6 +331,9 @@ func init() {
 	// Phase Fingers
 	core.NewEnchantEffect(4697, func(agent core.Agent, _ proto.ItemLevelState) {
 		character := agent.GetCharacter()
+		if !character.HasProfession(proto.Profession_Engineering) {
+			return
+		}
 
 		core.RegisterTemporaryStatsOnUseCD(character,
 			"Phase Fingers",
@@ -292,5 +352,52 @@ func init() {
 					},
 				},
 			})
+	})
+
+	// Nitro Boosts
+	core.NewEnchantEffect(4223, func(agent core.Agent, _ proto.ItemLevelState) {
+		character := agent.GetCharacter()
+		if !character.HasProfession(proto.Profession_Engineering) {
+			return
+		}
+
+		actionID := core.ActionID{SpellID: 55004}
+
+		buffAura := character.RegisterAura(core.Aura{
+			Label:    "Nitro Boosts",
+			ActionID: actionID,
+			Duration: time.Second * 5,
+		})
+
+		exclusiveSpeedEffect := buffAura.NewActiveMovementSpeedEffect(1.5)
+
+		activationSpell := character.RegisterSpell(core.SpellConfig{
+			ActionID:        actionID,
+			RelatedSelfBuff: buffAura,
+
+			Cast: core.CastConfig{
+				CD: core.Cooldown{
+					Timer:    character.NewTimer(),
+					Duration: time.Minute * 3,
+				},
+			},
+
+			ExtraCastCondition: func(_ *core.Simulation, _ *core.Unit) bool {
+				return !exclusiveSpeedEffect.Category.AnyActive()
+			},
+
+			ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
+				spell.RelatedSelfBuff.Activate(sim)
+			},
+		})
+
+		character.AddMajorCooldown(core.MajorCooldown{
+			Spell: activationSpell,
+			Type:  core.CooldownTypeDPS,
+
+			ShouldActivate: func(_ *core.Simulation, character *core.Character) bool {
+				return character.DistanceFromTarget > core.MaxMeleeRange
+			},
+		})
 	})
 }

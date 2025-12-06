@@ -19,10 +19,6 @@ func (war *ProtectionWarrior) registerShieldSlam() {
 		ClassSpellMask: warrior.SpellMaskShieldSlam,
 		MaxRange:       core.MaxMeleeRange,
 
-		RageCost: core.RageCostOptions{
-			Cost:   20,
-			Refund: 0.8,
-		},
 		Cast: core.CastConfig{
 			DefaultCast: core.Cast{
 				GCD: core.GCDDefault,
@@ -37,6 +33,10 @@ func (war *ProtectionWarrior) registerShieldSlam() {
 		DamageMultiplier: 1,
 		CritMultiplier:   war.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
+
+		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
+			return war.PseudoStats.CanBlock
+		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			baseDamage := war.CalcAndRollDamageRange(sim, 11.25, 0.05000000075) + spell.MeleeAttackPower()*1.5

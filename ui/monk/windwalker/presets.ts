@@ -1,60 +1,79 @@
 import * as PresetUtils from '../../core/preset_utils';
-import { ConsumesSpec, Glyphs, Profession, PseudoStat, Stat } from '../../core/proto/common';
+import { ConsumesSpec, Glyphs, Profession, PseudoStat, Spec, Stat } from '../../core/proto/common';
 import { MonkMajorGlyph, MonkMinorGlyph, MonkOptions } from '../../core/proto/monk';
 import { SavedTalents } from '../../core/proto/ui';
 import { Stats } from '../../core/proto_utils/stats';
 import DefaultApl from './apls/default.apl.json';
-import DefaultP1Bis2HGear from './gear_sets/p1_bis_2h.gear.json';
-import DefaultP1BisDWGear from './gear_sets/p1_bis_dw.gear.json';
-import DefaultP1Prebis2HGear from './gear_sets/p1_prebis_2h.gear.json';
-import DefaultP1PrebisDWGear from './gear_sets/p1_prebis_dw.gear.json';
+import DefaultP2BisGear from './gear_sets/p2_bis.gear.json';
+import DefaultP3BisGear from './gear_sets/p3_bis.gear.json';
+import DefaultP1PrebisGear from './gear_sets/p1_prebis.gear.json';
+import { Player } from '../../core/player';
 
-export const P1_PREBIS_2H_GEAR_PRESET = PresetUtils.makePresetGear('Pre-BIS - 2H', DefaultP1Prebis2HGear);
-export const P1_PREBIS_DW_GEAR_PRESET = PresetUtils.makePresetGear('Pre-BIS - DW', DefaultP1PrebisDWGear);
-
-export const P1_BIS_2H_GEAR_PRESET = PresetUtils.makePresetGear('BIS - 2H', DefaultP1Bis2HGear);
-export const P1_BIS_DW_GEAR_PRESET = PresetUtils.makePresetGear('BIS - DW', DefaultP1BisDWGear);
+export const P1_PREBIS_GEAR_PRESET = PresetUtils.makePresetGear('Pre-BIS', DefaultP1PrebisGear);
+export const P2_BIS_GEAR_PRESET = PresetUtils.makePresetGear('P2 - BIS', DefaultP2BisGear, {
+	onLoad: (player: Player<Spec.SpecFuryWarrior>) => {
+		PresetUtils.makeSpecChangeWarningToast(
+			[
+				{
+					condition: (player: Player<Spec.SpecFuryWarrior>) => player.getProfessions().includes(Profession.Tailoring) === false,
+					message: 'This preset assumes tailoring. Please reforge/regem for optimal results.',
+				},
+			],
+			player,
+		);
+	},
+});
+export const P3_BIS_GEAR_PRESET = PresetUtils.makePresetGear('P3 - BIS', DefaultP3BisGear, {
+	onLoad: (player: Player<Spec.SpecFuryWarrior>) => {
+		PresetUtils.makeSpecChangeWarningToast(
+			[
+				{
+					condition: (player: Player<Spec.SpecFuryWarrior>) => player.getProfessions().includes(Profession.Blacksmithing) === false,
+					message: 'This preset assumes blacksmithing for the Rune of Re-Origination proc. Please reforge/regem for optimal results.',
+				},
+			],
+			player,
+		);
+	},
+});
 
 export const ROTATION_PRESET = PresetUtils.makePresetAPLRotation('Default', DefaultApl);
 
 // Preset options for EP weights
-export const P1_PREBIS_2H_EP_PRESET = PresetUtils.makePresetEpWeights(
-	'Default - 2H',
+export const P1_BIS_EP_PRESET = PresetUtils.makePresetEpWeights(
+	'Default',
 	Stats.fromMap(
 		{
 			[Stat.StatAgility]: 1.0,
-			[Stat.StatHitRating]: 1.11,
-			[Stat.StatCritRating]: 0.33,
-			[Stat.StatHasteRating]: 0.43,
-			[Stat.StatExpertiseRating]: 1.02	,
-			[Stat.StatMasteryRating]: 0.27,
-			[Stat.StatAttackPower]: 0.37,
+			[Stat.StatHitRating]: 1.41,
+			[Stat.StatCritRating]: 0.44,
+			[Stat.StatHasteRating]: 0.49,
+			[Stat.StatExpertiseRating]: 0.99,
+			[Stat.StatMasteryRating]: 0.39,
+			[Stat.StatAttackPower]: 0.36,
 		},
 		{
-			[PseudoStat.PseudoStatMainHandDps]: 3.02,
-			[PseudoStat.PseudoStatOffHandDps]: 0,
-			[PseudoStat.PseudoStatPhysicalHitPercent]: 378.01,
+			[PseudoStat.PseudoStatMainHandDps]: 2.62,
+			[PseudoStat.PseudoStatOffHandDps]: 1.31,
 		},
 	),
 );
 
-// Preset options for EP weights
-export const P1_PREBIS_DW_EP_PRESET = PresetUtils.makePresetEpWeights(
-	'Default - DW',
+export const RORO_BIS_EP_PRESET = PresetUtils.makePresetEpWeights(
+	'RoRo',
 	Stats.fromMap(
 		{
 			[Stat.StatAgility]: 1.0,
-			[Stat.StatHitRating]: 1.09,
-			[Stat.StatCritRating]: 0.42,
-			[Stat.StatHasteRating]: 0.47,
-			[Stat.StatExpertiseRating]: 0.99,
-			[Stat.StatMasteryRating]: 0.26,
-			[Stat.StatAttackPower]: 0.37,
+			[Stat.StatHitRating]: 1.79,
+			[Stat.StatCritRating]: 0.74,
+			[Stat.StatHasteRating]: 0.89,
+			[Stat.StatExpertiseRating]: 1.49,
+			[Stat.StatMasteryRating]: 0.34,
+			[Stat.StatAttackPower]: 0.35,
 		},
 		{
-			[PseudoStat.PseudoStatMainHandDps]: 2.55,
-			[PseudoStat.PseudoStatOffHandDps]: 1.27,
-			[PseudoStat.PseudoStatPhysicalHitPercent]: 370.12,
+			[PseudoStat.PseudoStatMainHandDps]: 2.33,
+			[PseudoStat.PseudoStatOffHandDps]: 1.17,
 		},
 	),
 );
@@ -91,3 +110,22 @@ export const OtherDefaults = {
 	distanceFromTarget: 5,
 	iterationCount: 25000,
 };
+
+export const P2_BUILD_PRESET = PresetUtils.makePresetBuild('P2 - BIS', {
+	gear: P2_BIS_GEAR_PRESET,
+	settings: {
+		name: 'P2 - BIS',
+		playerOptions: OtherDefaults,
+	},
+});
+export const P3_BUILD_PRESET = PresetUtils.makePresetBuild('P3 - BIS', {
+	gear: P3_BIS_GEAR_PRESET,
+	settings: {
+		name: 'P3 - BIS',
+		playerOptions: {
+			...OtherDefaults,
+			profession1: Profession.Engineering,
+			profession2: Profession.Blacksmithing,
+		},
+	},
+});

@@ -18,6 +18,13 @@ func GetProfession(id int) proto.Profession {
 	}
 	return 0
 }
+
+func GetRepLevel(minReputation int) proto.RepLevel {
+	if repLevel, ok := MapMinReputationToRepLevel[minReputation]; ok {
+		return repLevel
+	}
+	return proto.RepLevel_RepLevelUnknown
+}
 func NullFloat(arr []float64) []float64 {
 	for _, v := range arr {
 		if v > 0 {

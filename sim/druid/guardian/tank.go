@@ -35,8 +35,13 @@ func NewGuardianDruid(character *core.Character, options *proto.Player) *Guardia
 
 	bear.registerTreants()
 
+	bear.EnableEnergyBar(core.EnergyBarOptions{
+		MaxComboPoints:        5,
+		MaxEnergy:             100,
+		UnitClass:             proto.Class_ClassDruid,
+		HasHasteRatingScaling: true,
+	})
 	bear.EnableRageBar(core.RageBarOptions{
-		StartingRage:       bear.Options.StartingRage,
 		BaseRageMultiplier: 2.5,
 	})
 	bear.EnableAutoAttacks(bear, core.AutoAttackOptions{
@@ -46,6 +51,7 @@ func NewGuardianDruid(character *core.Character, options *proto.Player) *Guardia
 	})
 
 	bear.RegisterBearFormAura()
+	bear.RegisterCatFormAura()
 
 	bear.BearFormAura.AttachStatDependency(bear.NewDynamicStatDependency(stats.Vengeance, stats.AttackPower, 1))
 
@@ -58,16 +64,21 @@ type GuardianDruid struct {
 	Options *proto.GuardianDruid_Options
 
 	// Aura references
-	EnrageAura          *core.Aura
-	SavageDefenseAura   *core.Aura
-	SonOfUrsocAura      *core.Aura
-	ToothAndClawBuff    *core.Aura
-	ToothAndClawDebuffs core.AuraArray
+	DreamOfCenariusAura      *core.Aura
+	EnrageAura               *core.Aura
+	HeartOfTheWildAura       *core.Aura
+	ImprovedRegenerationAura *core.Aura
+	SavageDefenseAura        *core.Aura
+	SonOfUrsocAura           *core.Aura
+	ToothAndClawBuff         *core.Aura
+	ToothAndClawDebuffs      core.AuraArray
+	VengeanceAura            *core.Aura
 
 	// Spell references
-	Enrage        *druid.DruidSpell
-	SavageDefense *druid.DruidSpell
-	SonOfUrsoc    *druid.DruidSpell
+	Enrage         *druid.DruidSpell
+	HeartOfTheWild *druid.DruidSpell
+	SavageDefense  *druid.DruidSpell
+	SonOfUrsoc     *druid.DruidSpell
 }
 
 func (bear *GuardianDruid) GetDruid() *druid.Druid {
@@ -80,11 +91,23 @@ func (bear *GuardianDruid) AddRaidBuffs(raidBuffs *proto.RaidBuffs) {
 
 func (bear *GuardianDruid) ApplyTalents() {
 	bear.Druid.ApplyTalents()
+	bear.applySpecTalents()
 	bear.applyMastery()
 	bear.applyThickHide()
 	bear.applyLeatherSpecialization()
-	bear.RegisterVengeance(84840, bear.BearFormAura)
-	bear.registerIncarnation()
+	bear.applyVengeance()
+
+	// 2025-07-01 - Bear Form now increases all damage you deal by 15%.
+	// 2025-11-13 - Bear Form now increases all damage you deal by 8%.
+	bear.BearFormAura.AttachMultiplicativePseudoStatBuff(&bear.PseudoStats.DamageDealtMultiplier, 1.08)
+}
+
+func (bear *GuardianDruid) applyVengeance() {
+	bear.VengeanceAura = bear.RegisterVengeance(84840, bear.BearFormAura)
+
+	bear.CatFormAura.ApplyOnGain(func(_ *core.Aura, sim *core.Simulation) {
+		bear.VengeanceAura.Deactivate(sim)
+	})
 }
 
 func (bear *GuardianDruid) applyMastery() {
@@ -154,6 +177,15 @@ func (bear *GuardianDruid) Initialize() {
 	bear.ApplyPrimalFury()
 	bear.ApplyLeaderOfThePack()
 	bear.ApplyNurturingInstinct()
+	bear.registerSymbiosis()
+}
+
+func (bear *GuardianDruid) registerSymbiosis() {
+	if bear.Options.SymbiosisTarget == proto.Class_ClassDeathKnight {
+		bear.registerBoneShieldSpell()
+	} else if bear.Options.SymbiosisTarget == proto.Class_ClassMonk {
+		bear.registerElusiveBrewSpell()
+	}
 }
 
 func (bear *GuardianDruid) Reset(sim *core.Simulation) {
@@ -161,4 +193,11 @@ func (bear *GuardianDruid) Reset(sim *core.Simulation) {
 	bear.Druid.ClearForm(sim)
 	bear.BearFormAura.Activate(sim)
 	bear.Druid.PseudoStats.Stunned = false
+}
+
+func (bear *GuardianDruid) OnEncounterStart(sim *core.Simulation) {
+	if bear.InForm(druid.Bear) {
+		bear.ResetRageBar(sim, 25)
+	}
+	bear.Druid.OnEncounterStart(sim)
 }

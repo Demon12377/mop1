@@ -10,6 +10,7 @@
 .detailed-results-manager-root {
 	display: flex;
 	flex-direction: column;
+
 	& > * {
 		min-height: 0;
 	}
@@ -22,6 +23,10 @@
 	.detailed-results-new-tab-button {
 		margin-right: var(--block-spacer);
 	}
+
+	.detailed-results-death-iteration-button {
+		margin-left: var(--block-spacer);
+	}
 }
 
 .all-players .single-player-only {
@@ -32,10 +37,11 @@
 	display: none;
 }
 
-.individual-sim .single-player-only {
+.individual-sim-ui .single-player-only {
 	display: initial;
 }
-.individual-sim .all-players-only {
+
+.individual-sim-ui .all-players-only {
 	display: none;
 }
 
@@ -55,57 +61,23 @@
 		}
 	}
 
-	> {
-		.tab-content {
-			padding-top: var(--gap-width);
-		}
+	> .tab-content {
+		padding-top: var(--gap-width);
+	}
 
-		.tab-content > .tab-pane.dr-tab-content {
-			padding-top: 0;
-			padding-bottom: 0;
-		}
+	> .tab-content > .tab-pane.dr-tab-content {
+		padding-top: 0;
+		padding-bottom: 0;
 	}
 }
 
 .dr-toolbar {
-	position: sticky;
-	top: var(--sim-header-height);
-	padding-left: var(--container-padding);
-	padding-right: var(--container-padding);
-	margin-left: calc(-1 * var(--container-padding));
-	margin-right: calc(-1 * var(--container-padding));
-	display: flex;
-	transition: background-color 0.15s ease-in-out;
-	// This needs to be less than var(--header-z-index) otherwise the toolbar overlaps the import/export dropdowns
-	z-index: calc(var(--header-z-index) - 1);
-
-	&::after {
-		content: ' ';
-		position: absolute;
-		bottom: -1px;
-		left: 0;
-		right: 0;
-		width: calc(100% - 2 * var(--container-padding));
-		height: 1px;
-		margin-left: auto;
-		margin-right: auto;
-		background-color: var(--bs-border-color);
-		transition: width 0.15s ease-in-out;
-	}
-
-	&.stuck {
-		background: rgba(var(--theme-background-color), var(--theme-background-opacity));
-
-		&::after {
-			width: 100%;
-		}
-	}
-
 	& > * {
 		min-height: 0;
 	}
 
 	.nav-tabs {
+		margin-left: auto;
 		border-bottom: 0;
 	}
 
@@ -127,7 +99,7 @@
 	align-items: center;
 }
 
-.individual-sim .player-filter-root {
+.individual-sim-ui .player-filter-root {
 	display: none !important;
 }
 
@@ -151,6 +123,7 @@
 	th {
 		white-space: nowrap;
 	}
+
 	td {
 		@include media-breakpoint-up(1080p) {
 			white-space: nowrap;
@@ -178,9 +151,11 @@
 	td {
 		border-left: 1px solid var(--bs-border-default);
 		border-right: 1px solid var(--bs-border-default);
+
 		&:first-child {
 			border-left: 0;
 		}
+
 		&:last-child {
 			border-right: 0;
 		}
@@ -224,6 +199,7 @@
 .metrics-table-footer td:first-child {
 	text-align: left;
 }
+
 .metrics-table-body td:not(:first-child),
 .metrics-table-footer td:not(:first-child) {
 	text-align: right;
@@ -251,6 +227,7 @@
 .parent-metric {
 	cursor: pointer;
 }
+
 .child-metric > *:first-child {
 	padding-left: 20px;
 }
@@ -258,6 +235,7 @@
 tr:not(.parent-metric) .expand-toggle {
 	display: none;
 }
+
 .parent-metric.expand .fa-caret-right,
 .parent-metric:not(.expand) .fa-caret-down {
 	display: none;
@@ -274,6 +252,7 @@ tr:not(.parent-metric) .expand-toggle {
 .metrics-total-damage {
 	flex-shrink: 0;
 }
+
 .metrics-total-percentage {
 	width: var(--total-percentage-width);
 }

@@ -112,15 +112,17 @@ func (paladin *Paladin) registerGlyphOfAvengingWrath() {
 			})
 		},
 
-		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
-			core.StartDelayedAction(sim, core.DelayedActionOptions{
-				DoAt: sim.CurrentTime + core.SpellBatchWindow,
-				OnAction: func(sim *core.Simulation) {
-					if healPA != nil {
-						healPA.Cancel(sim)
-					}
-				},
-			})
+		OnExpire: func(_ *core.Aura, sim *core.Simulation) {
+			pa := sim.GetConsumedPendingActionFromPool()
+			pa.NextActionAt = sim.CurrentTime + core.SpellBatchWindow
+
+			pa.OnAction = func(sim *core.Simulation) {
+				if healPA != nil {
+					healPA.Cancel(sim)
+				}
+			}
+
+			sim.AddPendingAction(pa)
 		},
 	})
 
@@ -141,7 +143,7 @@ func (paladin *Paladin) registerGlyphOfBurdenOfGuilt() {
 		}).AttachMultiplicativePseudoStatBuff(&unit.PseudoStats.MovementSpeedMultiplier, 0.5)
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Burden of Guilt" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 54931},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -167,7 +169,7 @@ func (paladin *Paladin) registerGlyphOfDazingShield() {
 		}).AttachMultiplicativePseudoStatBuff(&unit.PseudoStats.MovementSpeedMultiplier, 0.5)
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Dazing Shield" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 56414},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -207,7 +209,7 @@ func (paladin *Paladin) registerGlyphOfDenounce() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Denounce Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 56420},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -256,11 +258,12 @@ func (paladin *Paladin) registerGlyphOfDivineStorm() {
 	}
 
 	healthMetrics := paladin.NewHealthMetrics(core.ActionID{SpellID: 115515})
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           "Glyph of Divine Storm" + paladin.Label,
-		ActionID:       core.ActionID{SpellID: 63220},
-		Callback:       core.CallbackOnCastComplete, // DS doesn't have to hit anything, it still heals
-		ClassSpellMask: SpellMaskDivineStorm,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Glyph of Divine Storm" + paladin.Label,
+		ActionID:           core.ActionID{SpellID: 63220},
+		Callback:           core.CallbackOnCastComplete, // DS doesn't have to hit anything, it still heals
+		ClassSpellMask:     SpellMaskDivineStorm,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			paladin.GainHealth(sim, paladin.MaxHealth()*0.05, healthMetrics)
@@ -319,7 +322,7 @@ func (paladin *Paladin) registerGlyphOfDoubleJeopardy() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Double Jeopardy Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 54922},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -356,7 +359,7 @@ func (paladin *Paladin) registerGlyphOfFlashOfLight() {
 		})
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Flash of Light Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 57955},
 		Callback:       core.CallbackOnHealDealt,
@@ -420,7 +423,7 @@ func (paladin *Paladin) registerGlyphOfHarshWords() {
 			},
 			ModifyCast: func(sim *core.Simulation, spell *core.Spell, cast *core.Cast) {
 				paladin.DynamicHolyPowerSpent = paladin.SpendableHolyPower()
-				spell.SetMetricsSplit(paladin.DynamicHolyPowerSpent)
+				spell.SetMetricsSplit(int32(paladin.DynamicHolyPowerSpent))
 			},
 		},
 
@@ -482,13 +485,15 @@ func (paladin *Paladin) registerGlyphOfIllumination() {
 	manaMetrics := paladin.NewManaMetrics(core.ActionID{SpellID: 115314})
 
 	// TODO: Handle the Holy Insight part in holy/holy.go
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           "Glyph of Illumination" + paladin.Label,
-		ActionID:       core.ActionID{SpellID: 54937},
-		Callback:       core.CallbackOnSpellHitDealt | core.CallbackOnHealDealt,
-		Outcome:        core.OutcomeLanded,
-		ClassSpellMask: SpellMaskHolyShock,
-		ICD:            time.Millisecond * 800,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Glyph of Illumination" + paladin.Label,
+		ActionID:           core.ActionID{SpellID: 54937},
+		Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnHealDealt,
+		Outcome:            core.OutcomeLanded,
+		ClassSpellMask:     SpellMaskHolyShock,
+		ICD:                time.Millisecond * 800,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			paladin.AddMana(sim, paladin.MaxMana()*0.01, manaMetrics)
 		},
@@ -534,8 +539,6 @@ func (paladin *Paladin) registerGlyphOfMassExorcism() {
 		return
 	}
 
-	numTargets := paladin.Env.GetNumTargets() - 1
-
 	massExorcism := paladin.RegisterSpell(core.SpellConfig{
 		ActionID:       core.ActionID{SpellID: 879}.WithTag(2), // Actual 122032
 		SpellSchool:    core.SpellSchoolHoly,
@@ -550,33 +553,24 @@ func (paladin *Paladin) registerGlyphOfMassExorcism() {
 		ThreatMultiplier: 1,
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			results := make([]*core.SpellResult, numTargets)
+			spell.CalcCleaveDamageWithVariance(sim, sim.Environment.NextActiveTargetUnit(target), sim.Environment.ActiveTargetCount()-1, spell.OutcomeMagicHitAndCrit, func(sim *core.Simulation, _ *core.Spell) float64 {
+				return paladin.CalcAndRollDamageRange(sim, 6.09499979019, 0.1099999994) + 0.67699998617*spell.MeleeAttackPower()
+			})
 
-			currentTarget := sim.Environment.NextTargetUnit(target)
-			for idx := range numTargets {
-				baseDamage := paladin.CalcAndRollDamageRange(sim, 6.09499979019, 0.1099999994) +
-					0.67699998617*spell.MeleeAttackPower()
-
-				results[idx] = spell.CalcDamage(sim, currentTarget, baseDamage, spell.OutcomeMagicHitAndCrit)
-
-				currentTarget = sim.Environment.NextTargetUnit(currentTarget)
-			}
-
-			for idx := range numTargets {
-				spell.DealDamage(sim, results[idx])
-			}
+			spell.DealBatchedAoeDamage(sim)
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           "Glyph of Mass Exorcism" + paladin.Label,
-		ActionID:       core.ActionID{SpellID: 122028},
-		Callback:       core.CallbackOnSpellHitDealt,
-		ClassSpellMask: SpellMaskExorcism,
-		Outcome:        core.OutcomeLanded,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Glyph of Mass Exorcism" + paladin.Label,
+		ActionID:           core.ActionID{SpellID: 122028},
+		Callback:           core.CallbackOnSpellHitDealt,
+		ClassSpellMask:     SpellMaskExorcism,
+		Outcome:            core.OutcomeLanded,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
-			if spell.ActionID.Tag == 2 || numTargets == 0 {
+			if (spell.ActionID.Tag == 2) || (sim.Environment.ActiveTargetCount() == 1) {
 				return
 			}
 
@@ -602,11 +596,13 @@ func (paladin *Paladin) registerGlyphOfProtectorOfTheInnocent() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           "Glyph of Protector of the Innocent" + paladin.Label,
-		ActionID:       core.ActionID{SpellID: 93466},
-		Callback:       core.CallbackOnHealDealt,
-		ClassSpellMask: SpellMaskWordOfGlory,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Glyph of Protector of the Innocent" + paladin.Label,
+		ActionID:           core.ActionID{SpellID: 93466},
+		Callback:           core.CallbackOnHealDealt,
+		ClassSpellMask:     SpellMaskWordOfGlory,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			if result.Target == &paladin.Unit {
 				return
@@ -624,13 +620,13 @@ func (paladin *Paladin) registerGlyphOfTemplarsVerdict() {
 		return
 	}
 
-	glyphOfTemplarVerdictAura := paladin.RegisterAura(core.Aura{
+	glyphOfTemplarVerdictAura := core.BlockPrepull(paladin.RegisterAura(core.Aura{
 		Label:    "Glyph of Templar's Verdict" + paladin.Label,
 		ActionID: core.ActionID{SpellID: 115668},
 		Duration: time.Second * 6,
-	}).AttachMultiplicativePseudoStatBuff(&paladin.PseudoStats.DamageTakenMultiplier, 0.9)
+	})).AttachMultiplicativePseudoStatBuff(&paladin.PseudoStats.DamageTakenMultiplier, 0.9)
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Templar's Verdict Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 54926},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -654,7 +650,7 @@ func (paladin *Paladin) registerGlyphOfTheAlabasterShield() {
 		FloatValue: 0.1,
 	})
 
-	alabasterShieldAura := paladin.RegisterAura(core.Aura{
+	alabasterShieldAura := core.BlockPrepull(paladin.RegisterAura(core.Aura{
 		Label:     "Alabaster Shield" + paladin.Label,
 		ActionID:  core.ActionID{SpellID: 121467},
 		Duration:  time.Second * 12,
@@ -673,9 +669,9 @@ func (paladin *Paladin) registerGlyphOfTheAlabasterShield() {
 				aura.Deactivate(sim)
 			}
 		},
-	})
+	}))
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:     "Glyph of the Alabaster Shield" + paladin.Label,
 		ActionID: core.ActionID{SpellID: 63222},
 		Callback: core.CallbackOnSpellHitTaken,
@@ -712,7 +708,7 @@ func (paladin *Paladin) registerGlyphOfWordOfGlory() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Glyph of Word of Glory Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 54936},
 		Callback:       core.CallbackOnHealDealt,
@@ -723,7 +719,7 @@ func (paladin *Paladin) registerGlyphOfWordOfGlory() {
 			}
 
 			glyphAura.Activate(sim)
-			glyphAura.SetStacks(sim, paladin.DynamicHolyPowerSpent)
+			glyphAura.SetStacks(sim, int32(paladin.DynamicHolyPowerSpent))
 		},
 	})
 }

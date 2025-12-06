@@ -7,6 +7,7 @@ import (
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"slices"
 
 	"github.com/wowsims/mop/sim/core/proto"
 	"github.com/wowsims/mop/sim/core/simsignals"
@@ -246,6 +247,11 @@ func (rsrc *raidSimResultCombiner) combineUnitMetrics(base *proto.UnitMetrics, a
 
 	base.SecondsOomAvg += add.SecondsOomAvg * weight
 	base.ChanceOfDeath += add.ChanceOfDeath * weight
+
+	if add.DeathSeeds != nil {
+		base.DeathSeeds = append(base.DeathSeeds, add.DeathSeeds...)
+		slices.Sort(base.DeathSeeds)
+	}
 
 	for _, addAction := range add.Actions {
 		rsrc.addActionMetrics(base, addAction)

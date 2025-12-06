@@ -24,6 +24,7 @@ type DotConfig struct {
 	IsAOE                bool // Set to true for AOE dots (Blizzard, Hurricane, Consecrate, etc)
 	SelfOnly             bool // Set to true to only create the self-hot.
 	AffectedByCastSpeed  bool // tick length are shortened based on casting speed
+	AffectedByRealHaste  bool // tick length are shortened based on real haste (melee/ranged but not spell)
 	HasteReducesDuration bool // does not gain additional ticks after a certain haste threshold
 
 	BonusCoefficient float64 // EffectBonusCoefficient in SpellEffect client DB table, "SP mod" on Wowhead (not necessarily shown there even if > 0)
@@ -57,6 +58,7 @@ type Dot struct {
 	PeriodicDamageMultiplier float64 // Multiplier for periodic damage on top of the spell's damage multiplier
 
 	affectedByCastSpeed  bool // tick length are shortened based on casting speed
+	affectedByRealHaste  bool // tick length are shortened based on real haste
 	hasteReducesDuration bool // does not gain additional ticks after a haste threshold, HasteAffectsDuration in dbc
 	isChanneled          bool
 }
@@ -110,6 +112,8 @@ func (dot *Dot) CalcTickPeriod() time.Duration {
 		}
 
 		return dot.Spell.Unit.ApplyCastSpeed(dot.BaseTickLength).Round(time.Millisecond)
+	} else if dot.affectedByRealHaste {
+		return dot.Spell.Unit.ApplyRealHaste(dot.BaseTickLength).Round(time.Millisecond)
 	} else {
 		return dot.BaseTickLength
 	}
@@ -120,7 +124,7 @@ func (dot *Dot) recomputeAuraDuration(sim *Simulation) {
 
 	dot.tickPeriod = dot.CalcTickPeriod()
 	dot.remainingTicks = dot.calculateTickCount(dot.BaseDuration(), dot.BaseTickLength)
-	if dot.affectedByCastSpeed && !dot.hasteReducesDuration {
+	if (dot.affectedByCastSpeed || dot.affectedByRealHaste) && !dot.hasteReducesDuration {
 		dot.remainingTicks = dot.HastedTickCount()
 	}
 
@@ -163,7 +167,7 @@ func (dot *Dot) HastedTickCount() int32 {
 
 func (dot *Dot) ExpectedTickCount() int32 {
 	tickCount := dot.BaseTickCount
-	if dot.affectedByCastSpeed && !dot.hasteReducesDuration {
+	if (dot.affectedByCastSpeed || dot.affectedByRealHaste) && !dot.hasteReducesDuration {
 		tickPeriod := dot.CalcTickPeriod()
 		tickCount = dot.calculateTickCount(dot.BaseDuration(), tickPeriod)
 	}
@@ -229,18 +233,28 @@ func (dot *Dot) CopyDotAndApply(sim *Simulation, originaldot *Dot) {
 	sim.AddPendingAction(dot.tickAction)
 }
 
-// This is the incredibly cursed way fel flame uses to increase dot duration, don't use unless you know what you're
-// doing. It extends the duration, immediately recalculates the next tick and then fits as many ticks into the rest of
+// This is the incredibly cursed way of extending DoT durations (for Moonfire / Sunfire / SWP (T15 2P) / VT (T15 2P))
+// Don't use unless you know what you're doing
+// It extends the duration, immediately recalculates the next tick and then fits as many ticks into the rest of
 // the aura duration as it can. This will cause aura duration and dot ticks to desync ingame, so the aura will fall off
 // prematurely to what is shown.
 //
 // Sometimes the game also decides to tick one last time anyway, even though the time since the last tick is absurdly
 // low, though this isn't implemented until someone figures out the conditions.
+func (dot *Dot) DurationExtend(sim *Simulation, extendBy time.Duration) {
+	dot.durationExtendInternal(sim, extendBy, false)
+}
 func (dot *Dot) DurationExtendSnapshot(sim *Simulation, extendBy time.Duration) {
+	dot.durationExtendInternal(sim, extendBy, true)
+}
+
+func (dot *Dot) durationExtendInternal(sim *Simulation, extendBy time.Duration, useSnapshot bool) {
 	if !dot.IsActive() {
 		panic("Can't extend a non-active dot")
 	}
-	dot.TakeSnapshot(sim, false)
+	if useSnapshot {
+		dot.TakeSnapshot(sim, false)
+	}
 
 	previousTick := dot.tickAction.NextActionAt - dot.tickPeriod
 	dot.tickPeriod = dot.CalcTickPeriod()
@@ -258,7 +272,7 @@ func (dot *Dot) DurationExtendSnapshot(sim *Simulation, extendBy time.Duration) 
 	// cap the total duration to the amount of hasted ticks a new dot would have
 	extendDuration := min(dot.RemainingDuration(sim)+extendBy,
 		dot.tickPeriod*time.Duration(dot.HastedTickCount()-1)+(nextTick-sim.CurrentTime))
-	dot.remainingTicks = int32((extendDuration-(nextTick-sim.CurrentTime))/dot.tickPeriod) + 1
+	dot.remainingTicks = dot.calculateTickCount(extendDuration-(nextTick-sim.CurrentTime), dot.tickPeriod) + 1
 
 	dot.Duration = nextTick - sim.CurrentTime + time.Duration(dot.remainingTicks-1)*dot.tickPeriod
 	sim.AddPendingAction(dot.tickAction)
@@ -268,21 +282,24 @@ func (dot *Dot) DurationExtendSnapshot(sim *Simulation, extendBy time.Duration) 
 // Forces an instant tick. Does not reset the tick timer or aura duration,
 // the tick is simply an extra tick.
 func (dot *Dot) TickOnce(sim *Simulation) {
-	dot.onTick(sim, dot.Unit, dot)
+	if dot.onTick != nil {
+		dot.onTick(sim, dot.Unit, dot)
+	}
 }
 
 func (dot *Dot) periodicTick(sim *Simulation) {
 	dot.remainingTicks--
 	dot.TickOnce(sim)
 	if dot.isChanneled {
+		channelDelay := dot.getChannelClipDelay(sim)
 		// Note: even if the clip delay is 0ms, need a WaitUntil so that APL is called after the channel aura fades.
 		if dot.remainingTicks == 0 && dot.Spell.Unit.GCD.IsReady(sim) {
-			dot.Spell.Unit.WaitUntil(sim, sim.CurrentTime+dot.getChannelClipDelay(sim))
+			dot.Spell.Unit.WaitUntil(sim, sim.CurrentTime+channelDelay)
 		} else if dot.Spell.Unit.Rotation.shouldInterruptChannel(sim) {
 			dot.tickAction.NextActionAt = NeverExpires // don't tick again in ApplyOnExpire
 			dot.Deactivate(sim)
 			if dot.Spell.Unit.GCD.IsReady(sim) {
-				dot.Spell.Unit.WaitUntil(sim, sim.CurrentTime+dot.getChannelClipDelay(sim))
+				dot.Spell.Unit.WaitUntil(sim, sim.CurrentTime+channelDelay)
 			}
 
 			return // don't schedule another tick
@@ -309,15 +326,33 @@ func (dot *Dot) getChannelClipDelay(sim *Simulation) time.Duration {
 
 	// if we're channeling the same spell again, we don't need to add a delay
 	// within the game we'd actually cast before the last tick and it would be carried over
-	if channelAction, ok := nextAction.impl.(*APLActionCastSpell); ok && channelAction.spell == channeledDot.Spell {
+	if channelAction, ok := nextAction.impl.(*APLActionCastSpell); ok && ((channelAction.spell == channeledDot.Spell) || (channelAction.spell.Matches(channeledDot.Spell.ClassSpellMask))) {
 		return 0
 	}
 
-	if channelAction, ok := nextAction.impl.(*APLActionChannelSpell); ok && channelAction.spell == channeledDot.Spell {
+	if channelAction, ok := nextAction.impl.(*APLActionChannelSpell); ok && ((channelAction.spell == channeledDot.Spell) || (channelAction.spell.Matches(channeledDot.Spell.ClassSpellMask))) {
 		return 0
 	}
 
 	return dot.Spell.Unit.ChannelClipDelay
+}
+func (dot *Dot) ChannelCanBeInterrupted(sim *Simulation) bool {
+	if !dot.isChanneled {
+		return false
+	}
+
+	// Channel has ended, but dot.Spell.Unit.ChanneledDot hasn't been cleared yet, meaning the Aura is still active.
+	if dot.remainingTicks == 0 {
+		return false
+	}
+
+	// APL specifies that the channel should be continued.
+	apl := dot.Spell.Unit.Rotation
+	if (apl.interruptChannelIf == nil) || !apl.interruptChannelIf.GetBool(sim) {
+		return false
+	}
+
+	return true
 }
 
 func newDot(config Dot) *Dot {
@@ -393,6 +428,7 @@ func (spell *Spell) createDots(config DotConfig, isHot bool) {
 		onSnapshot:           config.OnSnapshot,
 		onTick:               config.OnTick,
 		affectedByCastSpeed:  config.AffectedByCastSpeed,
+		affectedByRealHaste:  config.AffectedByRealHaste,
 		hasteReducesDuration: config.HasteReducesDuration,
 		isChanneled:          config.Spell.Flags.Matches(SpellFlagChanneled),
 

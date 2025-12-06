@@ -45,7 +45,7 @@ func (warlock *Warlock) SimplePetStatInheritanceWithScale(apScale float64) core.
 			stats.Stamina:             ownerStats[stats.Stamina] * 1.0 / 3.0,
 			stats.SpellPower:          ownerStats[stats.SpellPower], // All pets inherit spell 1:1
 			stats.HasteRating:         ownerStats[stats.HasteRating],
-			stats.PhysicalCritPercent: ownerStats[stats.PhysicalCritPercent],
+			stats.PhysicalCritPercent: ownerStats[stats.SpellCritPercent], // All pets seem to use spell crit for Physical abilities
 			stats.SpellCritPercent:    ownerStats[stats.SpellCritPercent],
 
 			stats.AttackPower: ownerStats[stats.SpellPower] * apScale,
@@ -107,8 +107,9 @@ func (warlock *Warlock) setPetOptions(petAgent core.PetAgent, aaOptions *core.Au
 	}
 
 	pet.EnableEnergyBar(core.EnergyBarOptions{
-		MaxEnergy: 200,
-		UnitClass: proto.Class_ClassWarlock,
+		MaxEnergy:             200,
+		UnitClass:             proto.Class_ClassWarlock,
+		HasHasteRatingScaling: true,
 	})
 
 	warlock.AddPet(petAgent)
@@ -130,7 +131,7 @@ func (warlock *Warlock) registerImp() *WarlockPet {
 func (warlock *Warlock) registerImpWithName(name string, enabledOnStart bool, isGuardian bool) *WarlockPet {
 	pet := warlock.RegisterPet(proto.WarlockOptions_Imp, 0, 0, name, enabledOnStart, isGuardian)
 	pet.registerFireboltSpell()
-	pet.MinEnergy = 140
+	pet.MinEnergy = 120
 	return pet
 }
 
@@ -199,7 +200,11 @@ func (pet *WarlockPet) GetPet() *core.Pet {
 	return &pet.Pet
 }
 
-func (pet *WarlockPet) Reset(_ *core.Simulation) {}
+func (pet *WarlockPet) Reset(_ *core.Simulation) {
+}
+
+func (pet *WarlockPet) OnEncounterStart(_ *core.Simulation) {
+}
 
 func (pet *WarlockPet) ExecuteCustomRotation(sim *core.Simulation) {
 	waitUntil := time.Duration(1<<63 - 1)
@@ -309,7 +314,7 @@ func (pet *WarlockPet) registerLashOfPainSpell() {
 		},
 		Cast: core.CastConfig{
 			DefaultCast: core.Cast{
-				GCD: core.GCDDefault,
+				GCD: time.Second,
 			},
 		},
 

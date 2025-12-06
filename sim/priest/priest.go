@@ -1,6 +1,8 @@
 package priest
 
 import (
+	"time"
+
 	"github.com/wowsims/mop/sim/core"
 	"github.com/wowsims/mop/sim/core/proto"
 	"github.com/wowsims/mop/sim/core/stats"
@@ -53,7 +55,13 @@ type Priest struct {
 
 	WeakenedSouls core.AuraArray
 
-	ProcPrayerOfMending core.ApplySpellResults
+	ProcPrayerOfMending      core.ApplySpellResults
+	T15_2PC_ExtensionTracker []TargetDoTInfo
+}
+
+type TargetDoTInfo struct {
+	Swp time.Duration
+	VT  time.Duration
 }
 
 type SelfBuffs struct {
@@ -91,6 +99,8 @@ func (priest *Priest) Initialize() {
 	priest.newMindSearSpell()
 
 	priest.ApplyGlyphs()
+
+	priest.T15_2PC_ExtensionTracker = make([]TargetDoTInfo, len(priest.Env.Encounter.AllTargets))
 }
 
 func (priest *Priest) AddHolyEvanglismStack(sim *core.Simulation) {
@@ -112,6 +122,13 @@ func (priest *Priest) ApplyTalents() {
 }
 
 func (priest *Priest) Reset(_ *core.Simulation) {
+	for i := range len(priest.T15_2PC_ExtensionTracker) {
+		priest.T15_2PC_ExtensionTracker[i].Swp = core.NeverExpires
+		priest.T15_2PC_ExtensionTracker[i].VT = core.NeverExpires
+	}
+}
+
+func (priest *Priest) OnEncounterStart(sim *core.Simulation) {
 }
 
 func New(char *core.Character, selfBuffs SelfBuffs, talents string) *Priest {
@@ -153,6 +170,7 @@ const (
 	PriestSpellCircleOfHealing
 	PriestSpellDevouringPlague
 	PriestSpellDevouringPlagueDoT
+	PriestSpellDevouringPlagueHeal
 	PriestSpellDesperatePrayer
 	PriestSpellDispersion
 	PriestSpellDivineAegis

@@ -2,6 +2,7 @@ import { LOCAL_STORAGE_PREFIX, REPO_RELEASES_URL } from '../../constants/other';
 import { isDevMode, isLocal } from '../../utils';
 import { Component } from '../component';
 import Toast from '../toast';
+import i18n from '../../../i18n/config';
 
 export class NoticeLocalSim extends Component {
 	container: HTMLElement;
@@ -40,15 +41,15 @@ export class NoticeLocalSim extends Component {
 			additionalClasses: ['toast-notice-local-download'],
 			container: this.container,
 			variant: 'info',
-			title: 'Did you know?',
+			title: i18n.t('sim.notice_local_download.title'),
 			autohide: false,
 			body: (
-				<>
-					<p>You can download our local sim to speed up your simulations significantly?</p>
+				<div>
+					<p>{i18n.t('sim.notice_local_download.message')}</p>
 					<a href={REPO_RELEASES_URL} className="btn btn-outline-light" target="_blank" onclick={() => this.setHasSeenNotice()}>
-						Download
+						{i18n.t('sim.notice_local_download.download_button')}
 					</a>
-				</>
+				</div>
 			),
 		});
 	}

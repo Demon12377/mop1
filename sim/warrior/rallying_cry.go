@@ -5,7 +5,7 @@ import (
 )
 
 func (war *Warrior) registerRallyingCry() {
-	war.RallyingCryAura = core.RallyingCryAura(&war.Character, war.Index)
+	war.RallyingCryAuras = core.RallyingCryAuraArray(&war.Unit, war.Index)
 
 	spell := war.RegisterSpell(core.SpellConfig{
 		ActionID:       core.RallyingCryActionID,
@@ -27,12 +27,17 @@ func (war *Warrior) registerRallyingCry() {
 		},
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {
-			war.RallyingCryAura.Activate(sim)
+			war.RallyingCryAuras.ActivateAllPlayers(sim)
 		},
+		RelatedAuraArrays: war.RallyingCryAuras.ToMap(),
 	})
 
 	war.AddMajorCooldown(core.MajorCooldown{
-		Spell: spell,
-		Type:  core.CooldownTypeSurvival,
+		Spell:    spell,
+		Type:     core.CooldownTypeSurvival,
+		Priority: core.CooldownPriorityLow,
+		ShouldActivate: func(s *core.Simulation, c *core.Character) bool {
+			return war.CurrentHealthPercent() < 0.6
+		},
 	})
 }

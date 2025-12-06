@@ -46,6 +46,7 @@ func NewBalanceDruid(character *core.Character, options *proto.Player) *BalanceD
 		moonkin.SelfBuffs.InnervateTarget = balanceOptions.Options.ClassOptions.InnervateTarget
 	}
 
+	moonkin.RegisterMoonkinFormAura()
 	return moonkin
 }
 
@@ -55,6 +56,13 @@ type BalanceDruid struct {
 	Options *proto.BalanceDruid_Options
 
 	EclipseEnergyMap EclipseEnergyMap
+
+	LunarEclipseSpellMod       *core.SpellMod
+	SolarEclipseSpellMod       *core.SpellMod
+	CelestialAlignmentSpellMod *core.SpellMod
+	IncarnationSpellMod        *core.SpellMod
+
+	ManaMetric *core.ResourceMetrics
 
 	AstralCommunion      *druid.DruidSpell
 	AstralStorm          *druid.DruidSpell
@@ -69,6 +77,7 @@ type BalanceDruid struct {
 	AstralInsight   *core.Aura // Soul of the Forest
 	DreamOfCenarius *core.Aura
 	NaturesGrace    *core.Aura
+	OwlkinFrenzy    *core.Aura
 }
 
 func (moonkin *BalanceDruid) GetDruid() *druid.Druid {
@@ -79,20 +88,24 @@ func (moonkin *BalanceDruid) Initialize() {
 	moonkin.Druid.Initialize()
 
 	moonkin.EnableEclipseBar()
+	moonkin.RegisterEclipseSpellMods()
 	moonkin.RegisterEclipseAuras()
 	moonkin.RegisterEclipseEnergyGainAura()
 
 	moonkin.RegisterBalancePassives()
 	moonkin.RegisterBalanceSpells()
+
+	moonkin.ManaMetric = moonkin.NewManaMetrics(core.ActionID{SpellID: 81070 /* Eclipse */})
 }
 
 func (moonkin *BalanceDruid) ApplyTalents() {
 	moonkin.Druid.ApplyTalents()
-
 	moonkin.ApplyBalanceTalents()
 }
 
 func (moonkin *BalanceDruid) RegisterBalanceSpells() {
+	moonkin.RegisterMoonkinFormSpell()
+
 	moonkin.registerSunfireSpell()
 	moonkin.registerStarfireSpell()
 	moonkin.registerStarsurgeSpell()

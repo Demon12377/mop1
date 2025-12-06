@@ -22,15 +22,14 @@ func (ww *WindwalkerMonk) registerTigereyeBrew() {
 		ww.outstandingChi = accumulatedChi
 	})
 
-	ww.TigereyeBrewStackAura = ww.RegisterAura(core.Aura{
+	ww.TigereyeBrewStackAura = core.BlockPrepull(ww.RegisterAura(core.Aura{
 		Label:     "Tigereye Brew Stacks" + ww.Label,
 		ActionID:  stackActionID,
 		Duration:  time.Minute * 2,
 		MaxStacks: 20,
-	})
+	}))
 
 	ww.Monk.RegisterOnNewBrewStacks(func(sim *core.Simulation, stacksToAdd int32) {
-
 		if ww.T15Windwalker4P != nil && ww.T15Windwalker4P.IsActive() && sim.Proc(0.1, "Item - Monk T15 Windwalker 4P Bonus") {
 			stacksToAdd += 1
 		}
@@ -40,19 +39,23 @@ func (ww *WindwalkerMonk) registerTigereyeBrew() {
 	})
 
 	var damageMultiplier float64
-	buffAura := ww.RegisterAura(core.Aura{
-		Label:    "Tigereye Brew Buff" + ww.Label,
-		ActionID: buffActionID,
-		Duration: time.Second * 15,
+	buffAura := core.BlockPrepull(ww.RegisterAura(core.Aura{
+		Label:     "Tigereye Brew Buff" + ww.Label,
+		ActionID:  buffActionID,
+		Duration:  time.Second * 15,
+		MaxStacks: 10,
 
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
 			stacksToConsume := min(10, ww.TigereyeBrewStackAura.GetStacks())
 
-			damagePerStack := 0.035 + ww.getMasteryPercent()
+			// 2025-11-20 - Base %damage value on Tigereye Brew per stack increased to 5% (was 3.5%).
+			damagePerStack := 0.05 + ww.getMasteryPercent()
 			damageMultiplier = (1 + damagePerStack*float64(stacksToConsume))
 
 			ww.PseudoStats.DamageDealtMultiplier *= damageMultiplier
+			ww.SefController.UpdateCloneDamageMultiplier(damageMultiplier)
 
+			aura.SetStacks(sim, stacksToConsume)
 			ww.TigereyeBrewStackAura.SetStacks(sim, ww.TigereyeBrewStackAura.GetStacks()-stacksToConsume)
 
 			if ww.T16Windwalker4P != nil {
@@ -65,8 +68,9 @@ func (ww *WindwalkerMonk) registerTigereyeBrew() {
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			ww.PseudoStats.DamageDealtMultiplier /= damageMultiplier
+			ww.SefController.UpdateCloneDamageMultiplier(1 / damageMultiplier)
 		},
-	})
+	}))
 
 	ww.RegisterSpell(core.SpellConfig{
 		ActionID:       buffActionID,
@@ -79,7 +83,7 @@ func (ww *WindwalkerMonk) registerTigereyeBrew() {
 			},
 			CD: core.Cooldown{
 				Timer:    ww.NewTimer(),
-				Duration: time.Second * 5,
+				Duration: time.Second * 1,
 			},
 		},
 

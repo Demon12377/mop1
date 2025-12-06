@@ -9,9 +9,9 @@ import (
 func (mage *Mage) registerBlizzardSpell() {
 
 	// https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=42208
-	blizzardCoefficient := 0.367
-	blizzardScaling := 0.323
-	blizzardVariance := 0.0
+	blizzardCoefficient := 0.36700001359
+	blizzardScaling := 0.32300001383
+
 	blizzardTickSpell := mage.RegisterSpell(core.SpellConfig{
 		ActionID:       core.ActionID{SpellID: 42208},
 		SpellSchool:    core.SpellSchoolFrost,
@@ -24,16 +24,11 @@ func (mage *Mage) registerBlizzardSpell() {
 		BonusCoefficient: blizzardCoefficient,
 		ThreatMultiplier: 1,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			baseDamage := mage.CalcAndRollDamageRange(sim, blizzardScaling, blizzardVariance)
-			anyLanded := false
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
-				result := spell.CalcAndDealDamage(sim, aoeTarget, baseDamage, spell.OutcomeMagicHitAndCrit)
-				if result.Landed() {
-					anyLanded = true
-				}
-			}
-			if anyLanded {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
+			baseDamage := mage.CalcScalingSpellDmg(blizzardScaling)
+			results := spell.CalcAndDealAoeDamage(sim, baseDamage, spell.OutcomeMagicHitAndCrit)
+
+			if results.AnyLanded() {
 				mage.ProcFingersOfFrost(sim, spell)
 			}
 		},

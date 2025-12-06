@@ -74,6 +74,13 @@ func (character *Character) NewDynamicLegacyProcForEnchant(effectID int32, ppm f
 	})
 }
 
+// Dynamic Proc Manager for dynamic ProcMasks on weapon temp enchants
+func (character *Character) NewDynamicLegacyProcForTempEnchant(effectID int32, ppm float64, fixedProcChanceFn func(ProcMask) float64) *DynamicProcManager {
+	return character.newDynamicProcManagerWithDynamicProcMaskDynamicProcChance(ppm, fixedProcChanceFn, func() ProcMask {
+		return character.getCurrentProcMaskForWeaponTempEnchant(effectID)
+	})
+}
+
 // Dynamic Proc Manager for dynamic ProcMasks on weapon effects
 func (character *Character) NewDynamicLegacyProcForWeapon(itemID int32, ppm float64, fixedProcChance float64) *DynamicProcManager {
 	return character.newDynamicProcManagerWithDynamicProcMask(ppm, fixedProcChance, func() ProcMask {
@@ -85,6 +92,17 @@ func (character *Character) newDynamicProcManagerWithDynamicProcMask(ppm float64
 	dpm := character.newDynamicWeaponProcManager(ppm, fixedProcChance, procMaskFn())
 	character.RegisterItemSwapCallback(AllWeaponSlots(), func(sim *Simulation, slot proto.ItemSlot) {
 		dpm = character.newDynamicWeaponProcManager(ppm, fixedProcChance, procMaskFn())
+	})
+
+	return &dpm
+}
+
+func (character *Character) newDynamicProcManagerWithDynamicProcMaskDynamicProcChance(ppm float64, fixedProcChanceFn func(ProcMask) float64, procMaskFn func() ProcMask) *DynamicProcManager {
+	procMask := procMaskFn()
+	dpm := character.newDynamicWeaponProcManager(ppm, fixedProcChanceFn(procMask), procMask)
+	character.RegisterItemSwapCallback(AllWeaponSlots(), func(sim *Simulation, slot proto.ItemSlot) {
+		procMask := procMaskFn()
+		dpm = character.newDynamicWeaponProcManager(ppm, fixedProcChanceFn(procMask), procMask)
 	})
 
 	return &dpm
@@ -186,18 +204,22 @@ func (character *Character) NewSetBonusRPPMProcManager(spellID int32, setBonusAu
 //	char.NewRPPMProcManager(
 //			1234,
 //			false,
+//			false,
 //			ProcMaskDirect,
 //			RPPMConfig{PPM: 2}.
 //				WithClassMod(-0.5, 255).
 //				WithHasteMod(),
 //		)
-func (character *Character) NewRPPMProcManager(effectID int32, isEnchant bool, procMask ProcMask, rppmConfig RPPMConfig) *DynamicProcManager {
+func (character *Character) NewRPPMProcManager(effectID int32, isEnchant bool, isGem bool, procMask ProcMask, rppmConfig RPPMConfig) *DynamicProcManager {
 	var slotList []proto.ItemSlot
 	if isEnchant {
 		slotList = character.ItemSwap.EligibleSlotsForEffect(effectID)
+	} else if isGem {
+		slotList = character.ItemSwap.EligibleSlotsForGem(effectID)
 	} else {
 		slotList = character.ItemSwap.EligibleSlotsForItem(effectID)
 	}
+
 	builder := func() DynamicProcManager {
 		manager := DynamicProcManager{
 			procMasks:   []ProcMask{},
@@ -206,7 +228,7 @@ func (character *Character) NewRPPMProcManager(effectID int32, isEnchant bool, p
 
 		for _, slot := range slotList {
 			eq := character.Equipment.GetItemBySlot(slot)
-			if eq.selectEffectId(isEnchant) != effectID {
+			if eq.selectEffectId(isEnchant, isGem) != effectID {
 				continue
 			}
 
@@ -239,16 +261,44 @@ func (character *Character) NewRPPMProcManager(effectID int32, isEnchant bool, p
 	}
 
 	dpm := builder()
+
+	// Keep track of the lastProc and lastCheck values when weapon swapping.
+	lastProc := -RppmLastProcResetValue
+	lastCheck := -RppmLastCheckCap
+	isFirstProc := true
+
 	character.RegisterItemSwapCallback(slotList, func(_ *Simulation, _ proto.ItemSlot) {
+		for _, proc := range dpm.procChances {
+			resolvedProc := proc.(*RPPMProc)
+			lastProc = max(lastProc, resolvedProc.lastProc)
+			lastCheck = max(lastCheck, resolvedProc.lastCheck)
+			isFirstProc = isFirstProc && resolvedProc.isFirstProc
+		}
+
 		dpm = builder()
+
+		for _, proc := range dpm.procChances {
+			resolvedProc := proc.(*RPPMProc)
+			resolvedProc.lastProc = lastProc
+			resolvedProc.lastCheck = lastCheck
+			resolvedProc.isFirstProc = isFirstProc
+		}
+	})
+
+	character.RegisterResetEffect(func(_ *Simulation) {
+		lastProc = -RppmLastProcResetValue
+		lastCheck = -RppmLastCheckCap
+		isFirstProc = true
 	})
 
 	return &dpm
 }
 
-func (item *Item) selectEffectId(isEnchant bool) int32 {
+func (item *Item) selectEffectId(isEnchant bool, isGem bool) int32 {
 	if isEnchant {
 		return item.Enchant.EffectID
+	} else if isGem {
+		return item.Gems[0].ID
 	}
 
 	return item.ID

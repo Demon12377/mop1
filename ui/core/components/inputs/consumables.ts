@@ -6,6 +6,7 @@ import { EventID, TypedEvent } from '../../typed_event';
 import * as InputHelpers from '../input_helpers';
 import { IconEnumValueConfig } from '../pickers/icon_enum_picker';
 import { ActionInputConfig, ItemStatOption } from './stat_options';
+import i18n from '../../../i18n/config.js';
 
 export interface ConsumableInputConfig<T> extends ActionInputConfig<T> {
 	value: T;
@@ -39,7 +40,7 @@ function makeConsumeInputFactory<T extends number, SpecType extends Spec>(
 			type: 'iconEnum',
 			tooltip: tooltip,
 			numColumns: options.length > 5 ? 2 : 1,
-			values: [{ value: 0, iconUrl: '', tooltip: 'None' } as unknown as IconEnumValueConfig<Player<SpecType>, T>].concat(valueOptions),
+			values: [{ value: 0, iconUrl: '', tooltip: i18n.t('common.none') } as unknown as IconEnumValueConfig<Player<SpecType>, T>].concat(valueOptions),
 			equals: (a: T, b: T) => a == b,
 			zeroValue: 0 as T,
 			changedEvent: (player: Player<any>) => TypedEvent.onAny([player.consumesChangeEmitter, player.gearChangeEmitter, player.professionChangeEmitter]),
@@ -127,7 +128,7 @@ export function makeConsumableInput(
 		type: 'iconEnum',
 		tooltip: tooltip,
 		numColumns: items.length > 5 ? 2 : 1,
-		values: [{ value: 0, iconUrl: '', tooltip: 'None' }].concat(valueOptions),
+		values: [{ value: 0, iconUrl: '', tooltip: i18n.t('common.none') }].concat(valueOptions),
 		equals: (a: number, b: number) => a === b,
 		zeroValue: 0,
 		changedEvent: (player: Player<any>) => player.consumesChangeEmitter,

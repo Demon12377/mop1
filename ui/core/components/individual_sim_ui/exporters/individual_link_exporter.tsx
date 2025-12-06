@@ -7,10 +7,11 @@ import { IndividualSimSettings } from '../../../proto/ui';
 import { arrayEquals, getEnumValues } from '../../../utils';
 import { IndividualImporter } from '../importers/individual_importer';
 import { IndividualExporter } from './individual_exporter';
+import i18n from '../../../../i18n/config';
 
 export class IndividualLinkExporter<SpecType extends Spec> extends IndividualExporter<SpecType> {
 	constructor(parent: HTMLElement, simUI: IndividualSimUI<SpecType>) {
-		super(parent, simUI, { title: 'Shareable Link', selectCategories: true });
+		super(parent, simUI, { title: i18n.t('export.link.title'), selectCategories: true });
 	}
 
 	getData(): string {

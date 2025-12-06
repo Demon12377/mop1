@@ -4,6 +4,7 @@ import { SavedEPWeights } from '../../proto/ui';
 import { Stats } from '../../proto_utils/stats';
 import { TypedEvent } from '../../typed_event';
 import { SavedDataManager, SavedDataManagerConfig } from '../saved_data_manager';
+import i18n from '../../../i18n/config';
 
 export const renderSavedEPWeights = (
 	container: HTMLElement | null,
@@ -11,8 +12,9 @@ export const renderSavedEPWeights = (
 	options?: Partial<SavedDataManagerConfig<Player<any>, SavedEPWeights>>,
 ) => {
 	const savedEPWeightsManager = new SavedDataManager<Player<any>, SavedEPWeights>(container, simUI.player, {
-		label: 'EP Weights',
-		header: { title: 'Saved EP weights' },
+		label: i18n.t('sidebar.buttons.stat_weights.modal.ep'),
+		nameLabel: i18n.t('sidebar.buttons.stat_weights.title'),
+		header: { title: i18n.t('sidebar.buttons.stat_weights.saved_ep_weights.title') },
 		storageKey: simUI.getSavedEPWeightsStorageKey(),
 		getData: player =>
 			SavedEPWeights.create({

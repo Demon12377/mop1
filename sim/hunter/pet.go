@@ -1,6 +1,8 @@
 package hunter
 
 import (
+	"time"
+
 	"github.com/wowsims/mop/sim/core"
 	"github.com/wowsims/mop/sim/core/proto"
 	"github.com/wowsims/mop/sim/core/stats"
@@ -14,21 +16,88 @@ type HunterPet struct {
 
 	hunterOwner *Hunter
 
-	FrenzyAura *core.Aura
+	BestialWrathAura *core.Aura
+	FrenzyAura       *core.Aura
+	BoarsSpeedAura   *core.Aura
 
 	specialAbility *core.Spell
 	KillCommand    *core.Spell
 	focusDump      *core.Spell
 	exoticAbility  *core.Spell
 	lynxRushSpell  *core.Spell
+	Dash           *core.Spell
 
 	uptimePercent    float64
-	wolverineBite    *core.Spell
 	frostStormBreath *core.Spell
-	hasOwnerCooldown bool
 
 	WHFocusIncreaseMod *core.SpellMod
 	WHDamageMod        *core.SpellMod
+}
+
+type ThunderhawkPet struct {
+	HunterPet
+
+	expiresAt      time.Duration
+	LightningBlast *core.Spell
+}
+
+func (hunter *Hunter) NewThunderhawkPet(index int) *ThunderhawkPet {
+	conf := core.PetConfig{
+		Name:                     "Thunderhawk",
+		Owner:                    &hunter.Character,
+		NonHitExpStatInheritance: hunter.makeStatInheritance(),
+		EnabledOnStart:           false,
+		IsGuardian:               true,
+	}
+	thunderhawkPet := &ThunderhawkPet{
+		HunterPet: HunterPet{
+			Pet:         core.NewPet(conf),
+			config:      PetConfig{Name: "Thunderhawk"},
+			hunterOwner: hunter,
+		},
+	}
+	thunderhawkPet.OnPetDisable = thunderhawkPet.disable
+	thunderhawkPet.OnPetEnable = thunderhawkPet.enable
+	hunter.AddPet(thunderhawkPet)
+	return thunderhawkPet
+}
+
+func (tp *ThunderhawkPet) enable(sim *core.Simulation) {
+	tp.expiresAt = sim.CurrentTime + time.Second*10
+}
+
+func (tp *ThunderhawkPet) disable(sim *core.Simulation) {
+	if tp.Hardcast.Expires > sim.CurrentTime {
+		tp.CancelHardcast(sim)
+	}
+}
+
+func (tp *ThunderhawkPet) ExecuteCustomRotation(sim *core.Simulation) {
+	if !tp.Moving && tp.DistanceFromTarget > tp.LightningBlast.MaxRange {
+		tp.MoveTo(tp.LightningBlast.MaxRange-1, sim)
+		return
+	}
+
+	if tp.DistanceFromTarget > tp.LightningBlast.MaxRange {
+		return
+	}
+
+	if !tp.GCD.IsReady(sim) {
+		return
+	}
+
+	if tp.LightningBlast.CanCast(sim, tp.CurrentTarget) {
+		if tp.expiresAt < sim.CurrentTime+tp.LightningBlast.CastTime() {
+			tp.Disable(sim)
+		} else {
+			tp.LightningBlast.Cast(sim, tp.CurrentTarget)
+		}
+	}
+}
+
+func (tp *ThunderhawkPet) Initialize() {
+	tp.Pet.Initialize()
+	tp.LightningBlast = tp.RegisterLightningBlast()
 }
 
 func (hunter *Hunter) NewStampedePet(index int) *HunterPet {
@@ -44,8 +113,6 @@ func (hunter *Hunter) NewStampedePet(index int) *HunterPet {
 		Pet:         core.NewPet(conf),
 		config:      PetConfig{Name: "Stampede"},
 		hunterOwner: hunter,
-
-		//hasOwnerCooldown: petConfig.SpecialAbility == FuriousHowl || petConfig.SpecialAbility == SavageRend,
 	}
 	stampedePet.EnableAutoAttacks(stampedePet, core.AutoAttackOptions{
 		MainHand: core.Weapon{
@@ -53,6 +120,7 @@ func (hunter *Hunter) NewStampedePet(index int) *HunterPet {
 			BaseDamageMax:  hunter.ClassSpellScaling * 0.25,
 			CritMultiplier: 2,
 			SwingSpeed:     2,
+			MaxRange:       core.MaxMeleeRange,
 		},
 		AutoSwingMelee: true,
 		ProcMask:       core.ProcMaskEmpty,
@@ -75,8 +143,6 @@ func (hunter *Hunter) NewDireBeastPet() *HunterPet {
 		Pet:         core.NewPet(conf),
 		config:      PetConfig{Name: "Dire Beast"},
 		hunterOwner: hunter,
-
-		//hasOwnerCooldown: petConfig.SpecialAbility == FuriousHowl || petConfig.SpecialAbility == SavageRend,
 	}
 	dbActionID := core.ActionID{SpellID: 120679}
 	focusMetrics := hunter.NewFocusMetrics(dbActionID)
@@ -87,23 +153,27 @@ func (hunter *Hunter) NewDireBeastPet() *HunterPet {
 			CritMultiplier:    2,
 			SwingSpeed:        2,
 			AttackPowerPerDPS: 7,
+			MaxRange:          core.MaxMeleeRange,
 		},
 		AutoSwingMelee: true,
 		ProcMask:       core.ProcMaskEmpty,
 	})
 
 	hunter.AddPet(direBeastPet)
-	core.MakeProcTriggerAura(&direBeastPet.Unit, core.ProcTrigger{
-		Name:       "Dire Beast",
-		ActionID:   core.ActionID{ItemID: 120679},
-		Callback:   core.CallbackOnSpellHitDealt,
-		ProcChance: 1,
-		SpellFlags: core.SpellFlagMeleeMetrics,
-		Outcome:    core.OutcomeLanded,
+	direBeastPet.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Dire Beast",
+		ActionID:           core.ActionID{ItemID: 120679},
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcChance:         1,
+		SpellFlags:         core.SpellFlagMeleeMetrics,
+		Outcome:            core.OutcomeLanded,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			hunter.AddFocus(sim, 5, focusMetrics)
 		},
 	})
+
 	return direBeastPet
 }
 
@@ -123,6 +193,7 @@ func (hunter *Hunter) NewHunterPet() *HunterPet {
 		IsGuardian:                      false,
 		HasDynamicMeleeSpeedInheritance: true,
 		HasResourceRegenInheritance:     true,
+		StartsAtOwnerDistance:           true,
 	}
 	hp := &HunterPet{
 		Pet:         core.NewPet(conf),
@@ -164,7 +235,7 @@ func (hunter *Hunter) NewHunterPet() *HunterPet {
 			WHFocusIncreaseMod.Deactivate()
 			WHDamageMod.Deactivate()
 		}
-	})
+	}, true)
 
 	hp.EnableAutoAttacks(hp, core.AutoAttackOptions{
 		MainHand: core.Weapon{
@@ -172,6 +243,7 @@ func (hunter *Hunter) NewHunterPet() *HunterPet {
 			BaseDamageMax:  hp.hunterOwner.ClassSpellScaling * 0.25,
 			CritMultiplier: 2,
 			SwingSpeed:     2,
+			MaxRange:       core.MaxMeleeRange,
 		},
 		AutoSwingMelee: true,
 	})
@@ -182,7 +254,7 @@ func (hunter *Hunter) NewHunterPet() *HunterPet {
 func (hp *HunterPet) ApplyTalents() {
 	hp.ApplyCombatExperience() // All pets have this
 	hp.ApplySpikedCollar()
-
+	hp.ApplyBoarsSpeed()
 }
 func (hp *HunterPet) GetPet() *core.Pet {
 	return &hp.Pet
@@ -208,6 +280,7 @@ func (hp *HunterPet) Initialize() {
 		hp.exoticAbility = hp.NewPetAbility(cfg.ExoticAbility, false)
 	}
 	hp.KillCommand = hp.RegisterKillCommandSpell()
+	hp.Dash = hp.RegisterDash()
 
 	hp.registerRabidCD()
 }
@@ -223,7 +296,27 @@ func (hp *HunterPet) Reset(sim *core.Simulation) {
 	}
 }
 
+func (hp *HunterPet) OnEncounterStart(_ *core.Simulation) {
+}
+
 func (hp *HunterPet) ExecuteCustomRotation(sim *core.Simulation) {
+	if hp.DistanceFromTarget > core.MaxMeleeRange {
+		if hp.Dash.CanCast(sim, hp.CurrentTarget) {
+			hp.Dash.Cast(sim, hp.CurrentTarget)
+		}
+
+		if hp.hunterOwner.Talents.BlinkStrikes && hp.focusDump.CanCast(sim, hp.CurrentTarget) {
+			hp.focusDump.Cast(sim, hp.CurrentTarget)
+			return
+		}
+
+		if !hp.Moving {
+			hp.MoveTo(core.MaxMeleeRange-1, sim)
+		}
+
+		return
+	}
+
 	if !hp.isPrimary {
 		return
 	}
@@ -233,39 +326,16 @@ func (hp *HunterPet) ExecuteCustomRotation(sim *core.Simulation) {
 		return
 	}
 
-	if hp.hasOwnerCooldown && hp.CurrentFocus() < 50 {
-		// When a major ability (Furious Howl or Savage Rend) is ready, pool enough
-		// energy to use on-demand.
-		return
-	}
-
 	target := hp.CurrentTarget
 
-	if hp.frostStormBreath != nil && hp.frostStormBreath.CanCast(sim, target) && len(sim.Encounter.TargetUnits) > 4 {
+	if hp.frostStormBreath != nil && hp.frostStormBreath.CanCast(sim, target) && len(sim.Encounter.ActiveTargetUnits) > 4 {
 		hp.frostStormBreath.Cast(sim, target)
 	}
 
-	if hp.wolverineBite.CanCast(sim, target) {
-		hp.wolverineBite.Cast(sim, target)
-	}
-
-	if hp.focusDump == nil {
+	if hp.specialAbility.CanCast(sim, target) {
 		hp.specialAbility.Cast(sim, target)
-		return
-	}
-	if hp.specialAbility == nil {
+	} else if hp.focusDump.CanCast(sim, target) {
 		hp.focusDump.Cast(sim, target)
-		return
-	}
-
-	if hp.config.RandomSelection {
-		if sim.RandomFloat("Hunter Pet Ability") < 0.5 {
-			_ = hp.specialAbility.Cast(sim, target) || hp.focusDump.Cast(sim, target)
-		} else {
-			_ = hp.focusDump.Cast(sim, target) || hp.specialAbility.Cast(sim, target)
-		}
-	} else {
-		_ = hp.specialAbility.Cast(sim, target) || hp.focusDump.Cast(sim, target)
 	}
 }
 
@@ -292,9 +362,6 @@ type PetConfig struct {
 	SpecialAbility PetAbilityType
 	FocusDump      PetAbilityType
 	ExoticAbility  PetAbilityType
-
-	// Randomly select between abilities instead of using a prio.
-	RandomSelection bool
 }
 
 var DefaultPetConfigs = [...]PetConfig{
@@ -321,7 +388,7 @@ var DefaultPetConfigs = [...]PetConfig{
 	proto.HunterOptions_Rhino:        {Name: "Rhino", FocusDump: Bite, SpecialAbility: StampedeDebuff},
 	proto.HunterOptions_Scorpid:      {Name: "Scorpid", FocusDump: Bite},
 	proto.HunterOptions_Serpent:      {Name: "Serpent", FocusDump: Bite},
-	proto.HunterOptions_Silithid:     {Name: "Silithid", FocusDump: Claw, SpecialAbility: QirajiFortitude},
+	proto.HunterOptions_Silithid:     {Name: "Silithid", FocusDump: Claw},
 	proto.HunterOptions_Spider:       {Name: "Spider", FocusDump: Bite},
 	proto.HunterOptions_SpiritBeast:  {Name: "Spirit Beast", FocusDump: Claw, ExoticAbility: SpiritMend},
 	proto.HunterOptions_SporeBat:     {Name: "Spore Bat", FocusDump: Smack, SpecialAbility: SporeCloud},
@@ -332,7 +399,7 @@ var DefaultPetConfigs = [...]PetConfig{
 	proto.HunterOptions_WindSerpent:  {Name: "Wind Serpent", FocusDump: Bite, SpecialAbility: LightningBreath},
 	proto.HunterOptions_Wolf:         {Name: "Wolf", FocusDump: Bite},
 	proto.HunterOptions_Worm:         {Name: "Worm", FocusDump: Bite, SpecialAbility: AcidSpitDebuff, ExoticAbility: BurrowAttack},
-	proto.HunterOptions_ShaleSpider:  {Name: "Shale Spider", FocusDump: Bite, SpecialAbility: EmbraceOfTheShaleSpider},
+	proto.HunterOptions_ShaleSpider:  {Name: "Shale Spider", FocusDump: Bite},
 	proto.HunterOptions_Goat:         {Name: "Goat", FocusDump: Bite, SpecialAbility: Trample},
 	proto.HunterOptions_Porcupine:    {Name: "Porcupine", FocusDump: Bite},
 	proto.HunterOptions_Monkey:       {Name: "Monkey", FocusDump: Bite},

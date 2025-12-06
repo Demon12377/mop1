@@ -1,11 +1,17 @@
 /** @type {import('vite').UserConfig} */
 
 import fs from 'fs';
-import glob from 'glob';
+import { glob } from 'glob';
 import { IncomingMessage, ServerResponse } from 'http';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { ConfigEnv, defineConfig, PluginOption, UserConfigExport } from 'vite';
 import { checker } from 'vite-plugin-checker';
+import i18nextLoader from 'vite-plugin-i18next-loader';
+import stylelint from 'vite-plugin-stylelint';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 export const BASE_PATH = path.resolve(__dirname, 'ui');
 export const OUT_DIR = path.join(__dirname, 'dist', 'mop');
@@ -27,6 +33,7 @@ function serveExternalAssets() {
 					const targetPath = workerMappings[url as keyof typeof workerMappings];
 					const assetsPath = path.resolve(__dirname, './dist/mop');
 					const requestedPath = path.join(assetsPath, targetPath.replace('/mop/', ''));
+
 					serveFile(res, requestedPath);
 					return;
 				}
@@ -88,7 +95,7 @@ function determineContentType(filePath: string) {
 export const getBaseConfig = ({ command, mode }: ConfigEnv) =>
 	({
 		base: '/mop/',
-		root: path.join(__dirname, 'ui'),
+		root: BASE_PATH,
 		build: {
 			outDir: OUT_DIR,
 			minify: mode === 'development' ? false : 'terser',
@@ -102,11 +109,18 @@ export default defineConfig(({ command, mode }) => {
 	return {
 		...baseConfig,
 		plugins: [
+			i18nextLoader({ namespaceResolution: 'basename', paths: ['assets/locales'] }),
 			serveExternalAssets(),
 			checker({
-				root: path.resolve(__dirname, 'ui'),
+				root: BASE_PATH,
 				typescript: true,
 				enableBuild: true,
+			}),
+			stylelint({
+				build: true,
+				lintInWorker: process.env.NODE_ENV === 'production',
+				include: ['ui/**/*.scss'],
+				configFile: path.resolve(__dirname, 'stylelint.config.mjs'),
 			}),
 		],
 		esbuild: {

@@ -10,12 +10,22 @@ import (
 
 func (shaman *Shaman) ApplyElementalTalents() {
 
-	//MoP Classic Changes "https://us.forums.blizzard.com/en/wow/t/feedback-mists-of-pandaria-class-changes/2117387/1"
+	// MoP Classic Changes "https://us.forums.blizzard.com/en/wow/t/feedback-mists-of-pandaria-class-changes/2117387/1"
+	// 5.5.1 : 10%->20%
+	// 5.5.3 : 20%->5%
 	shaman.AddStaticMod(core.SpellModConfig{
 		ClassMask:  SpellMaskLightningBolt | SpellMaskLightningBoltOverload,
 		Kind:       core.SpellMod_DamageDone_Pct,
-		FloatValue: 0.1,
+		FloatValue: 0.05,
 	})
+
+	// 5.5.1 : 0% -> 10%
+	// 5.5.3 : 10%-> 0%
+	// shaman.AddStaticMod(core.SpellModConfig{
+	// 	ClassMask:  SpellMaskChainLightning | SpellMaskChainLightningOverload | SpellMaskFulmination,
+	// 	Kind:       core.SpellMod_DamageDone_Pct,
+	// 	FloatValue: 0,
+	// })
 
 	//Elemental Precision
 	shaman.AddStat(stats.HitRating, -shaman.GetBaseStats()[stats.Spirit])
@@ -40,11 +50,13 @@ func (shaman *Shaman) ApplyElementalTalents() {
 
 	// Elemental Fury
 	shaman.AddStaticMod(core.SpellModConfig{
-		ProcMask:          core.ProcMaskSpellDamage,
-		Kind:              core.SpellMod_CritMultiplier_Flat,
-		FloatValue:        0.5,
-		ShouldApplyToPets: true,
+		SpellFlag:  SpellFlagShamanSpell,
+		Kind:       core.SpellMod_CritMultiplier_Flat,
+		FloatValue: 0.5,
 	})
+	// For fire elemental, the bonus from elemental fury is "inherited" before other effects like skull banner apply.
+	// It has a base 2.5 = 2+0.5 = 2*1.25 crit damage multiplier and 2.5*1.2 = 3 when skull banner is up (assuming primal elementalist)
+	shaman.FireElemental.PseudoStats.CritDamageMultiplier *= 1.25
 
 	//Spiritual Insight
 	shaman.AddStaticMod(core.SpellModConfig{
@@ -59,7 +71,7 @@ func (shaman *Shaman) ApplyElementalTalents() {
 		ActionID:       core.ActionID{SpellID: 88767},
 		SpellSchool:    core.SpellSchoolNature,
 		ProcMask:       core.ProcMaskSpellProc,
-		Flags:          core.SpellFlagPassiveSpell,
+		Flags:          core.SpellFlagPassiveSpell | SpellFlagShamanSpell,
 		ClassSpellMask: SpellMaskFulmination,
 		ManaCost: core.ManaCostOptions{
 			BaseCostPercent: 0,
@@ -87,15 +99,17 @@ func (shaman *Shaman) ApplyElementalTalents() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&shaman.Unit, core.ProcTrigger{
-		Name:           "Fulmination Proc",
-		ProcChance:     1.0,
-		ClassSpellMask: SpellMaskEarthShock,
-		Callback:       core.CallbackOnApplyEffects,
-		ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
-			return shaman.SelfBuffs.Shield == proto.ShamanShield_LightningShield
-		},
+	shaman.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Fulmination Proc",
+		ProcChance:         1.0,
+		ClassSpellMask:     SpellMaskEarthShock,
+		Callback:           core.CallbackOnApplyEffects,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+			if shaman.SelfBuffs.Shield != proto.ShamanShield_LightningShield || shaman.LightningShieldAura.GetStacks() <= 1 {
+				return
+			}
 			shaman.Fulmination.Cast(sim, result.Target)
 			shaman.LightningShieldAura.SetStacks(sim, 1)
 		},
@@ -105,15 +119,19 @@ func (shaman *Shaman) ApplyElementalTalents() {
 	actionID := core.ActionID{SpellID: 88765}
 	manaMetrics := shaman.NewManaMetrics(actionID)
 
-	core.MakeProcTriggerAura(&shaman.Unit, core.ProcTrigger{
-		Name:           "Rolling Thunder",
-		ActionID:       actionID,
-		ClassSpellMask: SpellMaskChainLightning | SpellMaskChainLightningOverload | SpellMaskLightningBolt | SpellMaskLightningBoltOverload | SpellMaskLavaBeam | SpellMaskLavaBeamOverload,
-		Callback:       core.CallbackOnSpellHitDealt,
-		ProcChance:     0.6,
+	shaman.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Rolling Thunder",
+		ActionID:           actionID,
+		MetricsActionID:    actionID,
+		ClassSpellMask:     SpellMaskChainLightning | SpellMaskChainLightningOverload | SpellMaskLightningBolt | SpellMaskLightningBoltOverload | SpellMaskLavaBeam | SpellMaskLavaBeamOverload,
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcChance:         0.6,
+		TriggerImmediately: true,
+
 		ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
 			return shaman.SelfBuffs.Shield == proto.ShamanShield_LightningShield
 		},
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			nStack := core.TernaryInt32(shaman.T14Ele4pc.IsActive(), 2, 1)
 			shaman.AddMana(sim, 0.02*shaman.MaxMana()*float64(nStack), manaMetrics)
@@ -131,13 +149,13 @@ func (shaman *Shaman) ApplyElementalTalents() {
 
 	maxStacks := int32(2)
 
-	clearcastingAura := shaman.RegisterAura(core.Aura{
+	clearcastingAura := core.BlockPrepull(shaman.RegisterAura(core.Aura{
 		Label:     "Clearcasting",
 		ActionID:  core.ActionID{SpellID: 16246},
 		Duration:  time.Second * 15,
 		MaxStacks: maxStacks,
 		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
-			if !spell.Matches(canConsumeSpells) {
+			if !spell.Matches(canConsumeSpells) || spell.Flags.Matches(SpellFlagIsEcho) {
 				return
 			}
 			if spell == triggeringSpell && sim.CurrentTime == triggerTime {
@@ -145,13 +163,13 @@ func (shaman *Shaman) ApplyElementalTalents() {
 			}
 			aura.RemoveStack(sim)
 		},
-	}).AttachSpellMod(core.SpellModConfig{
+	})).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_PowerCost_Pct,
 		ClassMask:  canConsumeSpells,
 		FloatValue: -0.25,
 	}).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
-		School:     core.SpellSchoolFire | core.SpellSchoolFrost | core.SpellSchoolNature,
+		School:     core.SpellSchoolElemental,
 		FloatValue: 0.2,
 	}).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
@@ -159,11 +177,13 @@ func (shaman *Shaman) ApplyElementalTalents() {
 		FloatValue: 0.2,
 	})
 
-	core.MakeProcTriggerAura(&shaman.Unit, core.ProcTrigger{
-		Name:           "Elemental Focus",
-		Callback:       core.CallbackOnSpellHitDealt,
-		Outcome:        core.OutcomeCrit,
-		ClassSpellMask: canTriggerSpells,
+	shaman.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Elemental Focus",
+		Callback:           core.CallbackOnSpellHitDealt,
+		Outcome:            core.OutcomeCrit,
+		ClassSpellMask:     canTriggerSpells,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			triggeringSpell = spell
 			triggerTime = sim.CurrentTime
@@ -173,11 +193,11 @@ func (shaman *Shaman) ApplyElementalTalents() {
 	})
 
 	//Lava Surge
-	procAura := shaman.RegisterAura(core.Aura{
+	procAura := core.BlockPrepull(shaman.RegisterAura(core.Aura{
 		Label:    "Lava Surge",
 		Duration: time.Second * 6,
 		ActionID: core.ActionID{SpellID: 77762},
-	}).AttachSpellMod(core.SpellModConfig{
+	})).AttachSpellMod(core.SpellModConfig{
 		ClassMask:  SpellMaskLavaBurst,
 		Kind:       core.SpellMod_CastTime_Pct,
 		FloatValue: -1.0,
@@ -217,7 +237,7 @@ func (shaman *Shaman) ApplyElementalTalents() {
 			}
 		},
 		OnCastComplete: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell) {
-			if !spell.Matches(SpellMaskLavaBurst) || !procAura.IsActive() {
+			if !spell.Matches(SpellMaskLavaBurst) || spell.Flags.Matches(SpellFlagIsEcho) || !procAura.IsActive() {
 				return
 			}
 			//If lava surge procs during LvB cast time, it is not consumed and lvb does not go on cd

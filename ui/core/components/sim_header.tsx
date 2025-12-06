@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import tippy, { ReferenceElement as TippyReferenceElement } from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
+import i18n from '../../i18n/config';
 import { REPO_CHOOSE_NEW_ISSUE_URL, REPO_RELEASES_URL } from '../constants/other';
 import { SimUI } from '../sim_ui';
 import { isLocal, noop } from '../utils';
@@ -12,6 +13,7 @@ import { Importer } from './importer';
 import { SettingsMenu } from './settings_menu';
 import { SimTab } from './sim_tab';
 import { SocialLinks } from './social_links';
+import { trackPageView } from '../../tracking/utils';
 
 interface ToolbarLinkArgs {
 	parent: HTMLElement;
@@ -137,7 +139,7 @@ export class SimHeader extends Component {
 	private addKnownIssuesLink() {
 		return this.addToolbarLink({
 			parent: this.simToolbar,
-			text: 'Known Issues',
+			text: i18n.t('info.known_issues'),
 			tooltip: this.knownIssuesContent,
 			classes: 'known-issues link-danger hide',
 		});
@@ -158,7 +160,7 @@ export class SimHeader extends Component {
 			href: REPO_CHOOSE_NEW_ISSUE_URL,
 			parent: this.simToolbar,
 			icon: 'fas fa-bug fa-lg',
-			tooltip: 'Report a bug or<br>Request a feature',
+			tooltip: i18n.t('info.bug_report'),
 		});
 	}
 
@@ -203,9 +205,12 @@ export class SimHeader extends Component {
 		this.addToolbarLink({
 			parent: this.simToolbar,
 			icon: 'fas fa-cog fa-lg',
-			tooltip: 'Show Sim Options',
+			tooltip: i18n.t('info.sim_options'),
 			classes: 'sim-options',
-			onclick: () => settingsMenu.open(),
+			onclick: () => {
+				trackPageView('Options', '/settings-menu');
+				settingsMenu.open();
+			},
 		});
 	}
 
@@ -238,13 +243,13 @@ export class SimHeader extends Component {
 					<div className="import-export nav within-raid-sim-hide">
 						<div className="dropdown sim-dropdown-menu import-dropdown">
 							<button className="import-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
-								<i className="fa fa-download"></i> Import
+								<i className="fa fa-download"></i> {i18n.t('import.title')}
 							</button>
 							<ul className="dropdown-menu"></ul>
 						</div>
 						<div className="dropdown sim-dropdown-menu export-dropdown">
 							<button className="export-link" attributes={{ 'aria-expanded': 'false' }} dataset={{ bsToggle: 'dropdown', bsDisplay: 'dynamic' }}>
-								<i className="fa fa-right-from-bracket"></i> Export
+								<i className="fa fa-right-from-bracket"></i> {i18n.t('export.title')}
 							</button>
 							<ul className="dropdown-menu"></ul>
 						</div>

@@ -7,9 +7,8 @@ import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl';
 import { Faction, ItemSlot, PartyBuffs, PseudoStat, Race, Spec, Stat } from '../../core/proto/common';
-import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { DEFAULT_HYBRID_CASTER_GEM_STATS, Stats, UnitStat } from '../../core/proto_utils/stats';
 import * as PriestInputs from '../inputs';
-// import * as ShadowPriestInputs from './inputs';
 import * as Presets from './presets';
 
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecShadowPriest, {
@@ -39,6 +38,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecShadowPriest, {
 		],
 		[PseudoStat.PseudoStatSpellHitPercent, PseudoStat.PseudoStatSpellCritPercent, PseudoStat.PseudoStatSpellHastePercent],
 	),
+	gemStats: DEFAULT_HYBRID_CASTER_GEM_STATS,
 	modifyDisplayStats: (player: Player<Spec.SpecShadowPriest>) => {
 		const playerStats = player.getCurrentStats();
 		const gearStats = Stats.fromProto(playerStats.gearStats);
@@ -55,7 +55,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecShadowPriest, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.PRE_RAID_PRESET.gear,
+		gear: Presets.P1_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.P1_EP_PRESET.epWeights,
 		statCaps: (() => {
@@ -86,26 +86,26 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecShadowPriest, {
 	excludeBuffDebuffInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
-		inputs: [OtherInputs.InputDelay, OtherInputs.TankAssignment, OtherInputs.ChannelClipDelay, OtherInputs.DistanceFromTarget],
+		inputs: [OtherInputs.InputDelay, OtherInputs.ChannelClipDelay, OtherInputs.TankAssignment, OtherInputs.DistanceFromTarget],
 	},
-	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotHands, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
 		showExecuteProportion: true,
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET],
+		epWeights: [Presets.P1_EP_PRESET, Presets.P2_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.StandardTalents],
 		rotations: [Presets.ROTATION_PRESET_DEFAULT],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.PRE_RAID_PRESET, Presets.P1_PRESET],
+		gear: [Presets.PRE_RAID_PRESET, Presets.P1_PRESET, Presets.P2_PRESET],
 		itemSwaps: [],
 		builds: [],
 	},
 
-	autoRotation: (player: Player<Spec.SpecShadowPriest>): APLRotation => {
+	autoRotation: (_: Player<Spec.SpecShadowPriest>): APLRotation => {
 		return Presets.ROTATION_PRESET_DEFAULT.rotation.rotation!;
 	},
 
@@ -139,10 +139,16 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecShadowPriest, {
 export class ShadowPriestSimUI extends IndividualSimUI<Spec.SpecShadowPriest> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecShadowPriest>) {
 		super(parentElem, player, SPEC_CONFIG);
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				statSelectionPresets: Presets.SHADOW_BREAKPOINTS,
-			});
+
+		this.reforger = new ReforgeOptimizer(this, {
+			statSelectionPresets: [Presets.SHADOW_BREAKPOINTS],
+			getEPDefaults: player => {
+				const avgIlvl = player.getGear().getAverageItemLevel(false);
+				if (avgIlvl >= 500) {
+					return Presets.P2_EP_PRESET.epWeights;
+				}
+				return Presets.P1_EP_PRESET.epWeights;
+			},
 		});
 	}
 }

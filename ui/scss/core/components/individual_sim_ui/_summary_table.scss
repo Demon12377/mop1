@@ -17,6 +17,7 @@
 	.content-block-header {
 		.summary-table-reset-button {
 			margin-left: auto;
+			flex-shrink: 0;
 		}
 	}
 
@@ -48,7 +49,14 @@
 	.positive {
 		color: var(--bs-success);
 	}
+
 	.negative {
 		color: var(--bs-danger);
+	}
+}
+
+.summary-table--upgrade-costs {
+	.gem-icon {
+		cursor: default;
 	}
 }

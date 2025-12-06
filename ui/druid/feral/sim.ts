@@ -1,15 +1,20 @@
-import * as BuffDebuffInputs from '../../core/components/inputs/buffs_debuffs';
 import * as OtherInputs from '../../core/components/inputs/other_inputs';
-import { ReforgeOptimizer } from '../../core/components/suggest_reforges_action';
+import * as BuffDebuffInputs from '../../core/components/inputs/buffs_debuffs';
+import { ReforgeOptimizer, RelativeStatCap } from '../../core/components/suggest_reforges_action';
 import * as Mechanics from '../../core/constants/mechanics';
 import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_ui';
 import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLAction, APLListItem, APLPrepullAction, APLRotation, APLRotation_Type as APLRotationType } from '../../core/proto/apl';
 import { Cooldowns, Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
-import { FeralDruid_Rotation as DruidRotation, FeralDruid_Rotation_AplType as FeralRotationType } from '../../core/proto/druid';
+import {
+	FeralDruid_Rotation as DruidRotation,
+	FeralDruid_Rotation_AplType as FeralRotationType,
+	FeralDruid_Rotation_HotwStrategy as HotwStrategy,
+} from '../../core/proto/druid';
 import * as AplUtils from '../../core/proto_utils/apl_utils';
 import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import { TypedEvent } from '../../core/typed_event';
 import * as FeralInputs from './inputs';
 import * as Presets from './presets';
@@ -17,6 +22,8 @@ import * as Presets from './presets';
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 	cssClass: 'feral-druid-sim-ui',
 	cssScheme: PlayerClasses.getCssClass(PlayerClasses.Druid),
+	// Override required talent rows - Feral only requires rows 3 and 5 instead of all rows
+	requiredTalentRows: [0, 3, 5],
 	// List any known bugs / issues here and they'll be shown on the site.
 	knownIssues: [],
 	warnings: [],
@@ -45,11 +52,11 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 		// Default equipped gear.
 		gear: Presets.PRERAID_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.BEARWEAVE_EP_PRESET.epWeights,
+		epWeights: Presets.DOC_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
 		statCaps: (() => {
-			const hitCap = new Stats().withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 8);
-			const expCap = new Stats().withStat(Stat.StatExpertiseRating, 6.5 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION);
+			const hitCap = new Stats().withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5);
+			const expCap = new Stats().withStat(Stat.StatExpertiseRating, 7.5 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION);
 
 			return hitCap.add(expCap);
 		})(),
@@ -64,10 +71,23 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
-		raidBuffs: RaidBuffs.create({}),
+		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
+			markOfTheWild: true,
+			trueshotAura: true,
+			unholyAura: true,
+			graceOfAir: true,
+			bloodlust: true,
+			arcaneBrilliance: true,
+			moonkinAura: true,
+		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
-		debuffs: Debuffs.create({}),
+		debuffs: Debuffs.create({
+			weakenedArmor: true,
+			physicalVulnerability: true,
+			lightningBreath: true,
+		}),
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.
@@ -75,7 +95,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 	// Inputs to include in the 'Rotation' section on the settings tab.
 	rotationInputs: FeralInputs.FeralDruidRotationConfig,
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
-	includeBuffDebuffInputs: [],
+	includeBuffDebuffInputs: [BuffDebuffInputs.SpellPowerBuff, BuffDebuffInputs.SpellDamageDebuff, BuffDebuffInputs.SpellHasteBuff],
 	excludeBuffDebuffInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
@@ -88,21 +108,21 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 			FeralInputs.CannotShredTarget,
 		],
 	},
-	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotHands, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
 		showExecuteProportion: true,
 	},
 
 	presets: {
-		epWeights: [Presets.BEARWEAVE_EP_PRESET, Presets.MONOCAT_EP_PRESET],
+		epWeights: [Presets.DOC_EP_PRESET, Presets.HOTW_EP_PRESET, Presets.DOC_RORO_PRESET, Presets.HOTW_RORO_PRESET],
 		// Preset talents that the user can quickly select.
-		talents: [Presets.StandardTalents, Presets.HybridTalents],
-		rotations: [Presets.SIMPLE_ROTATION_DEFAULT, Presets.AOE_ROTATION_DEFAULT, Presets.APL_ROTATION_DEFAULT],
+		talents: [Presets.StandardTalents, Presets.HotWTalents],
+		rotations: [Presets.SIMPLE_ROTATION_DEFAULT, Presets.APL_ROTATION_DEFAULT],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P3_PRESET, Presets.P4_PRESET],
-		itemSwaps: [Presets.P4_ITEM_SWAP_PRESET],
-		builds: [Presets.PRESET_BUILD_DEFAULT, Presets.PRESET_BUILD_TENDON],
+		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
+		itemSwaps: [Presets.ITEM_SWAP_PRESET],
+		builds: [Presets.PRESET_BUILD_ST, Presets.PRESET_BUILD_CLEAVE],
 	},
 
 	autoRotation: (_player: Player<Spec.SpecFeralDruid>): APLRotation => {
@@ -112,53 +132,60 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 	simpleRotation: (player: Player<Spec.SpecFeralDruid>, simple: DruidRotation, cooldowns: Cooldowns): APLRotation => {
 		const [prepullActions, actions] = AplUtils.standardCooldownDefaults(cooldowns);
 
+		// Rotation entries
+		const agiTrinkets = APLAction.fromJsonString(
+			`{"condition":{"or":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"16s"}}}}]}},"castAllStatBuffCooldowns":{"statType1":1,"statType2":-1,"statType3":-1}}`,
+		);
 		const synapseSprings = APLAction.fromJsonString(
-			`{"condition":{"or":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"11s"}}}}]}},"castSpell":{"spellId":{"spellId":82174}}}`,
+			`{"condition":{"or":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"11s"}}}}]}},"castSpell":{"spellId":{"spellId":126734}}}`,
+		);
+		const hasteTrinkets = APLAction.fromJsonString(
+			`{"condition":{"or":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"16s"}}}}]}},"castAllStatBuffCooldowns":{"statType1":7,"statType2":-1,"statType3":-1}}`,
+		);
+		const trees = APLAction.fromJsonString(
+			`{"condition":{"or":{"vals":[{"anyStatBuffCooldownsActive":{"statType1":1,"statType2":-1,"statType3":-1}},{"and":{"vals":[{"cmp":{"op":"OpEq","lhs":{"numStatBuffCooldowns":{"statType1":1,"statType2":-1,"statType3":-1}},"rhs":{"const":{"val":"0"}}}},{"anyTrinketStatProcsActive":{"statType1":1,"statType2":-1,"statType3":-1,"minIcdSeconds":30}}]}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"16s"}}}}]}},"castSpell":{"spellId":{"spellId":106737}}}`,
 		);
 		const potion = APLAction.fromJsonString(
-			`{"condition":{"or":{"vals":[{"and":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"math":{"op":"OpAdd","lhs":{"spellTimeToReady":{"spellId":{"spellId":50334}}},"rhs":{"const":{"val":"26s"}}}}}}]}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"26s"}}}},{"auraIsActive":{"auraId":{"spellId":50334}}}]}},"castSpell":{"spellId":{"itemId":58145}}}`,
+			`{"condition":{"or":{"vals":[{"and":{"vals":[{"auraIsActive":{"auraId":{"spellId":5217}}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"math":{"op":"OpAdd","lhs":{"spellTimeToReady":{"spellId":{"spellId":106952}}},"rhs":{"const":{"val":"26s"}}}}}}]}},{"cmp":{"op":"OpLt","lhs":{"remainingTime":{}},"rhs":{"const":{"val":"26s"}}}},{"auraIsActive":{"auraId":{"spellId":106951}}}]}},"castSpell":{"spellId":{"itemId":76089}}}`,
 		);
-		const trollRacial = APLAction.fromJsonString(`{"condition":{"auraIsActive":{"auraId":{"spellId":50334}}},"castSpell":{"spellId":{"spellId":26297}}}`);
-		const blockZerk = APLAction.fromJsonString(`{"condition":{"const":{"val":"false"}},"castSpell":{"spellId":{"spellId":50334}}}`);
-		const blockEnrage = APLAction.fromJsonString(`{"condition":{"const":{"val":"false"}},"castSpell":{"spellId":{"spellId":5229}}}`);
+		const trollRacial = APLAction.fromJsonString(`{"condition":{"auraIsActive":{"auraId":{"spellId":106951}}},"castSpell":{"spellId":{"spellId":26297}}}`);
+		const blockZerk = APLAction.fromJsonString(`{"condition":{"const":{"val":"false"}},"castSpell":{"spellId":{"spellId":106952}}}`);
+		const blockNS = APLAction.fromJsonString(`{"condition":{"const":{"val":"false"}},"castSpell":{"spellId":{"spellId":132158}}}`);
+		const blockHotw = APLAction.fromJsonString(`{"condition":{"const":{"val":"false"}},"castSpell":{"spellId":{"spellId":108292}}}`);
+		const shouldUseHotw = player.getTalents().heartOfTheWild && simple.hotwStrategy != HotwStrategy.PassivesOnly;
+		const shouldWrathWeave = shouldUseHotw && simple.hotwStrategy == HotwStrategy.Wrath;
 		const doRotation = APLAction.fromJsonString(
-			`{"catOptimalRotationAction":{"rotationType":${simple.rotationType},"manualParams":${simple.manualParams},"maintainFaerieFire":${
-				simple.maintainFaerieFire
-			},"allowAoeBerserk":${simple.allowAoeBerserk},"meleeWeave":${simple.meleeWeave},"bearWeave":${simple.bearWeave},"snekWeave":${
-				simple.snekWeave
-			},"minRoarOffset":${simple.minRoarOffset.toFixed(2)},"ripLeeway":${simple.ripLeeway.toFixed(0)},"useRake":${simple.useRake},"useBite":${
-				simple.useBite
-			},"biteDuringExecute":${simple.biteDuringExecute},"biteTime":${simple.biteTime.toFixed(2)},"berserkBiteTime":${simple.berserkBiteTime.toFixed(
-				2,
-			)},"cancelPrimalMadness":${simple.cancelPrimalMadness}}}`,
+			`{"catOptimalRotationAction":{"rotationType":${simple.rotationType},"manualParams":${simple.manualParams},"allowAoeBerserk":${simple.allowAoeBerserk},"bearWeave":${simple.bearWeave},"snekWeave":${simple.snekWeave},"useNs":${simple.useNs},"wrathWeave":${shouldWrathWeave},"minRoarOffset":${simple.minRoarOffset.toFixed(2)},"ripLeeway":${simple.ripLeeway.toFixed(2)},"useBite":${simple.useBite},"biteTime":${simple.biteTime.toFixed(2)},"berserkBiteTime":${simple.berserkBiteTime.toFixed(2)}}}`,
 		);
-		const autocasts = APLAction.fromJsonString(`{"autocastOtherCooldowns":{}}`);
 
 		const singleTarget = simple.rotationType == FeralRotationType.SingleTarget;
 		actions.push(
 			...([
+				singleTarget ? agiTrinkets : null,
 				singleTarget ? synapseSprings : null,
+				singleTarget ? hasteTrinkets : null,
+				singleTarget ? trees : null,
 				singleTarget ? potion : null,
 				singleTarget ? trollRacial : null,
 				blockZerk,
-				blockEnrage,
+				blockNS,
+				!shouldUseHotw ? blockHotw : null,
 				doRotation,
-				autocasts,
 			].filter(a => a) as Array<APLAction>),
 		);
 
-		if (simple.prepullTranquility && player.shouldEnableTargetDummies()) {
-			player.getRaid()?.setTargetDummies(TypedEvent.nextEventID(), 4);
+		// Pre-pull entries
+		const healingTouch = APLPrepullAction.fromJsonString(`{"action":{"castSpell":{"spellId":{"spellId":5185}}},"doAtValue":{"const":{"val":"-5.2s"}}}`);
+		const shiftCat = APLPrepullAction.fromJsonString(`{"action":{"castSpell":{"spellId":{"spellId":768}}},"doAtValue":{"const":{"val":"-2.6s"}}}`);
+		const preRoar = APLPrepullAction.fromJsonString(`{"action":{"castSpell":{"spellId":{"spellId":52610}}},"doAtValue":{"const":{"val":"-1s"}}}`);
 
-			const trinketSwap = APLPrepullAction.fromJsonString(`{"action":{"itemSwap":{"swapSet":"Swap1"}},"doAtValue":{"const":{"val":"-125s"}}}`);
-			const tranq = APLPrepullAction.fromJsonString(
-				`{"action":{"channelSpell":{"spellId":{"spellId":740},"interruptIf":{"cmp":{"op":"OpGt","lhs":{"currentTime":{}},"rhs":{"const":{"val":"-2s"}}}}}},"doAtValue":{"const":{"val":"-5.5s"}}}`,
-			);
-			const swapBack = APLPrepullAction.fromJsonString(`{"action":{"itemSwap":{"swapSet":"Main"}},"doAtValue":{"const":{"val":"-1.5s"}}}`);
-			const shiftCat = APLPrepullAction.fromJsonString(`{"action":{"castSpell":{"spellId":{"spellId":768}}},"doAtValue":{"const":{"val":"-1.5s"}}}`);
-
-			prepullActions.push(...([trinketSwap, tranq, swapBack, shiftCat].filter(a => a) as Array<APLPrepullAction>));
-		}
+		prepullActions.push(
+			...([
+				player.getTalents().dreamOfCenarius ? healingTouch : null,
+				player.getTalents().dreamOfCenarius ? shiftCat : null,
+				player.getMajorGlyphs().includes(40923) ? preRoar : null,
+			].filter(a => a) as Array<APLPrepullAction>),
+		);
 
 		return APLRotation.create({
 			prepullActions: prepullActions,
@@ -170,7 +197,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 		});
 	},
 
-	hiddenMCDs: [50334, 5229],
+	hiddenMCDs: [126734, 106737, 76089, 26297, 106952, 132158, 108292, 55004],
 
 	raidSimPresets: [
 		{
@@ -206,8 +233,16 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFeralDruid, {
 export class FeralDruidSimUI extends IndividualSimUI<Spec.SpecFeralDruid> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecFeralDruid>) {
 		super(parentElem, player, SPEC_CONFIG);
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this);
+
+		this.reforger = new ReforgeOptimizer(this, {
+			getEPDefaults: (player: Player<Spec.SpecFeralDruid>) => {
+				if (player.getTalents().heartOfTheWild) {
+					return RelativeStatCap.hasRoRo(player) ? Presets.HOTW_RORO_PRESET.epWeights : Presets.HOTW_EP_PRESET.epWeights;
+				} else {
+					return RelativeStatCap.hasRoRo(player) ? Presets.DOC_RORO_PRESET.epWeights : Presets.DOC_EP_PRESET.epWeights;
+				}
+			},
+			defaultRelativeStatCap: Stat.StatMasteryRating,
 		});
 	}
 }

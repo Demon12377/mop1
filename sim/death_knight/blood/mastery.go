@@ -30,7 +30,7 @@ func (bdk *BloodDeathKnight) registerMastery() {
 				Duration:  time.Second * 10,
 				MaxStacks: math.MaxInt32,
 
-				OnExpire: func(aura *core.Aura, sim *core.Simulation) {
+				OnReset: func(aura *core.Aura, sim *core.Simulation) {
 					shieldAmount = 0.0
 					currentShield = 0.0
 				},
@@ -46,7 +46,7 @@ func (bdk *BloodDeathKnight) registerMastery() {
 					}
 
 					damageReduced := min(result.Damage, currentShield)
-					currentShield -= damageReduced
+					currentShield = max(0, currentShield-damageReduced)
 
 					bdk.GainHealth(sim, damageReduced, shieldSpell.HealthMetrics(result.Target))
 
@@ -56,32 +56,46 @@ func (bdk *BloodDeathKnight) registerMastery() {
 						shield.SetStacks(sim, int32(currentShield))
 					}
 				},
+				OnEncounterStart: func(aura *core.Aura, sim *core.Simulation) {
+					shieldSpell.SelfShield().Deactivate(sim)
+				},
 			},
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+			shield := spell.SelfShield()
+			if !shield.IsActive() {
+				currentShield = 0
+			}
+
+			currentShield = min(currentShield, bdk.MaxHealth())
 			if currentShield < bdk.MaxHealth() {
-				shieldAmount = min(shieldAmount, bdk.MaxHealth()-currentShield)
+				shieldAmount = max(0, min(shieldAmount, bdk.MaxHealth()-currentShield))
 				currentShield += shieldAmount
-				shield := spell.SelfShield()
 				shield.Apply(sim, shieldAmount)
 				shield.SetStacks(sim, int32(currentShield))
+			} else if shield.IsActive() {
+				shieldStacks := int32(currentShield)
+				if shieldStacks != shield.GetStacks() {
+					shield.SetStacks(sim, shieldStacks)
+				}
+				shield.Refresh(sim)
 			}
 		},
 	})
 
-	core.MakeProcTriggerAura(&bdk.Unit, core.ProcTrigger{
-		Name:           "Mastery: Blood Shield" + bdk.Label,
-		ActionID:       core.ActionID{SpellID: 77513},
-		Callback:       core.CallbackOnHealDealt,
-		ClassSpellMask: death_knight.DeathKnightSpellDeathStrikeHeal,
+	bdk.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Mastery: Blood Shield" + bdk.Label,
+		ActionID:           core.ActionID{SpellID: 77513},
+		Callback:           core.CallbackOnHealDealt,
+		ClassSpellMask:     death_knight.DeathKnightSpellDeathStrikeHeal,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			shieldAmount = result.Damage * bdk.getMasteryPercent()
 			shieldSpell.Cast(sim, result.Target)
 		},
 	})
-
 }
 
 func (bdk BloodDeathKnight) getMasteryPercent() float64 {

@@ -7,10 +7,9 @@ import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl';
 import { Debuffs, Faction, IndividualBuffs, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
-import { StatCapType } from '../../core/proto/ui';
-import { StatCap, Stats, UnitStat } from '../../core/proto_utils/stats';
-import { Sim } from '../../core/sim';
-import { TypedEvent } from '../../core/typed_event';
+import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
+import * as MonkUtils from '../utils';
 import * as Presets from './presets';
 
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
@@ -22,22 +21,46 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 	// All stats for which EP should be calculated.
 	epStats: [
 		Stat.StatAgility,
+		Stat.StatStamina,
+		Stat.StatArmor,
 		Stat.StatAttackPower,
-		Stat.StatHitRating,
-		Stat.StatExpertiseRating,
 		Stat.StatCritRating,
-		Stat.StatHasteRating,
 		Stat.StatDodgeRating,
 		Stat.StatParryRating,
+		Stat.StatHitRating,
+		Stat.StatExpertiseRating,
+		Stat.StatHasteRating,
 		Stat.StatMasteryRating,
 	],
 	epPseudoStats: [PseudoStat.PseudoStatMainHandDps, PseudoStat.PseudoStatOffHandDps],
-	consumableStats: [Stat.StatAgility, Stat.StatStamina, Stat.StatArmor, Stat.StatBonusArmor, Stat.StatAttackPower, Stat.StatDodgeRating],
 	// Reference stat against which to calculate EP.
-	epReferenceStat: Stat.StatAttackPower,
+	epReferenceStat: Stat.StatAgility,
+	consumableStats: [
+		Stat.StatAgility,
+		Stat.StatArmor,
+		Stat.StatBonusArmor,
+		Stat.StatStamina,
+		Stat.StatAttackPower,
+		Stat.StatDodgeRating,
+		Stat.StatParryRating,
+		Stat.StatHitRating,
+		Stat.StatHasteRating,
+		Stat.StatCritRating,
+		Stat.StatExpertiseRating,
+		Stat.StatMasteryRating,
+	],
 	// Which stats to display in the Character Stats section, at the bottom of the left-hand sidebar.
 	displayStats: UnitStat.createDisplayStatArray(
-		[Stat.StatHealth, Stat.StatStamina, Stat.StatAgility, Stat.StatStrength, Stat.StatAttackPower, Stat.StatMasteryRating, Stat.StatExpertiseRating],
+		[
+			Stat.StatHealth,
+			Stat.StatArmor,
+			Stat.StatStamina,
+			Stat.StatAgility,
+			Stat.StatStrength,
+			Stat.StatAttackPower,
+			Stat.StatMasteryRating,
+			Stat.StatExpertiseRating,
+		],
 		[
 			PseudoStat.PseudoStatPhysicalHitPercent,
 			PseudoStat.PseudoStatSpellHitPercent,
@@ -49,25 +72,18 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 		],
 	),
 
+	defaultBuild: Presets.PRESET_BUILD_SHA,
+
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
+		gear: Presets.P2_BIS_DW_GEAR_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.PREPATCH_EP_PRESET.epWeights,
+		epWeights: Presets.P2_BALANCED_EP_PRESET.epWeights,
 		// Stat caps for reforge optimizer
 		statCaps: (() => {
 			const hitCap = new Stats().withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5);
-			return hitCap;
-		})(),
-		softCapBreakpoints: (() => {
-			const expertiseCap = StatCap.fromStat(Stat.StatExpertiseRating, {
-				breakpoints: [7.5 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION, 15 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION],
-				capType: StatCapType.TypeSoftCap,
-				// These are set by the active EP weight in the updateSoftCaps callback
-				postCapEPs: [6.04, 0],
-			});
-
-			return [expertiseCap];
+			const expCap = new Stats().withStat(Stat.StatExpertiseRating, 15 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION);
+			return hitCap.add(expCap);
 		})(),
 		other: Presets.OtherDefaults,
 		// Default consumes settings.
@@ -78,6 +94,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
 		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
 			legacyOfTheEmperor: true,
 			legacyOfTheWhiteTiger: true,
 			darkIntent: true,
@@ -86,8 +103,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 			moonkinAura: true,
 			blessingOfMight: true,
 			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
 		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
@@ -123,20 +138,26 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 	},
 
 	presets: {
-		epWeights: [Presets.PREPATCH_EP_PRESET],
+		epWeights: [Presets.P2_BALANCED_EP_PRESET, Presets.P2_OFFENSIVE_EP_PRESET, Presets.P3_BALANCED_EP_PRESET, Presets.P3_OFFENSIVE_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.DefaultTalents, Presets.DungeonTalents],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.ROTATION_PRESET],
+		rotations: [
+			Presets.ROTATION_PRESET,
+			Presets.ROTATION_OFFENSIVE_PRESET,
+			Presets.ROTATION_GARAJAL_PRESET,
+			Presets.ROTATION_SHA_PRESET,
+			Presets.ROTATION_HORRIDON_PRESET,
+		],
 		// Preset gear configurations that the user can quickly select.
 		gear: [
-			Presets.P1_PREBIS_RICH_GEAR_PRESET,
-			Presets.P1_PREBIS_POOR_GEAR_PRESET,
-			Presets.P1_BIS_BALANCED_DW_GEAR_PRESET,
-			Presets.P1_BIS_BALANCED_2H_GEAR_PRESET,
-			Presets.P1_BIS_OFFENSIVE_DW_GEAR_PRESET,
-			Presets.P1_BIS_OFFENSIVE_2H_GEAR_PRESET,
+			Presets.P2_BIS_DW_GEAR_PRESET,
+			Presets.P2_BIS_OFFENSIVE_DW_GEAR_PRESET,
+			Presets.P2_BIS_OFFENSIVE_TIERLESS_DW_GEAR_PRESET,
+			Presets.P3_BIS_DW_GEAR_PRESET,
+			Presets.P3_BIS_OFFENSIVE_DW_GEAR_PRESET,
 		],
+		builds: [Presets.PRESET_BUILD_GARAJAL, Presets.PRESET_BUILD_SHA, Presets.PRESET_BUILD_HORRIDON],
 	},
 
 	autoRotation: (_: Player<Spec.SpecBrewmasterMonk>): APLRotation => {
@@ -157,16 +178,16 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					2: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					3: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					4: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
+					1: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					2: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					3: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					4: Presets.P1_BIS_DW_GEAR_PRESET.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					2: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					3: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
-					4: Presets.P1_BIS_BALANCED_DW_GEAR_PRESET.gear,
+					1: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					2: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					3: Presets.P1_BIS_DW_GEAR_PRESET.gear,
+					4: Presets.P1_BIS_DW_GEAR_PRESET.gear,
 				},
 			},
 			otherDefaults: Presets.OtherDefaults,
@@ -174,35 +195,15 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBrewmasterMonk, {
 	],
 });
 
-const getActiveEPWeight = (player: Player<Spec.SpecBrewmasterMonk>, sim: Sim): Stats => {
-	if (sim.getUseCustomEPValues()) {
-		return player.getEpWeights();
-	} else {
-		return Presets.PREPATCH_EP_PRESET.epWeights;
-	}
-};
-
 export class BrewmasterMonkSimUI extends IndividualSimUI<Spec.SpecBrewmasterMonk> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecBrewmasterMonk>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		const setTalentBasedSettings = () => {
-			const talents = player.getTalents();
-			// Zen sphere can be on 2 targets, so we set the target dummies to 1 if it is talented.
-			player.getRaid()?.setTargetDummies(TypedEvent.nextEventID(), talents.zenSphere ? 2 : 0);
-		};
-
-		setTalentBasedSettings();
+		MonkUtils.setTalentBasedSettings(player);
 		player.talentsChangeEmitter.on(() => {
-			setTalentBasedSettings();
+			MonkUtils.setTalentBasedSettings(player);
 		});
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				getEPDefaults: (player: Player<Spec.SpecBrewmasterMonk>) => {
-					return getActiveEPWeight(player, this.sim);
-				},
-			});
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }

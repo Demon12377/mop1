@@ -14,11 +14,12 @@ type APLValueCurrentHealth struct {
 
 func (rot *APLRotation) newValueCurrentHealth(config *proto.APLValueCurrentHealth, uuid *proto.UUID) APLValue {
 	unit := rot.GetSourceUnit(config.SourceUnit)
-	if unit.Get() == nil {
+	resolvedUnit := unit.Get()
+	if resolvedUnit == nil {
 		return nil
 	}
-	if !unit.Get().HasHealthBar() {
-		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Health", unit.Get().Label)
+	if !resolvedUnit.HasHealthBar() {
+		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Health", resolvedUnit.Label)
 		return nil
 	}
 	return &APLValueCurrentHealth{
@@ -42,11 +43,13 @@ type APLValueCurrentHealthPercent struct {
 
 func (rot *APLRotation) newValueCurrentHealthPercent(config *proto.APLValueCurrentHealthPercent, uuid *proto.UUID) APLValue {
 	unit := rot.GetSourceUnit(config.SourceUnit)
-	if unit.Get() == nil {
+	resolvedUnit := unit.Get()
+
+	if resolvedUnit == nil {
 		return nil
 	}
-	if !unit.Get().HasHealthBar() {
-		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Health", unit.Get().Label)
+	if !resolvedUnit.HasHealthBar() {
+		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Health", resolvedUnit.Label)
 		return nil
 	}
 	return &APLValueCurrentHealthPercent{
@@ -95,11 +98,13 @@ type APLValueCurrentMana struct {
 
 func (rot *APLRotation) newValueCurrentMana(config *proto.APLValueCurrentMana, uuid *proto.UUID) APLValue {
 	unit := rot.GetSourceUnit(config.SourceUnit)
-	if unit.Get() == nil {
+	resolvedUnit := unit.Get()
+
+	if resolvedUnit == nil {
 		return nil
 	}
-	if !unit.Get().HasManaBar() {
-		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Mana", unit.Get().Label)
+	if !resolvedUnit.HasManaBar() {
+		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Mana", resolvedUnit.Label)
 		return nil
 	}
 	return &APLValueCurrentMana{
@@ -123,11 +128,13 @@ type APLValueCurrentManaPercent struct {
 
 func (rot *APLRotation) newValueCurrentManaPercent(config *proto.APLValueCurrentManaPercent, uuid *proto.UUID) APLValue {
 	unit := rot.GetSourceUnit(config.SourceUnit)
-	if unit.Get() == nil {
+	resolvedUnit := unit.Get()
+
+	if resolvedUnit == nil {
 		return nil
 	}
-	if !unit.Get().HasManaBar() {
-		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Mana", unit.Get().Label)
+	if !resolvedUnit.HasManaBar() {
+		rot.ValidationMessageByUUID(uuid, proto.LogLevel_Warning, "%s does not use Mana", resolvedUnit.Label)
 		return nil
 	}
 	return &APLValueCurrentManaPercent{
@@ -529,9 +536,9 @@ func (rot *APLRotation) newValueCurrentGenericResource(_ *proto.APLValueCurrentG
 	}
 }
 func (value *APLValueCurrentGenericResource) Type() proto.APLValueType {
-	return proto.APLValueType_ValueTypeInt
+	return proto.APLValueType_ValueTypeFloat
 }
-func (value *APLValueCurrentGenericResource) GetInt(sim *Simulation) int32 {
+func (value *APLValueCurrentGenericResource) GetFloat(sim *Simulation) float64 {
 	return value.unit.secondaryResourceBar.Value()
 }
 func (value *APLValueCurrentGenericResource) String() string {

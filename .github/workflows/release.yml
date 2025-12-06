@@ -22,7 +22,7 @@ jobs:
             - name: Install Go
               uses: actions/setup-go@v2
               with:
-                  go-version: 1.23.x
+                  go-version: 1.25.x
 
             - name: Install Protoc
               uses: arduino/setup-protoc@v1
@@ -36,12 +36,17 @@ jobs:
             - name: Install Node
               uses: actions/setup-node@v3
               with:
-                  node-version: 20
+                  node-version: 22
 
             - name: Checkout
-              uses: actions/checkout@v2.3.1
+              uses: actions/checkout@v5
               with:
                   ref: ${{ github.event.inputs.ref }}
+
+            - name: Test Locales 💬
+              run: |
+                  npm ci
+                  npm run test:locales
 
             - name: Build 🔧
               run: |
@@ -62,6 +67,7 @@ jobs:
                   artifacts: |
                       wowsimcli-amd64-linux.zip
                       wowsimcli-windows.exe.zip
+                      wowsimcli-arm64-darwin.zip
                       wowsimmop-amd64-darwin.zip
                       wowsimmop-arm64-darwin.zip
                       wowsimmop-amd64-linux.zip

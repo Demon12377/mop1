@@ -206,6 +206,8 @@ type Unit struct {
 	GetSpellPowerValue GetSpellPowerValue
 
 	GetAttackPowerValue GetAttackPowerValue
+
+	SpellsInFlight map[*Spell]int32
 }
 
 func (unit *Unit) getSpellPowerValueImpl(spell *Spell) float64 {
@@ -231,11 +233,11 @@ func (unit *Unit) IsOpponent(other *Unit) bool {
 	return (unit.Type == EnemyUnit) != (other.Type == EnemyUnit)
 }
 
-func (unit *Unit) GetOpponents() []*Unit {
+func (unit *Unit) GetAllOpponents() []*Unit {
 	if unit.Type == EnemyUnit {
 		return unit.Env.Raid.AllUnits
 	} else {
-		return unit.Env.Encounter.TargetUnits
+		return unit.Env.Encounter.AllTargetUnits
 	}
 }
 
@@ -252,6 +254,9 @@ func (unit *Unit) GetInitialStat(stat stats.Stat) float64 {
 }
 func (unit *Unit) GetStats() stats.Stats {
 	return unit.stats
+}
+func (unit *Unit) GetStatsWithoutDeps() stats.Stats {
+	return unit.statsWithoutDeps
 }
 
 // Given an array of Stat types, return the Stat whose value is largest for this
@@ -388,9 +393,20 @@ func (unit *Unit) processDynamicBonus(sim *Simulation, bonus stats.Stats) {
 		}
 	}
 
-	unit.Env.triggerDelayedPetInheritance(sim, unit.DynamicStatsPets, func(sim *Simulation, pet *Pet) {
-		pet.addOwnerStats(sim, bonus)
-	})
+	// Higher performance than calling TriggerDelayedPetInheritance()
+	for _, pet := range unit.DynamicStatsPets {
+		if !pet.enabled {
+			continue
+		}
+
+		pet.pendingStatInheritance.AddInplace(&bonus)
+
+		if pet.statInheritanceAction.consumed || (pet.statInheritanceAction.NextActionAt == 0) {
+			numHeartbeats := (sim.CurrentTime - unit.Env.heartbeatOffset) / PetUpdateInterval
+			pet.statInheritanceAction.NextActionAt = PetUpdateInterval*(numHeartbeats+1) + unit.Env.heartbeatOffset
+			sim.AddPendingAction(pet.statInheritanceAction)
+		}
+	}
 }
 
 func (unit *Unit) EnableDynamicStatDep(sim *Simulation, dep *stats.StatDependency) {
@@ -471,6 +487,14 @@ func (unit *Unit) InitialCastSpeed() float64 {
 	return unit.initialCastSpeed
 }
 
+func (unit *Unit) IsChanneling() bool {
+	return unit.ChanneledDot != nil
+}
+
+func (unit *Unit) IsCastingDuringChannel() bool {
+	return unit.IsChanneling() && unit.ChanneledDot.Spell.Flags.Matches(SpellFlagCastWhileChanneling)
+}
+
 func (unit *Unit) SpellGCD() time.Duration {
 	return max(GCDMin, unit.ApplyCastSpeed(GCDDefault))
 }
@@ -491,8 +515,8 @@ func (unit *Unit) updateCastSpeed() {
 func (unit *Unit) MultiplyCastSpeed(sim *Simulation, amount float64) {
 	unit.PseudoStats.CastSpeedMultiplier *= amount
 
-	unit.Env.triggerDelayedPetInheritance(sim, unit.DynamicCastSpeedPets, func(_ *Simulation, pet *Pet) {
-		pet.dynamicCastSpeedInheritance(amount)
+	unit.Env.TriggerDelayedPetInheritance(sim, unit.DynamicCastSpeedPets, func(sim *Simulation, pet *Pet) {
+		pet.dynamicCastSpeedInheritance(sim, amount)
 	})
 
 	unit.updateCastSpeed()
@@ -505,14 +529,37 @@ func (unit *Unit) ApplyCastSpeedForSpell(dur time.Duration, spell *Spell) time.D
 	return time.Duration(float64(dur) * unit.CastSpeed * max(0, spell.CastTimeMultiplier))
 }
 
+// ApplyRangedSpeed applies ranged haste to a duration, for ranged abilities that should be affected by ranged haste
+func (unit *Unit) ApplyRangedSpeed(dur time.Duration) time.Duration {
+	return time.Duration(float64(dur) / unit.TotalRangedHasteMultiplier())
+}
+
+func (unit *Unit) ApplyRealHaste(dur time.Duration) time.Duration {
+	return time.Duration(float64(dur) / unit.TotalRealHasteMultiplier())
+}
+
 func (unit *Unit) TotalMeleeHasteMultiplier() float64 {
 	return unit.PseudoStats.AttackSpeedMultiplier * unit.PseudoStats.MeleeSpeedMultiplier * (1 + (unit.stats[stats.HasteRating] / (HasteRatingPerHastePercent * 100)))
 }
 
-// Returns the melee haste multiplier only including equip haste and real haste modifiers like lust
+// Returns the real haste multiplier only including equip haste and real haste modifiers like lust
 // Same value for ranged and melee
+// Real Haste mods:
+// MELEE_SLOW
+// MOD_MELEE_HASTE
+// MOD_MELEE_RANGED_HASTE
+// MOD_RANGED_HASTE
+//
+// Not Real Haste mods:
+// MOD_MELEE_HASTE_2
+// MOD_MELEE_HASTE_3
+// MOD_MELEE_RANGED_HASTE_2
+// MOD_MELEE_RANGED_HASTE_3
+// MOD_RANGED_HASTE_2
+// MOD_RANGED_HASTE_3
+// MOD_CASTING_SPEED_NOT_STACK
 func (unit *Unit) TotalRealHasteMultiplier() float64 {
-	return unit.PseudoStats.AttackSpeedMultiplier * (1 + (unit.stats[stats.HasteRating] / (HasteRatingPerHastePercent * 100)))
+	return unit.PseudoStats.AttackSpeedMultiplier * unit.PseudoStats.RangedHasteMultiplier * (1 + (unit.stats[stats.HasteRating] / (HasteRatingPerHastePercent * 100)))
 }
 
 func (unit *Unit) Armor() float64 {
@@ -541,8 +588,8 @@ func (unit *Unit) MultiplyMeleeSpeed(sim *Simulation, amount float64) {
 	unit.PseudoStats.MeleeSpeedMultiplier *= amount
 	unit.updateMeleeAttackSpeed()
 
-	unit.Env.triggerDelayedPetInheritance(sim, unit.DynamicMeleeSpeedPets, func(_ *Simulation, pet *Pet) {
-		pet.dynamicMeleeSpeedInheritance(amount)
+	unit.Env.TriggerDelayedPetInheritance(sim, unit.DynamicMeleeSpeedPets, func(sim *Simulation, pet *Pet) {
+		pet.dynamicMeleeSpeedInheritance(sim, amount)
 	})
 
 	unit.AutoAttacks.UpdateSwingTimers(sim)
@@ -566,6 +613,7 @@ func (unit *Unit) MultiplyRangedSpeed(sim *Simulation, amount float64) {
 
 // Used for "Ranged haste" effects that modify both attack speed and focus regen, like Rapid Fire and Focus Fire
 func (unit *Unit) MultiplyRangedHaste(sim *Simulation, amount float64) {
+	unit.PseudoStats.RangedHasteMultiplier *= amount
 	unit.MultiplyRangedSpeed(sim, amount)
 	unit.MultiplyResourceRegenSpeed(sim, amount)
 }
@@ -604,8 +652,8 @@ func (unit *Unit) MultiplyAttackSpeed(sim *Simulation, amount float64) {
 	unit.updateAttackSpeed()
 	unit.updateMeleeAndRangedHaste()
 
-	unit.Env.triggerDelayedPetInheritance(sim, unit.DynamicMeleeSpeedPets, func(_ *Simulation, pet *Pet) {
-		pet.dynamicMeleeSpeedInheritance(amount)
+	unit.Env.TriggerDelayedPetInheritance(sim, unit.DynamicMeleeSpeedPets, func(sim *Simulation, pet *Pet) {
+		pet.dynamicMeleeSpeedInheritance(sim, amount)
 	})
 
 	unit.AutoAttacks.UpdateSwingTimers(sim)
@@ -621,7 +669,7 @@ func (unit *Unit) MultiplyResourceRegenSpeed(sim *Simulation, amount float64) {
 		unit.MultiplyEnergyRegenSpeed(sim, amount)
 	}
 
-	unit.Env.triggerDelayedPetInheritance(sim, unit.RegenInheritancePets, func(sim *Simulation, pet *Pet) {
+	unit.Env.TriggerDelayedPetInheritance(sim, unit.RegenInheritancePets, func(sim *Simulation, pet *Pet) {
 		pet.MultiplyResourceRegenSpeed(sim, amount)
 	})
 }
@@ -708,7 +756,10 @@ func (unit *Unit) finalize() {
 }
 
 func (unit *Unit) reset(sim *Simulation, _ Agent) {
-	unit.enabled = true
+	if unit.Type != EnemyUnit {
+		unit.enabled = true
+	}
+
 	unit.resetCDs(sim)
 	unit.Hardcast.Expires = startingCDTime
 	unit.ChanneledDot = nil
@@ -745,10 +796,24 @@ func (unit *Unit) reset(sim *Simulation, _ Agent) {
 
 	unit.DynamicStatsPets = unit.DynamicStatsPets[:0]
 	unit.DynamicMeleeSpeedPets = unit.DynamicMeleeSpeedPets[:0]
+	clear(unit.SpellsInFlight)
 
 	if unit.Type != PetUnit {
 		sim.addTracker(&unit.auraTracker)
 	}
+}
+
+func (unit *Unit) onEncounterStart(sim *Simulation) {
+	if agent := unit.Env.GetAgentFromUnit(unit); agent != nil {
+		agent.OnEncounterStart(sim)
+	}
+
+	// Reduce Haste fakepoints arising from overly precise swing timings relative to the GCD timer.
+	if unit.AutoAttacks.AutoSwingMelee && (unit.Type != EnemyUnit) && unit.AutoAttacks.RandomMeleeOffset {
+		unit.AutoAttacks.RandomizeMeleeTiming(sim)
+	}
+
+	unit.OnEncounterStart(sim)
 }
 
 func (unit *Unit) startPull(sim *Simulation) {
@@ -781,6 +846,15 @@ func (unit *Unit) GetSpellsMatchingSchool(school SpellSchool) []*Spell {
 	return spells
 }
 
+func (unit *Unit) SpellInFlight(spell *Spell) bool {
+	return unit.SpellsInFlight[spell] > 0
+}
+
+func (unit *Unit) SpellInFlightByID(spellID int32) bool {
+	spell := unit.GetSpell(ActionID{SpellID: spellID})
+	return unit.SpellInFlight(spell)
+}
+
 func (unit *Unit) GetUnit(ref *proto.UnitReference) *Unit {
 	return unit.Env.GetUnit(ref, unit)
 }
@@ -804,6 +878,7 @@ func (unit *Unit) GetMetadata() *proto.UnitMetadata {
 			HasCastTime:     spell.DefaultCast.CastTime > 0,
 			IsFriendly:      spell.Flags.Matches(SpellFlagHelpful),
 			HasExpectedTick: spell.expectedTickDamageInternal != nil,
+			HasMissileSpeed: spell.MissileSpeed > 0.0,
 		}
 	})
 

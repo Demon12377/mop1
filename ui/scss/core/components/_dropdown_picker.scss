@@ -1,3 +1,13 @@
+.dropdown-picker-root {
+	.dropdown-picker-button {
+		border: 0;
+
+		&:hover {
+			color: rgba(var(--bs-white-rgb), 0.8);
+		}
+	}
+}
+
 .dropdown-picker-button,
 .dropdown-picker-item .dropdown-item {
 	display: flex;
@@ -19,6 +29,7 @@
 .tippy-box[data-theme='dropdown-tooltip'] {
 	max-width: 35vw;
 	pointer-events: none;
+
 	.tippy-content {
 		text-align: left;
 	}

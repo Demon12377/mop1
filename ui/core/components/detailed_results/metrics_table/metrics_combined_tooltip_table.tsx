@@ -2,6 +2,7 @@ import clsx from 'clsx';
 import tippy, { Props as TippyProps } from 'tippy.js';
 
 import { SpellSchool } from '../../../proto/common';
+import i18n from '../../../../i18n/config';
 import { formatToCompactNumber } from '../../../utils';
 import { MetricsTotalBar, MetricsTotalBarProps } from './metrics_total_bar';
 
@@ -48,9 +49,9 @@ export const MetricsCombinedTooltipTable = ({
 				<table className="metrics-table">
 					<thead className="metrics-table-header">
 						<tr className="metrics-table-header-row">
-							<th className="metrics-table-header-cell">{headerValues?.[0] || 'Type'}</th>
-							<th className="metrics-table-header-cell">{headerValues?.[1] || 'Count'}</th>
-							{hasAverageColumn ? <th className="metrics-table-header-cell">{headerValues?.[2] || 'Average'}</th> : undefined}
+							<th className="metrics-table-header-cell">{headerValues?.[0] || i18n.t('results_tab.details.tooltip_table.type')}</th>
+							<th className="metrics-table-header-cell">{headerValues?.[1] || i18n.t('results_tab.details.tooltip_table.count')}</th>
+							{hasAverageColumn ? <th className="metrics-table-header-cell">{headerValues?.[2] || i18n.t('results_tab.details.tooltip_table.average')}</th> : undefined}
 						</tr>
 					</thead>
 					<tbody className="metrics-table-body">

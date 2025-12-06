@@ -72,7 +72,7 @@ func main() {
 		panic(fmt.Sprintf("Error loading DBC data %v", err))
 	}
 
-	_, err = database.LoadAndWriteRawItems(helper, "s.OverallQualityId != 7 AND NOT (s.Bonding = 2 AND ind.Description_lang IS NOT NULL and ind.Description_lang NOT LIKE '%Season%') AND s.Field_1_15_7_59706_054 = 0 AND s.OverallQualityId != 0 AND (i.ClassID = 2 OR i.ClassID = 4) AND s.Display_lang != '' AND (s.ID != 34219 AND s.Display_lang NOT LIKE '%Test%' AND s.Display_lang NOT LIKE 'QA%')", inputsDir)
+	_, err = database.LoadAndWriteRawItems(helper, "s.OverallQualityId != 7 AND s.Field_1_15_7_59706_054 = 0 AND s.OverallQualityId != 0 AND (i.ClassID = 2 OR i.ClassID = 4) AND s.Display_lang != '' AND (s.ID != 34219 AND s.Display_lang NOT LIKE '%Test%' AND s.Display_lang NOT LIKE 'QA%' AND s.Display_lang != 'unused')", inputsDir)
 	if err != nil {
 		panic(fmt.Sprintf("Error loading DBC data %v", err))
 	}
@@ -134,6 +134,10 @@ func main() {
 	if err != nil {
 		panic(fmt.Sprintf("Error loading DBC data %v", err))
 	}
+	upgradePath, err := database.LoadItemUpgradePath(helper)
+	if err != nil {
+		panic(fmt.Sprintf("Error loading DBC data %v", err))
+	}
 	craftingSources := database.LoadCraftedItems(helper)
 	repSources := database.LoadRepItems(helper)
 	//Todo: See if we cant get rid of these as well
@@ -146,12 +150,16 @@ func main() {
 	db.Encounters = core.PresetEncounters
 	db.ReforgeStats = reforgeStats.ToProto()
 
-	iconsMap, _ := database.LoadArtTexturePaths("./tools/DB2ToSqlite/listfile.csv")
+	iconsMap, err := database.LoadArtTexturePaths("./tools/DB2ToSqlite/listfile.csv")
+	if err != nil {
+		panic(fmt.Sprintf("Error loading icon paths %v", err))
+	}
+
 	var instance = dbc.GetDBC()
 	instance.LoadSpellScaling()
 	database.GenerateProtos(instance, db)
 
-	processItems(instance, iconsMap, names, dropSources, craftingSources, repSources, db)
+	processItems(instance, iconsMap, names, dropSources, craftingSources, repSources, upgradePath, db)
 
 	for _, gem := range instance.Gems {
 		parsed := gem.ToProto()
@@ -170,9 +178,23 @@ func main() {
 		db.MergeEnchant(parsed)
 	}
 
-	for _, item := range atlaslootDB.Items {
-		if _, ok := db.Items[item.Id]; ok {
-			db.MergeItem(item)
+	for _, atlaslootItem := range atlaslootDB.Items {
+		if dbItem, ok := db.Items[atlaslootItem.Id]; ok {
+			firstDBRepFaction := proto.RepFaction(-1)
+
+			for _, dbItemSource := range dbItem.Sources {
+				if dbRepSource := dbItemSource.GetRep(); dbRepSource != nil {
+					firstDBRepFaction = dbRepSource.RepFactionId
+					break
+				}
+			}
+
+			atlaslootItem.Sources = core.FilterSlice(atlaslootItem.Sources, func(atlaslootItemSource *proto.UIItemSource) bool {
+				atlaslootRepSource := atlaslootItemSource.GetRep()
+				return (atlaslootRepSource == nil) || (atlaslootRepSource.RepFactionId != firstDBRepFaction)
+			})
+
+			db.MergeItem(atlaslootItem)
 		}
 	}
 
@@ -232,8 +254,8 @@ func main() {
 	database.GenerateMissingEffectsFile()
 	database.GenerateItemEffectRandomPropPoints(instance, db)
 
-	for _, key := range slices.SortedFunc(maps.Keys(db.Enchants), func(l database.EnchantDBKey, r database.EnchantDBKey) int {
-		return int(l.EffectID) - int(r.EffectID)
+	for _, key := range slices.SortedFunc(maps.Keys(db.Enchants), func(l int32, r int32) int {
+		return int(l) - int(r)
 	}) {
 		enchant := db.Enchants[key]
 		if enchant.ItemId != 0 {
@@ -276,14 +298,41 @@ func main() {
 
 	craftedSpellIds := []int32{}
 	for _, item := range db.Items {
+		// Manual override for some ToT weapons that drop from shared loot
+		// and are missing sources in Atlas
+		if slices.Contains([]int32{95866, 95859, 95860, 95861, 95862, 95867, 95876, 95875, 95877, 97129}, item.Id) {
+			item.Sources = database.InferThroneOfThunderSource(item)
+		}
+
+		if item.NameDescription == "Celestial" {
+			item.Sources = database.InferCelestialItemSource(item)
+		}
+
+		// Infer the drop difficulty for the item
+		if item.NameDescription == "Flexible" {
+			item.Sources = database.InferFlexibleRaidItemSource(item)
+		}
+
+		// 1. Add Belt Buckle gem socket to Waist.
+		// 2. Add Eye Of The Black Prince gem socket to Sha-touched items.
+		if item.Type == proto.ItemType_ItemTypeWaist || slices.Contains(item.GemSockets, proto.GemColor_GemColorShaTouched) {
+			item.GemSockets = append(item.GemSockets, proto.GemColor_GemColorPrismatic)
+		}
+
 		for _, source := range item.Sources {
 			if crafted := source.GetCrafted(); crafted != nil {
 				craftedSpellIds = append(craftedSpellIds, crafted.SpellId)
 			}
+			// Add Eye Of The Black Prince gem socket to Throne of Thunder weapons.
+			if drop := source.GetDrop(); drop != nil && (item.Type == proto.ItemType_ItemTypeWeapon || item.Type == proto.ItemType_ItemTypeRanged) && (item.WeaponType != proto.WeaponType_WeaponTypeOffHand && item.WeaponType != proto.WeaponType_WeaponTypeShield) && drop.ZoneId == 6622 {
+				item.GemSockets = append(item.GemSockets, proto.GemColor_GemColorPrismatic)
+			}
 		}
+
 		if item.Phase < 2 {
-			item.Phase = InferPhase(item)
+			item.Phase = database.InferPhase(item)
 		}
+
 	}
 	addSpellIcons(db, craftedSpellIds, icons, iconsMap)
 
@@ -295,169 +344,14 @@ func main() {
 	db.WriteBinaryAndJson(fmt.Sprintf("%s/db.bin", dbDir), fmt.Sprintf("%s/db.json", dbDir))
 }
 
-func InferPhase(item *proto.UIItem) int32 {
-	ilvl := item.ScalingOptions[int32(proto.ItemLevelState_Base)].Ilvl
-	name := item.Name
-	quality := item.Quality
-
-	if strings.Contains(name, "Necklace of the Terra-Cotta") {
-		return 4
-	}
-
-	//- Any blue pvp ''Crafted'' item of ilvl 458 is 5.2
-	//- Any blue pvp ''Crafted'' item of ilvl 476 is 5.4
-	if strings.Contains(name, "Crafted") {
-		switch ilvl {
-		case 458:
-			return 3
-		case 476:
-			return 5
-		}
-	}
-
-	//- Any "Tyrannical" item is 5.2
-	//- Any "Grievous" item is 5.4
-	//- Any "Prideful" item is 5.4
-	switch {
-	case strings.Contains(name, "Grievous"),
-		strings.Contains(name, "Prideful"):
-		return 5
-	case strings.Contains(name, "Tyrannical"):
-		return 3
-	}
-
-	//- Any 476 epic item with random stats is 5.1
-	//- Any 496 epic item with random stats is 5.4
-	//- Any 516 epic items with random stats are 5.3
-	//- Any 535 epic items with random stats are 5.4
-	//- Any 489 random stat epic is 5.3
-	if item.RandPropPoints > 0 {
-		switch ilvl {
-		case 476:
-			return 2
-		case 489:
-			return 4
-		case 496:
-			return 5
-		case 516:
-			return 4
-		case 535:
-			return 5
-		}
-	}
-
-	//iLvl 600 legendary vs. epic
-	if ilvl == core.MaxIlvl {
-		if quality == proto.ItemQuality_ItemQualityLegendary {
-			return 5
-		}
-		if quality == proto.ItemQuality_ItemQualityEpic {
-			return 4
-		}
-	}
-
-	//- Any item above ilvl 542 is 5.4 (except the 600 ilvl Epic Cloaks from the legendary questline)
-	if ilvl > 542 && quality < proto.ItemQuality_ItemQualityLegendary {
-		return 5
-	}
-
-	//- Any 483 green item is a boosted level 90 item in 5.4
-	if ilvl == 483 && quality == proto.ItemQuality_ItemQualityUncommon {
-		return 5
-	}
-
-	//- All pve tier items of ilvl 502/522/535 are 5.2
-	//- All pve tier items of ilvl 528/540/553/566 are 5.4
-	if item.SetId > 0 {
-		switch ilvl {
-		case 528, 540, 553, 566:
-			return 5
-		case 502, 522, 535:
-			return 3
-		}
-	}
-
-	// Timeless Isle trinkets are all ilvl 496 and does not have a source listed.
-	if item.Sources == nil {
-		if item.Type == proto.ItemType_ItemTypeTrinket && ilvl == 496 {
-			return 3
-		}
-	}
-
-	//AtlasLoot‐style source checks
-	for _, src := range item.Sources {
-		if rep := src.GetRep(); rep != nil {
-			//- All items with Reputation requirements of "Shado-Pan Assault" are 5.2
-			if rep.RepFactionId == proto.RepFaction_RepFactionShadoPanAssault {
-				return 3
-			}
-			if rep.RepFactionId == proto.RepFaction_RepFactionOperationShieldwall || rep.RepFactionId == proto.RepFaction_RepFactionDominanceOffensive {
-				return 2
-			}
-			//- All items with Reputation requirements of "Emperor Shaohao" are 5.4
-			if rep.RepFactionId == proto.RepFaction_RepFactionEmperorShaohao {
-				return 3
-			}
-		}
-		if craft := src.GetCrafted(); craft != nil {
-			switch ilvl {
-			case 476, 496:
-				return 1
-			case 502:
-				return 4
-			case 522:
-				return 3
-			case 553:
-				return 4
-			}
-		}
-		if drop := src.GetDrop(); drop != nil {
-			switch drop.ZoneId {
-			case 6297, 6125, 6067:
-				return 1
-			case 6622:
-				return 3
-			case 6738:
-				return 5
-			}
-			//- All "Oondasta (World Boss)" items are 5.2
-			if drop.NpcId == 826 {
-				return 3
-			}
-			//- All "Ordos (World Boss)" items are 5.4
-			if drop.NpcId == 861 {
-				return 5
-			}
-		}
-	}
-
-	// Any 489 random stat epic is 5.3
-	if ilvl >= 489 && len(item.RandomSuffixOptions) > 0 {
-		return 2
-	}
-
-	// high ilvl greens probably boosted
-	if ilvl > 440 && quality < proto.ItemQuality_ItemQualityRare {
-		return 5
-	}
-
-	if ilvl <= 463 {
-		return 1
-	}
-
-	switch ilvl {
-	case 476, 483, 489, 496:
-		return 1
-	case 502, 522, 535, 541:
-		return 3
-	case 553, 528, 566, 540:
-		return 5
-	}
-
-	return 0
-}
-
-func processItems(instance *dbc.DBC, iconsMap map[int]string, names map[int]string, dropSources map[int][]*proto.DropSource, craftingSources map[int][]*proto.CraftedSource, repSources map[int][]*proto.RepSource, db *database.WowDatabase) {
+func processItems(instance *dbc.DBC,
+	iconsMap map[int]string,
+	names map[int]string,
+	dropSources map[int][]*proto.DropSource,
+	craftingSources map[int][]*proto.CraftedSource,
+	repSources map[int][]*proto.RepSource,
+	upgradePath map[int][]int,
+	db *database.WowDatabase) {
 	sourceMap := make(map[string][]*proto.UIItemSource, len(instance.Items))
 	parsedItems := make([]*proto.UIItem, 0, len(instance.Items))
 
@@ -471,6 +365,12 @@ func processItems(instance *dbc.DBC, iconsMap map[int]string, names map[int]stri
 		if item.Flags2&0x10 != 0 && (item.StatAlloc[0] > 0 && item.StatAlloc[0] < 600) {
 			continue
 		}
+		// UIItem doesn't have the upgrade context so we need to apply the
+		// upgrade override before we convert it to an UIItem
+		if _, ok := database.ItemUpgradesDisallowList[int32(item.Id)]; ok {
+			item.UpgradeID = 0
+		}
+		item.UpgradePath = upgradePath[item.UpgradeID]
 		parsed := item.ToUIItem()
 		if parsed.Icon == "" {
 			parsed.Icon = strings.ToLower(database.GetIconName(iconsMap, item.FDID))
@@ -625,7 +525,7 @@ func ApplyGlobalFilters(db *database.WowDatabase) {
 		return icon.Name != "" && icon.Icon != "" && icon.Id != 0
 	})
 
-	db.Enchants = core.FilterMap(db.Enchants, func(_ database.EnchantDBKey, enchant *proto.UIEnchant) bool {
+	db.Enchants = core.FilterMap(db.Enchants, func(_ int32, enchant *proto.UIEnchant) bool {
 		// MoP no longer has head enchants, so filter them.
 		if enchant.Type == proto.ItemType_ItemTypeHead {
 			return false
@@ -981,6 +881,7 @@ func GetAllRotationSpellIds() map[string][]int32 {
 			Class:         proto.Class_ClassWarlock,
 			Equipment:     &proto.EquipmentSpec{},
 			TalentsString: "000000",
+			Profession1:   proto.Profession_Herbalism,
 		}, &proto.Player_AfflictionWarlock{AfflictionWarlock: &proto.AfflictionWarlock{Options: &proto.AfflictionWarlock_Options{ClassOptions: &proto.WarlockOptions{}}}}), nil, nil, nil)},
 		{Name: "demonologyWarlock", Raid: core.SinglePlayerRaidProto(core.WithSpec(&proto.Player{
 			Class:         proto.Class_ClassWarlock,
@@ -1015,12 +916,12 @@ func GetAllRotationSpellIds() map[string][]int32 {
 			Class:         proto.Class_ClassMonk,
 			Equipment:     &proto.EquipmentSpec{},
 			TalentsString: "000000",
-		}, &proto.Player_BrewmasterMonk{BrewmasterMonk: &proto.BrewmasterMonk{Options: &proto.BrewmasterMonk_Options{ClassOptions: &proto.MonkOptions{}, Stance: proto.MonkStance_SturdyOx}}}), nil, nil, nil)},
+		}, &proto.Player_BrewmasterMonk{BrewmasterMonk: &proto.BrewmasterMonk{Options: &proto.BrewmasterMonk_Options{ClassOptions: &proto.MonkOptions{}}}}), nil, nil, nil)},
 		{Name: "mistweaverMonk", Raid: core.SinglePlayerRaidProto(core.WithSpec(&proto.Player{
 			Class:         proto.Class_ClassMonk,
 			Equipment:     &proto.EquipmentSpec{},
 			TalentsString: "000000",
-		}, &proto.Player_MistweaverMonk{MistweaverMonk: &proto.MistweaverMonk{Options: &proto.MistweaverMonk_Options{ClassOptions: &proto.MonkOptions{}, Stance: proto.MonkStance_WiseSerpent}}}), nil, nil, nil)},
+		}, &proto.Player_MistweaverMonk{MistweaverMonk: &proto.MistweaverMonk{Options: &proto.MistweaverMonk_Options{ClassOptions: &proto.MonkOptions{}}}}), nil, nil, nil)},
 		{Name: "windwalkerMonk", Raid: core.SinglePlayerRaidProto(core.WithSpec(&proto.Player{
 			Class:         proto.Class_ClassMonk,
 			Equipment:     &proto.EquipmentSpec{},

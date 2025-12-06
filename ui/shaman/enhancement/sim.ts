@@ -8,6 +8,8 @@ import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl.js';
 import { Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, Spec, Stat, UnitStats } from '../../core/proto/common.js';
 import { Stats, UnitStat } from '../../core/proto_utils/stats.js';
+import { TypedEvent } from '../../core/typed_event';
+import i18n from '../../i18n/config';
 import * as ShamanInputs from '../inputs.js';
 import * as EnhancementInputs from './inputs.js';
 import * as Presets from './presets.js';
@@ -17,6 +19,24 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 	cssScheme: PlayerClasses.getCssClass(PlayerClasses.Shaman),
 	// List any known bugs / issues here and they'll be shown on the site.
 	knownIssues: [],
+	warnings: [
+		simUI => {
+			return {
+				updateOn: TypedEvent.onAny([simUI.player.specOptionsChangeEmitter, simUI.player.talentsChangeEmitter]),
+				getContent: () => {
+					const autocast = simUI.player.getClassOptions().feleAutocast;
+					if (
+						simUI.player.getTalents().primalElementalist &&
+						(autocast?.autocastEmpower || !(autocast?.autocastFireblast && autocast.autocastFirenova && autocast.autocastImmolate))
+					) {
+						return i18n.t('sidebar.warnings.shaman_fele_autocast');
+					} else {
+						return '';
+					}
+				},
+			};
+		},
+	],
 
 	overwriteDisplayStats: (player: Player<Spec.SpecEnhancementShaman>) => {
 		const playerStats = player.getCurrentStats();
@@ -52,7 +72,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 		Stat.StatCritRating,
 		Stat.StatHasteRating,
 		Stat.StatExpertiseRating,
-		Stat.StatSpellPower,
 		Stat.StatMasteryRating,
 	],
 	epPseudoStats: [
@@ -88,9 +107,9 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_PRESET.gear,
+		gear: Presets.P3_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.P1_EP_PRESET.epWeights,
+		epWeights: Presets.P3_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge optimizer
 		statCaps: (() => {
 			const physHitCap = new Stats().withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5);
@@ -103,7 +122,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 		// Default consumes settings.
 		consumables: Presets.DefaultConsumables,
 		// Default talents.
-		talents: Presets.StandardTalents.data,
+		talents: Presets.P3Talents.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
@@ -114,7 +133,13 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 	},
 
 	// IconInputs to include in the 'Player' section on the settings tab.
-	playerIconInputs: [ShamanInputs.ShamanShieldInput(), ShamanInputs.ShamanImbueMH(), EnhancementInputs.ShamanImbueOH],
+	playerIconInputs: [
+		ShamanInputs.ShamanShieldInput(),
+		ShamanInputs.ShamanImbueMH(),
+		EnhancementInputs.ShamanImbueOH,
+		ShamanInputs.ShamanImbueMHSwap(),
+		EnhancementInputs.ShamanImbueOHSwap,
+	],
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
 	includeBuffDebuffInputs: [],
 	excludeBuffDebuffInputs: [BuffDebuffInputs.SpellPowerBuff],
@@ -122,18 +147,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 	otherInputs: {
 		inputs: [EnhancementInputs.SyncTypeInput, OtherInputs.InputDelay, OtherInputs.TankAssignment, OtherInputs.InFrontOfTarget],
 	},
-	itemSwapSlots: [
-		ItemSlot.ItemSlotHead,
-		ItemSlot.ItemSlotShoulder,
-		ItemSlot.ItemSlotBack,
-		ItemSlot.ItemSlotChest,
-		ItemSlot.ItemSlotHands,
-		ItemSlot.ItemSlotLegs,
-		ItemSlot.ItemSlotTrinket1,
-		ItemSlot.ItemSlotTrinket2,
-		ItemSlot.ItemSlotMainHand,
-		ItemSlot.ItemSlotOffHand,
-	],
+	itemSwapSlots: [ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2, ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand],
 	customSections: [ShamanInputs.TotemsSection],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
@@ -141,38 +155,36 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecEnhancementShaman, {
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET],
+		epWeights: [Presets.P1_EP_PRESET, Presets.P3_EP_PRESET],
 		// Preset talents that the user can quickly select.
-		talents: [Presets.StandardTalents],
+		talents: [Presets.StandardTalents, Presets.P3Talents],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.ROTATION_PRESET_DEFAULT],
+		rotations: [Presets.ROTATION_PRESET_DEFAULT, Presets.ROTATION_PRESET_P3],
 		// Preset gear configurations that the user can quickly select.
-		gear: [
-			Presets.P1_PRESET,
-		],
+		gear: [Presets.P1_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
 	},
 
-	autoRotation: (player: Player<Spec.SpecEnhancementShaman>): APLRotation => {
-		return Presets.ROTATION_PRESET_DEFAULT.rotation.rotation!;
+	autoRotation: (_: Player<Spec.SpecEnhancementShaman>): APLRotation => {
+		return Presets.ROTATION_PRESET_P3.rotation.rotation!;
 	},
 
 	raidSimPresets: [
 		{
 			spec: Spec.SpecEnhancementShaman,
-			talents: Presets.StandardTalents.data,
+			talents: Presets.P3Talents.data,
 			specOptions: Presets.DefaultOptions,
 			consumables: Presets.DefaultConsumables,
 			defaultFactionRaces: {
 				[Faction.Alliance]: Race.RaceDraenei,
-				[Faction.Horde]: Race.RaceOrc,
+				[Faction.Horde]: Race.RaceTroll,
 				[Faction.Unknown]: Race.RaceUnknown,
 			},
 			defaultGear: {
 				[Faction.Alliance]: {
-					1: Presets.P1_PRESET.gear,
+					1: Presets.P3_PRESET.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.P1_PRESET.gear,
+					1: Presets.P3_PRESET.gear,
 				},
 				[Faction.Unknown]: {},
 			},
@@ -185,8 +197,6 @@ export class EnhancementShamanSimUI extends IndividualSimUI<Spec.SpecEnhancement
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecEnhancementShaman>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this);
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }

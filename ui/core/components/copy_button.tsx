@@ -2,6 +2,7 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import { Component } from './component';
+import i18n from '../../i18n/config';
 
 export interface CopyButtonConfig {
 	getContent: () => string;
@@ -18,7 +19,7 @@ export class CopyButton extends Component {
 		const buttonElem = (
 			<button className={`btn ${config.extraCssClasses?.join(' ') ?? ''}`} ref={btnRef}>
 				<i className="fas fa-copy me-1" />
-				{config.text ?? 'Copy to Clipboard'}
+				{config.text ?? i18n.t('common.copy_button.default_text')}
 			</button>
 		);
 
@@ -37,7 +38,7 @@ export class CopyButton extends Component {
 				clicked = true;
 				navigator.clipboard.writeText(data);
 				const originalContent = button.innerHTML;
-				button.innerHTML = '<i class="fas fa-check me-1"></i>Copied';
+				button.innerHTML = `<i class="fas fa-check me-1"></i>${i18n.t('common.copy_button.copied')}`;
 				setTimeout(() => {
 					button.innerHTML = originalContent;
 					clicked = false;

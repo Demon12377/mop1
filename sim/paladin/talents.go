@@ -54,7 +54,7 @@ func (paladin *Paladin) registerSpeedOfLight() {
 		ActionID: actionID,
 		Duration: time.Second * 8,
 	})
-	speedOfLightAura.NewMovementSpeedEffect(0.7)
+	speedOfLightAura.NewActiveMovementSpeedEffect(0.7)
 
 	paladin.RegisterSpell(core.SpellConfig{
 		ActionID:    actionID,
@@ -90,14 +90,14 @@ func (paladin *Paladin) registerLongArmOfTheLaw() {
 		return
 	}
 
-	longArmOfTheLawAura := paladin.RegisterAura(core.Aura{
+	longArmOfTheLawAura := core.BlockPrepull(paladin.RegisterAura(core.Aura{
 		Label:    "Long Arm of the Law" + paladin.Label,
 		ActionID: core.ActionID{SpellID: 87173},
 		Duration: time.Second * 3,
-	})
-	longArmOfTheLawAura.NewMovementSpeedEffect(0.45)
+	}))
+	longArmOfTheLawAura.NewActiveMovementSpeedEffect(0.45)
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Long Arm of the Law Trigger" + paladin.Label,
 		ActionID:       core.ActionID{SpellID: 87172},
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -136,19 +136,23 @@ func (paladin *Paladin) registerPursuitOfJustice() {
 			paladin.MultiplyMovementSpeed(sim, 1+newSpeed)
 			movementSpeedEffect.SetPriority(sim, newSpeed)
 		},
+		OnEncounterStart: func(aura *core.Aura, sim *core.Simulation) {
+			aura.Activate(sim)
+			aura.SetStacks(sim, 1)
+		},
 	})
 
 	movementSpeedEffect = pursuitOfJusticeAura.NewExclusiveEffect("MovementSpeed", true, core.ExclusiveEffect{
 		Priority: speedLevels[1],
 	})
 
-	paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain, realGain int32, actionID core.ActionID) {
+	paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain, realGain float64, actionID core.ActionID) {
 		pursuitOfJusticeAura.Activate(sim)
-		pursuitOfJusticeAura.SetStacks(sim, paladin.SpendableHolyPower()+1)
+		pursuitOfJusticeAura.SetStacks(sim, int32(paladin.SpendableHolyPower()+1))
 	})
-	paladin.HolyPower.RegisterOnSpend(func(sim *core.Simulation, amount int32, actionID core.ActionID) {
+	paladin.HolyPower.RegisterOnSpend(func(sim *core.Simulation, amount float64, actionID core.ActionID) {
 		pursuitOfJusticeAura.Activate(sim)
-		pursuitOfJusticeAura.SetStacks(sim, paladin.SpendableHolyPower()+1)
+		pursuitOfJusticeAura.SetStacks(sim, int32(paladin.SpendableHolyPower()+1))
 	})
 }
 
@@ -209,20 +213,22 @@ func (paladin *Paladin) registerSelflessHealer() {
 			costMod.Deactivate()
 		},
 	}).AttachProcTrigger(core.ProcTrigger{
-		Callback:       core.CallbackOnCastComplete,
-		ClassSpellMask: classMask,
+		Callback:           core.CallbackOnCastComplete,
+		ClassSpellMask:     classMask,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			paladin.SelflessHealerAura.Deactivate(sim)
 		},
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           "Selfless Healer Trigger" + paladin.Label,
-		ActionID:       core.ActionID{SpellID: 85804},
-		Callback:       core.CallbackOnSpellHitDealt,
-		Outcome:        core.OutcomeLanded,
-		ClassSpellMask: SpellMaskJudgment,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Selfless Healer Trigger" + paladin.Label,
+		ActionID:           core.ActionID{SpellID: 85804},
+		Callback:           core.CallbackOnSpellHitDealt,
+		Outcome:            core.OutcomeLanded,
+		ClassSpellMask:     SpellMaskJudgment,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			paladin.SelflessHealerAura.Activate(sim)
@@ -459,18 +465,20 @@ func (paladin *Paladin) registerHolyAvenger() {
 		FloatValue: 0.3,
 	})
 
-	paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain int32, actualGain int32, triggeredActionID core.ActionID) {
+	paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain float64, actualGain float64, triggeredActionID core.ActionID) {
 		if !holyAvengerAura.IsActive() {
 			return
 		}
 
 		if slices.Contains(paladin.HolyAvengerActionIDFilter, triggeredActionID) {
-			core.StartDelayedAction(sim, core.DelayedActionOptions{
-				DoAt: sim.CurrentTime + core.SpellBatchWindow,
-				OnAction: func(sim *core.Simulation) {
-					paladin.HolyPower.Gain(sim, 2, actionID)
-				},
-			})
+			pa := sim.GetConsumedPendingActionFromPool()
+			pa.NextActionAt = sim.CurrentTime + core.SpellBatchWindow
+
+			pa.OnAction = func(sim *core.Simulation) {
+				paladin.HolyPower.Gain(sim, 2, actionID)
+			}
+
+			sim.AddPendingAction(pa)
 		}
 	})
 
@@ -528,7 +536,7 @@ func (paladin *Paladin) registerSanctifiedWrath() {
 		cdClassMask = SpellMaskJudgment
 		hpGainActionID := core.ActionID{SpellID: 53376}
 
-		paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain, realGain int32, actionID core.ActionID) {
+		paladin.HolyPower.RegisterOnGain(func(sim *core.Simulation, gain, realGain float64, actionID core.ActionID) {
 			if actionID.SameAction(paladin.JudgmentsOfTheWiseActionID) && paladin.AvengingWrathAura.IsActive() {
 				paladin.HolyPower.Gain(sim, 1, hpGainActionID)
 			}
@@ -556,20 +564,21 @@ func (paladin *Paladin) registerSanctifiedWrath() {
 type AuraDeactivationCheck func(aura *core.Aura, spell *core.Spell) bool
 
 func (paladin *Paladin) divinePurposeFactory(label string, spellID int32, duration time.Duration, auraDeactivationCheck AuraDeactivationCheck) *core.Aura {
-	procChances := []float64{0, 0.25 * (1 / 3), 0.25 * (2 / 3), 0.25}
+	procChances := []float64{0, 0.25 * (1.0 / 3.0), 0.25 * (2.0 / 3.0), 0.25}
 	aura := paladin.RegisterAura(core.Aura{
 		Label:    label + paladin.Label,
 		ActionID: core.ActionID{SpellID: spellID},
 		Duration: duration,
 	})
 
-	core.MakeProcTriggerAura(&paladin.Unit, core.ProcTrigger{
-		Name:           label + " Consume Trigger" + paladin.Label,
-		Callback:       core.CallbackOnCastComplete,
-		ClassSpellMask: SpellMaskSpender,
+	paladin.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               label + " Consume Trigger" + paladin.Label,
+		Callback:           core.CallbackOnCastComplete,
+		ClassSpellMask:     SpellMaskSpender,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
-			var hpSpent int32
+			var hpSpent float64
 			if aura.IsActive() && (auraDeactivationCheck == nil || auraDeactivationCheck(aura, spell)) {
 				aura.Deactivate(sim)
 				hpSpent = 3
@@ -581,13 +590,15 @@ func (paladin *Paladin) divinePurposeFactory(label string, spellID int32, durati
 				return
 			}
 
-			if sim.Proc(procChances[hpSpent], label+paladin.Label) {
-				core.StartDelayedAction(sim, core.DelayedActionOptions{
-					DoAt: sim.CurrentTime + core.SpellBatchWindow,
-					OnAction: func(sim *core.Simulation) {
-						aura.Activate(sim)
-					},
-				})
+			if sim.Proc(procChances[int32(hpSpent)], label+paladin.Label) {
+				pa := sim.GetConsumedPendingActionFromPool()
+				pa.NextActionAt = sim.CurrentTime + core.SpellBatchWindow
+
+				pa.OnAction = func(sim *core.Simulation) {
+					aura.Activate(sim)
+				}
+
+				sim.AddPendingAction(pa)
 			}
 		},
 	})
@@ -607,9 +618,9 @@ func (paladin *Paladin) registerDivinePurpose() {
 		return
 	}
 
-	paladin.DivinePurposeAura = paladin.divinePurposeFactory("Divine Purpose", 90174, time.Second*8, func(aura *core.Aura, spell *core.Spell) bool {
+	paladin.DivinePurposeAura = core.BlockPrepull(paladin.divinePurposeFactory("Divine Purpose", 90174, time.Second*8, func(aura *core.Aura, spell *core.Spell) bool {
 		return true
-	})
+	}))
 }
 
 func (paladin *Paladin) holyPrismFactory(spellID int32, targets []*core.Unit, timer *core.Timer, isHealing bool) {

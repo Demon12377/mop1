@@ -14,7 +14,7 @@ func (dk *DeathKnight) registerPestilence() {
 
 	dk.PestilenceSpell = dk.RegisterSpell(core.SpellConfig{
 		ActionID:       PestilenceActionID,
-		Flags:          core.SpellFlagAPL,
+		Flags:          core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskSpellDamage,
 		ClassSpellMask: DeathKnightSpellPestilence,
@@ -39,12 +39,15 @@ func (dk *DeathKnight) registerPestilence() {
 			frostFeverActive := dk.FrostFeverSpell.Dot(target).IsActive()
 			bloodPlagueActive := dk.BloodPlagueSpell.Dot(target).IsActive()
 
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				result := spell.CalcAndDealOutcome(sim, aoeTarget, spell.OutcomeMagicHit)
 
 				if aoeTarget == target {
 					if hasReaping {
-						spell.SpendRefundableCostAndConvertBloodRune(sim, result.Landed())
+						// In terms of keeping Death runes Death through Reaping, abilities using Blood runes look at both Blood and Frost slots
+						// when deciding if they should be converted back to their defaults.
+						// Spending an Frost (Death) rune on Pestilence keeps it as a Death rune, but an Unholy (Death) rune gets converted back to Unholy.
+						spell.SpendRefundableCostAndConvertBloodOrFrostRune(sim, result.Landed())
 					} else {
 						spell.SpendRefundableCost(sim, result)
 					}
@@ -78,7 +81,7 @@ func (dk *DeathKnight) registerDrwPestilence() *core.Spell {
 			frostFeverActive := dk.RuneWeapon.FrostFeverSpell.Dot(target).IsActive()
 			bloodPlagueActive := dk.RuneWeapon.BloodPlagueSpell.Dot(target).IsActive()
 
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
+			for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				result := spell.CalcAndDealOutcome(sim, aoeTarget, spell.OutcomeMagicHit)
 
 				if result.Landed() {

@@ -40,16 +40,21 @@ func (war *ProtectionWarrior) registerLastStand() {
 		},
 
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return !war.RallyingCryAura.IsActive()
+			return !war.RallyingCryAuras.Get(&war.Unit).IsActive()
 		},
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
 			war.LastStandAura.Activate(sim)
 		},
+		RelatedSelfBuff: war.LastStandAura,
 	})
 
 	war.AddMajorCooldown(core.MajorCooldown{
-		Spell: spell,
-		Type:  core.CooldownTypeSurvival,
+		Spell:    spell,
+		Type:     core.CooldownTypeSurvival,
+		Priority: core.CooldownPriorityLow,
+		ShouldActivate: func(s *core.Simulation, c *core.Character) bool {
+			return war.CurrentHealthPercent() < 0.6
+		},
 	})
 }

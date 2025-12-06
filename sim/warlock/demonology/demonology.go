@@ -33,7 +33,7 @@ func NewDemonologyWarlock(character *core.Character, options *proto.Player) *Dem
 	}
 
 	demonology.Felguard = demonology.registerFelguard()
-	demonology.registerWildImp(10)
+	demonology.registerWildImp(15)
 	demonology.registerGrimoireOfService()
 	return demonology
 }
@@ -43,9 +43,10 @@ type DemonologyWarlock struct {
 
 	DemonicFury   core.SecondaryResourceBar
 	Metamorphosis *core.Spell
-	Soulfire      *core.Spell
 	HandOfGuldan  *core.Spell
 	ChaosWave     *core.Spell
+
+	MoltenCore *core.Aura
 
 	Felguard               *warlock.WarlockPet
 	WildImps               []*WildImpPet
@@ -57,13 +58,15 @@ func (demonology *DemonologyWarlock) GetWarlock() *warlock.Warlock {
 	return demonology.Warlock
 }
 
+const DefaultDemonicFury = 200
+
 func (demonology *DemonologyWarlock) Initialize() {
 	demonology.Warlock.Initialize()
 
 	demonology.DemonicFury = demonology.RegisterNewDefaultSecondaryResourceBar(core.SecondaryResourceConfig{
 		Type:    proto.SecondaryResourceType_SecondaryResourceTypeDemonicFury,
-		Max:     1000,
-		Default: 200,
+		Max:     1000, // Multiplied by 10 to avoid having to refactor to float
+		Default: DefaultDemonicFury,
 	})
 
 	demonology.registerMetamorphosis()
@@ -84,6 +87,8 @@ func (demonology *DemonologyWarlock) Initialize() {
 	demonology.registerVoidRay()
 	demonology.registerDarksoulKnowledge()
 	demonology.registerImpSwarm()
+
+	demonology.registerHotfixes()
 }
 
 func (demonology *DemonologyWarlock) ApplyTalents() {
@@ -100,6 +105,11 @@ func (demonology *DemonologyWarlock) Reset(sim *core.Simulation) {
 	demonology.HandOfGuldanImpactTime = 0
 }
 
+func (demonology *DemonologyWarlock) OnEncounterStart(sim *core.Simulation) {
+	demonology.DemonicFury.ResetBarTo(sim, DefaultDemonicFury)
+	demonology.Warlock.OnEncounterStart(sim)
+}
+
 func NewDemonicFuryCost(cost int) *warlock.SecondaryResourceCost {
 	return &warlock.SecondaryResourceCost{
 		SecondaryCost: cost,
@@ -109,4 +119,36 @@ func NewDemonicFuryCost(cost int) *warlock.SecondaryResourceCost {
 
 func (demo *DemonologyWarlock) IsInMeta() bool {
 	return demo.Metamorphosis.RelatedSelfBuff.IsActive()
+}
+
+func (demo *DemonologyWarlock) CanSpendDemonicFury(amount float64) bool {
+	if demo.T15_2pc.IsActive() {
+		amount *= 0.7
+	}
+
+	return demo.DemonicFury.CanSpend(amount)
+}
+
+func (demo *DemonologyWarlock) SpendUpToDemonicFury(sim *core.Simulation, limit float64, actionID core.ActionID) {
+	if demo.T15_2pc.IsActive() {
+		limit *= 0.7
+	}
+
+	demo.DemonicFury.SpendUpTo(sim, limit, actionID)
+}
+
+func (demo *DemonologyWarlock) SpendDemonicFury(sim *core.Simulation, amount float64, actionID core.ActionID) {
+	if demo.T15_2pc.IsActive() {
+		amount *= 0.7
+	}
+
+	demo.DemonicFury.Spend(sim, amount, actionID)
+}
+
+func (demo *DemonologyWarlock) GainDemonicFury(sim *core.Simulation, amount float64, actionID core.ActionID) {
+	if demo.T15_4pc.IsActive() {
+		amount *= 1.1
+	}
+
+	demo.DemonicFury.Gain(sim, amount, actionID)
 }

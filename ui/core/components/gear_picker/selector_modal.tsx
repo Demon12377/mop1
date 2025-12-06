@@ -3,21 +3,21 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import { Player } from '../../player';
-import { GemColor, ItemLevelState, ItemQuality, ItemRandomSuffix, ItemSlot, Profession } from '../../proto/common';
+import { GemColor, ItemLevelState, ItemRandomSuffix, ItemSlot, Profession, ItemQuality } from '../../proto/common';
 import { UIEnchant as Enchant, UIGem as Gem, UIItem as Item } from '../../proto/ui';
 import { ActionId } from '../../proto_utils/action_id';
 import { EquippedItem, ReforgeData } from '../../proto_utils/equipped_item';
 import { gemMatchesSocket, getEmptyGemSocketIconUrl } from '../../proto_utils/gems';
-import { shortSecondaryStatNames, slotNames } from '../../proto_utils/names';
+import { translateProtoStatName, translateSlotName, translateStat } from '../../../i18n/localization';
 import { Stats } from '../../proto_utils/stats';
 import { SimUI } from '../../sim_ui';
 import { EventID, TypedEvent } from '../../typed_event';
 import { mod, randomUUID, sanitizeId } from '../../utils';
 import { BaseModal } from '../base_modal';
-import { ChallengeMode } from '../inputs/other_inputs';
 import GearPicker from './gear_picker';
 import ItemList, { GearData, ItemData, ItemListType } from './item_list';
 import { createGemContainer, getEmptySlotIconUrl } from './utils';
+import i18n from '../../../i18n/config';
 
 export enum SelectorModalTabs {
 	Items = 'Items',
@@ -29,6 +29,32 @@ export enum SelectorModalTabs {
 	Gem1 = 'Gem1',
 	Gem2 = 'Gem2',
 	Gem3 = 'Gem3',
+}
+
+// Helper function to get translated tab labels
+export function getTranslatedTabLabel(tab: SelectorModalTabs): string {
+	switch (tab) {
+		case SelectorModalTabs.Items:
+			return i18n.t('gear_tab.gear_picker.tabs.items');
+		case SelectorModalTabs.RandomSuffixes:
+			return i18n.t('gear_tab.gear_picker.tabs.random_suffix');
+		case SelectorModalTabs.Enchants:
+			return i18n.t('gear_tab.gear_picker.tabs.enchants');
+		case SelectorModalTabs.Tinkers:
+			return i18n.t('gear_tab.gear_picker.tabs.tinkers');
+		case SelectorModalTabs.Reforging:
+			return i18n.t('gear_tab.gear_picker.tabs.reforging');
+		case SelectorModalTabs.Upgrades:
+			return i18n.t('gear_tab.gear_picker.tabs.upgrades');
+		case SelectorModalTabs.Gem1:
+			return i18n.t('gear_tab.gear_picker.tabs.gem1');
+		case SelectorModalTabs.Gem2:
+			return i18n.t('gear_tab.gear_picker.tabs.gem2');
+		case SelectorModalTabs.Gem3:
+			return i18n.t('gear_tab.gear_picker.tabs.gem3');
+		default:
+			return tab;
+	}
 }
 
 type SelectorModalOptions = {
@@ -82,18 +108,16 @@ export default class SelectorModal extends BaseModal {
 			<div className="d-flex align-items-center form-text">
 				<i className="fas fa-circle-exclamation fa-xl me-2"></i>
 				<span>
-					If gear is missing, check the selected phase and your gear filters.
+					{i18n.t('gear_tab.gear_picker.missing_gear_message.title')}
 					<br />
-					If the problem persists, save any un-saved data, click the
-					<i className="fas fa-cog mx-1"></i>
-					to open your sim options, then click the "Restore Defaults".
+					{i18n.t('gear_tab.gear_picker.missing_gear_message.description')}
 				</span>
 			</div>,
 		);
 	}
 
 	openTab(selectedSlot: ItemSlot, selectedTab: SelectorModalTabs, gearData: GearData) {
-		this.titleElem.textContent = slotNames.get(selectedSlot) ?? '';
+		this.titleElem.textContent = translateSlotName(selectedSlot) ?? '';
 		this.setData(selectedSlot, selectedTab, gearData);
 		this.setActiveItemSlotTab(selectedSlot);
 		this.open();
@@ -188,22 +212,28 @@ export default class SelectorModal extends BaseModal {
 				id: sanitizeId(`${this.options.id}-${SelectorModalTabs.Enchants}`),
 				label: SelectorModalTabs.Enchants,
 				gearData,
-				itemData: eligibleEnchants.map(enchant => {
-					return {
-						item: enchant,
-						id: enchant.effectId,
-						actionId: enchant.itemId ? ActionId.fromItemId(enchant.itemId) : ActionId.fromSpellId(enchant.spellId),
-						name: enchant.name,
-						quality: enchant.quality,
-						phase: enchant.phase || 1,
-						ignoreEPFilter: true,
-						nameDescription: '',
-						onEquip: (eventID, enchant) => {
-							const equippedItem = gearData.getEquippedItem();
-							if (equippedItem) gearData.equipItem(eventID, equippedItem.withEnchant(enchant));
-						},
-					};
-				}),
+				itemData: eligibleEnchants
+					.sort((itemA, itemB) => {
+						if (itemA.effectId > itemB.effectId) return -1;
+						if (itemA.effectId < itemB.effectId) return 1;
+						return 0;
+					})
+					.map(enchant => {
+						return {
+							item: enchant,
+							id: enchant.effectId,
+							actionId: enchant.itemId ? ActionId.fromItemId(enchant.itemId) : ActionId.fromSpellId(enchant.spellId),
+							name: enchant.name,
+							quality: enchant.quality,
+							phase: enchant.phase || 1,
+							ignoreEPFilter: true,
+							nameDescription: '',
+							onEquip: (eventID, enchant) => {
+								const equippedItem = gearData.getEquippedItem();
+								if (equippedItem) gearData.equipItem(eventID, equippedItem.withEnchant(enchant));
+							},
+						};
+					}),
 				computeEP: (enchant: Enchant) => this.player.computeEnchantEP(enchant),
 				equippedToItemFn: (equippedItem: EquippedItem | null) => equippedItem?.enchant,
 				onRemove: (eventID: number) => {
@@ -218,22 +248,28 @@ export default class SelectorModal extends BaseModal {
 				id: sanitizeId(`${this.options.id}-${SelectorModalTabs.Tinkers}`),
 				label: SelectorModalTabs.Tinkers,
 				gearData,
-				itemData: eligibleTinkers.map(tinker => {
-					return {
-						item: tinker,
-						id: tinker.effectId,
-						actionId: tinker.itemId ? ActionId.fromItemId(tinker.itemId) : ActionId.fromSpellId(tinker.spellId),
-						name: tinker.name,
-						quality: tinker.quality,
-						phase: tinker.phase || 1,
-						ignoreEPFilter: true,
-						nameDescription: '',
-						onEquip: (eventID, tinker) => {
-							const equippedItem = gearData.getEquippedItem();
-							if (equippedItem) gearData.equipItem(eventID, equippedItem.withTinker(tinker));
-						},
-					};
-				}),
+				itemData: eligibleTinkers
+					.sort((itemA, itemB) => {
+						if (itemA.effectId > itemB.effectId) return -1;
+						if (itemA.effectId < itemB.effectId) return 1;
+						return 0;
+					})
+					.map(tinker => {
+						return {
+							item: tinker,
+							id: tinker.effectId,
+							actionId: tinker.itemId ? ActionId.fromItemId(tinker.itemId) : ActionId.fromSpellId(tinker.spellId),
+							name: tinker.name,
+							quality: tinker.quality,
+							phase: tinker.phase || 1,
+							ignoreEPFilter: true,
+							nameDescription: '',
+							onEquip: (eventID, tinker) => {
+								const equippedItem = gearData.getEquippedItem();
+								if (equippedItem) gearData.equipItem(eventID, equippedItem.withTinker(tinker));
+							},
+						};
+					}),
 				computeEP: (tinker: Enchant) => this.player.computeEnchantEP(tinker),
 				equippedToItemFn: (equippedItem: EquippedItem | null) => equippedItem?.tinker,
 				onRemove: (eventID: number) => {
@@ -245,7 +281,7 @@ export default class SelectorModal extends BaseModal {
 
 		const hasRandomSuffixTab = !this.disabledTabs?.includes(SelectorModalTabs.RandomSuffixes);
 		if (hasRandomSuffixTab) this.addRandomSuffixTab(equippedItem, gearData);
-		const hasUpgradesTab = !(this.player.getChallengeModeEnabled() || this.disabledTabs?.includes(SelectorModalTabs.Upgrades));
+		const hasUpgradesTab = !this.disabledTabs?.includes(SelectorModalTabs.Upgrades);
 		if (hasUpgradesTab) this.addUpgradesTab(equippedItem, gearData);
 		const hasReforgingTab = !this.disabledTabs?.includes(SelectorModalTabs.Reforging);
 		if (hasReforgingTab) this.addReforgingTab(equippedItem, gearData);
@@ -297,7 +333,7 @@ export default class SelectorModal extends BaseModal {
 					setItemData();
 					picker.onUpdate(() => setItemData());
 					tippy(anchorRef.value!, {
-						content: `Edit ${slotNames.get(picker.slot)}`,
+						content: `Edit ${translateSlotName(picker.slot)}`,
 						placement: 'left',
 					});
 					this.itemSlotTabElems.push(wrapper);
@@ -423,7 +459,7 @@ export default class SelectorModal extends BaseModal {
 					item: randomSuffix,
 					id: randomSuffix.id,
 					actionId: ActionId.fromRandomSuffix(itemProto, randomSuffix),
-					name: randomSuffix.name,
+					name: translateProtoStatName(randomSuffix.name),
 					quality: itemProto.quality,
 					phase: itemProto.phase,
 					nameDescription: '',
@@ -468,10 +504,10 @@ export default class SelectorModal extends BaseModal {
 					name: (
 						<div>
 							<span className="reforge-value negative">
-								{reforgeData.fromAmount} {shortSecondaryStatNames.get(reforgeData.fromStat)}
+								{reforgeData.fromAmount} {translateStat(reforgeData.fromStat)}
 							</span>
 							<span className="reforge-value positive">
-								+{reforgeData.toAmount} {shortSecondaryStatNames.get(reforgeData.toStat)}
+								+{reforgeData.toAmount} {translateStat(reforgeData.toStat)}
 							</span>
 						</div>
 					) as HTMLElement,
@@ -602,7 +638,7 @@ export default class SelectorModal extends BaseModal {
 		if (setTabContent) {
 			setTabContent(tabButton.value!);
 		} else {
-			tabButton.value!.textContent = label;
+			tabButton.value!.textContent = getTranslatedTabLabel(label);
 		}
 
 		const ilist = new ItemList(
@@ -627,7 +663,7 @@ export default class SelectorModal extends BaseModal {
 				const isItemChange = Item.is(item.item);
 				const newItem = gearData.getEquippedItem() || null;
 				const isRandomSuffixChange = prevItem?._randomSuffix?.id !== newItem?.randomSuffix?.id;
-				const isUpgradeChange = prevItem?.upgrade !== newItem?.upgrade;
+				const isUpgradeChange = prevItem?.id === newItem?.id && prevItem?.upgrade !== newItem?.upgrade;
 
 				// If the item changes, then gem slots and random suffix options will also change, so remove and recreate these tabs.
 				if (isItemChange || isRandomSuffixChange || isUpgradeChange) {
@@ -684,8 +720,8 @@ export default class SelectorModal extends BaseModal {
 	}
 
 	private removeTabs(labelSubstring: string) {
-		const tabElems = [...this.tabsElem.querySelectorAll<HTMLElement>('.selector-modal-item-tab')].filter(
-			tab => tab.dataset?.label?.includes(labelSubstring),
+		const tabElems = [...this.tabsElem.querySelectorAll<HTMLElement>('.selector-modal-item-tab')].filter(tab =>
+			tab.dataset?.label?.includes(labelSubstring),
 		);
 
 		const contentElems = tabElems.map(tabElem => document.querySelector(tabElem.dataset.bsTarget!)).filter(tabElem => Boolean(tabElem));

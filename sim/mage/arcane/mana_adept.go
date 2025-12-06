@@ -12,8 +12,7 @@ func (arcane *ArcaneMage) ArcaneMasteryValue() float64 {
 
 func (arcane *ArcaneMage) registerMastery() {
 	arcaneMastery := arcane.AddDynamicMod(core.SpellModConfig{
-		School: core.SpellSchoolArcane | core.SpellSchoolFire | core.SpellSchoolFrost | core.SpellSchoolHoly | core.SpellSchoolNature | core.SpellSchoolShadow,
-		Kind:   core.SpellMod_DamageDone_Pct,
+		Kind: core.SpellMod_DamageDone_Pct,
 	})
 
 	arcane.AddOnMasteryStatChanged(func(sim *core.Simulation, oldMastery, newMastery float64) {
@@ -32,9 +31,11 @@ func (arcane *ArcaneMage) registerMastery() {
 		},
 	}))
 
-	core.MakeProcTriggerAura(&arcane.Unit, core.ProcTrigger{
-		Name:     "Arcane Mastery Mana Updater",
-		Callback: core.CallbackOnCastComplete,
+	arcane.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Arcane Mastery Mana Updater",
+		Callback:           core.CallbackOnCastComplete,
+		TriggerImmediately: true,
+
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			arcaneMastery.UpdateFloatValue(arcane.ArcaneMasteryValue())
 		},

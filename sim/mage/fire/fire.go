@@ -35,6 +35,8 @@ func NewFireMage(character *core.Character, options *proto.Player) *FireMage {
 		Mage: mage.NewMage(character, options, fireOptions.ClassOptions),
 	}
 	fireMage.FireOptions = fireOptions
+	fireMage.combustionDotDamageMultiplier = 0.2
+	fireMage.criticalMassMultiplier = 0.3
 
 	return fireMage
 }
@@ -49,7 +51,9 @@ type FireMage struct {
 
 	pyromaniacAuras core.AuraArray
 
-	combustionDotEstimate int32
+	criticalMassMultiplier        float64
+	combustionDotDamageMultiplier float64
+	combustionDotEstimate         int32
 }
 
 func (fireMage *FireMage) GetMage() *mage.Mage {
@@ -65,6 +69,7 @@ func (fireMage *FireMage) Initialize() {
 
 	fireMage.registerPassives()
 	fireMage.registerSpells()
+	fireMage.registerHotfixes()
 }
 
 func (fireMage *FireMage) registerPassives() {

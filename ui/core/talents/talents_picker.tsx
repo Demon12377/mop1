@@ -1,6 +1,9 @@
 import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
+import i18n from '../../i18n/config';
+import { translatePlayerSpec } from '../../i18n/localization';
+import { getClassI18nKey } from '../../i18n/entity_mapping';
 import { Component } from '../components/component.js';
 import { CopyButton } from '../components/copy_button.js';
 import { Input, InputConfig } from '../components/input.js';
@@ -50,8 +53,8 @@ export class TalentsPicker<ModObject extends Player<any>, TalentsProto> extends 
 		new CopyButton(actionsContainerRef.value!, {
 			extraCssClasses: ['btn-sm', 'btn-outline-primary', 'copy-talents'],
 			getContent: () => modObject.getTalentsString(),
-			text: 'Copy',
-			tooltip: 'Copy talent string',
+			text: i18n.t('talents_tab.copy_button.label'),
+			tooltip: i18n.t('talents_tab.copy_button.tooltip'),
 		});
 
 		this.tree = new TalentTreePicker(talentsListContainer, this.config.tree, this, config.playerSpec);
@@ -102,7 +105,7 @@ class TalentTreePicker<TalentsProto> extends Component {
 			<>
 				<div className="talent-tree-header">
 					<img src={this.getTreeIcon(playerSpec)} className="talent-tree-icon" />
-					<span className="talent-tree-title">{PlayerSpecs.fromProto(playerSpec).friendlyName}</span>
+					<span className="talent-tree-title">{translatePlayerSpec(PlayerSpecs.fromProto(playerSpec))}</span>
 					<button ref={resetButton} className="talent-tree-reset btn link-danger">
 						<i className="fa fa-times"></i>
 					</button>
@@ -120,7 +123,7 @@ class TalentTreePicker<TalentsProto> extends Component {
 		);
 
 		const resetBtn = resetButton.value!;
-		tippy(resetBtn, { content: 'Reset talent points' });
+		tippy(resetBtn, { content: i18n.t('talents_tab.reset_button.tooltip') });
 		resetBtn.addEventListener('click', _event => this.resetPoints());
 	}
 
@@ -177,7 +180,7 @@ class TalentPicker<TalentsProto> extends Component {
 			<>
 				<div ref={iconRef} className="talent-picker-icon"></div>
 				<div className="talent-picker-label" dataset={{ whtticon: false }}>
-					{config.fancyName}
+					{i18n.t(`${getClassI18nKey(this.tree.picker.modObject.getClass())}.${String(config.fieldName)}`, { ns: 'talents' }) || config.fancyName}
 				</div>
 			</>,
 		);

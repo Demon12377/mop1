@@ -7,6 +7,7 @@ import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation, APLRotation_Type } from '../../core/proto/apl.js';
 import { Debuffs, Faction, IndividualBuffs, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat, UnitStats } from '../../core/proto/common.js';
 import { Stats, UnitStat } from '../../core/proto_utils/stats.js';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as PaladinInputs from '../inputs.js';
 import * as Presets from './presets.js';
 
@@ -17,15 +18,13 @@ const getStatCaps = () => {
 	return hitCap.add(expCap);
 };
 
-const getEPDefaults = (_: Player<Spec.SpecRetributionPaladin>) => {
-	return Presets.P1_EP_PRESET.epWeights;
-};
-
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 	cssClass: 'retribution-paladin-sim-ui',
 	cssScheme: PlayerClasses.getCssClass(PlayerClasses.Paladin),
 	// List any known bugs / issues here and they'll be shown on the site.
-	knownIssues: [],
+	knownIssues: [
+		'If reforging times out, click the gear icon next to the reforge button, check "Use custom EP weights" and then check Max for the hit cap to undershoot',
+	],
 
 	overwriteDisplayStats: (player: Player<Spec.SpecRetributionPaladin>) => {
 		const playerStats = player.getCurrentStats();
@@ -62,6 +61,15 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 		Stat.StatExpertiseRating,
 		Stat.StatMasteryRating,
 	],
+	gemStats: [
+		Stat.StatStamina,
+		Stat.StatStrength,
+		Stat.StatHitRating,
+		Stat.StatCritRating,
+		Stat.StatHasteRating,
+		Stat.StatExpertiseRating,
+		Stat.StatMasteryRating,
+	],
 	epPseudoStats: [PseudoStat.PseudoStatMainHandDps],
 	// Reference stat against which to calculate EP. I think all classes use either spell power or attack power.
 	epReferenceStat: Stat.StatStrength,
@@ -91,9 +99,9 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_GEAR_PRESET.gear,
+		gear: Presets.P2_GEAR_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.P1_EP_PRESET.epWeights,
+		epWeights: Presets.P1_P2_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
 		statCaps: getStatCaps(),
 		// Default consumes settings.
@@ -105,6 +113,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 		other: Presets.OtherDefaults,
 		// Default raid/party buffs settings.
 		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
 			arcaneBrilliance: true,
 			blessingOfKings: true,
 			blessingOfMight: true,
@@ -113,8 +122,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 			powerWordFortitude: true,
 			serpentsSwiftness: true,
 			trueshotAura: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
 		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
@@ -134,7 +141,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 	excludeBuffDebuffInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
-		inputs: [PaladinInputs.StartingHolyPower(), OtherInputs.InputDelay, OtherInputs.TankAssignment, OtherInputs.InFrontOfTarget],
+		inputs: [OtherInputs.InputDelay, OtherInputs.TankAssignment, OtherInputs.InFrontOfTarget],
 	},
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
@@ -142,13 +149,13 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET, Presets.PRERAID_EP_PRESET],
+		epWeights: [Presets.P1_P2_EP_PRESET, Presets.P3_EP_PRESET, Presets.PRERAID_EP_PRESET],
 		rotations: [Presets.APL_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.DefaultTalents],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.P1_GEAR_PRESET, Presets.PRERAID_GEAR_PRESET],
-		builds: [Presets.P1_BUILD_PRESET, Presets.PRERAID_BUILD_PRESET],
+		gear: [Presets.P2_GEAR_PRESET, Presets.P3_GEAR_PRESET, Presets.PRERAID_GEAR_PRESET],
+		builds: [Presets.P2_BUILD_PRESET, Presets.P3_BUILD_PRESET, Presets.PRERAID_BUILD_PRESET],
 	},
 
 	autoRotation: (_: Player<Spec.SpecRetributionPaladin>): APLRotation => {
@@ -169,10 +176,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecRetributionPaladin, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.P1_GEAR_PRESET.gear,
+					1: Presets.PRERAID_GEAR_PRESET.gear,
+					2: Presets.P2_GEAR_PRESET.gear,
+					3: Presets.P3_GEAR_PRESET.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.P1_GEAR_PRESET.gear,
+					1: Presets.PRERAID_GEAR_PRESET.gear,
+					2: Presets.P2_GEAR_PRESET.gear,
+					3: Presets.P3_GEAR_PRESET.gear,
 				},
 			},
 		},
@@ -183,10 +194,6 @@ export class RetributionPaladinSimUI extends IndividualSimUI<Spec.SpecRetributio
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecRetributionPaladin>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				getEPDefaults,
-			});
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }

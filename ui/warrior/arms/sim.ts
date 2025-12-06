@@ -1,4 +1,3 @@
-import * as BuffDebuffInputs from '../../core/components/inputs/buffs_debuffs';
 import * as OtherInputs from '../../core/components/inputs/other_inputs';
 import { ReforgeOptimizer } from '../../core/components/suggest_reforges_action';
 import * as Mechanics from '../../core/constants/mechanics';
@@ -6,8 +5,9 @@ import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_u
 import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLRotation } from '../../core/proto/apl';
-import { Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
+import { Class, Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
 import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as WarriorInputs from '../inputs';
 import * as Presets from './presets';
 
@@ -49,7 +49,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecArmsWarrior, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_ARMS_BIS_PRESET.gear,
+		gear: Presets.P2_ARMS_BIS_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.P1_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
@@ -68,6 +68,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecArmsWarrior, {
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
 		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(Class.ClassWarrior),
 			legacyOfTheEmperor: true,
 			legacyOfTheWhiteTiger: true,
 			darkIntent: true,
@@ -76,8 +77,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecArmsWarrior, {
 			moonkinAura: true,
 			blessingOfMight: true,
 			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
 		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
@@ -91,15 +90,11 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecArmsWarrior, {
 	// IconInputs to include in the 'Player' section on the settings tab.
 	playerIconInputs: [],
 	// Buff and Debuff inputs to include/exclude, overriding the EP-based defaults.
-	includeBuffDebuffInputs: [
-		// just for Bryntroll
-		BuffDebuffInputs.SpellDamageDebuff,
-	],
+	includeBuffDebuffInputs: [],
 	excludeBuffDebuffInputs: [],
 	// Inputs to include in the 'Other' section on the settings tab.
 	otherInputs: {
 		inputs: [
-			WarriorInputs.StartingRage(),
 			WarriorInputs.StanceSnapshot(),
 			OtherInputs.DistanceFromTarget,
 			OtherInputs.InputDelay,
@@ -107,37 +102,20 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecArmsWarrior, {
 			OtherInputs.InFrontOfTarget,
 		],
 	},
-	itemSwapSlots: [
-		ItemSlot.ItemSlotHead,
-		ItemSlot.ItemSlotNeck,
-		ItemSlot.ItemSlotShoulder,
-		ItemSlot.ItemSlotBack,
-		ItemSlot.ItemSlotChest,
-		ItemSlot.ItemSlotWrist,
-		ItemSlot.ItemSlotHands,
-		ItemSlot.ItemSlotWaist,
-		ItemSlot.ItemSlotLegs,
-		ItemSlot.ItemSlotFeet,
-		ItemSlot.ItemSlotFinger1,
-		ItemSlot.ItemSlotFinger2,
-		ItemSlot.ItemSlotTrinket1,
-		ItemSlot.ItemSlotTrinket2,
-		ItemSlot.ItemSlotMainHand,
-		ItemSlot.ItemSlotOffHand,
-	],
+	itemSwapSlots: [ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2, ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
 		showExecuteProportion: true,
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET],
+		epWeights: [Presets.P1_EP_PRESET, Presets.P2_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.ArmsTalents],
 		// Preset rotations that the user can quickly select.
 		rotations: [Presets.ROTATION_ARMS],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.P1_PREBIS_ARMS_RICH_PRESET, Presets.P1_PREBIS_ARMS_POOR_PRESET, Presets.P1_ARMS_BIS_PRESET],
+		gear: [Presets.P1_PREBIS_PRESET, Presets.P1_ARMS_BIS_PRESET, Presets.P2_ARMS_BIS_PRESET, Presets.P3_ARMS_BIS_PRESET],
 	},
 
 	autoRotation: (_player: Player<Spec.SpecArmsWarrior>): APLRotation => {
@@ -173,8 +151,14 @@ export class ArmsWarriorSimUI extends IndividualSimUI<Spec.SpecArmsWarrior> {
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecArmsWarrior>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this);
+		this.reforger = new ReforgeOptimizer(this, {
+			getEPDefaults: player => {
+				const avgIlvl = player.getGear().getAverageItemLevel(false);
+				if (avgIlvl >= 500) {
+					return Presets.P2_EP_PRESET.epWeights;
+				}
+				return Presets.P1_EP_PRESET.epWeights;
+			},
 		});
 	}
 }

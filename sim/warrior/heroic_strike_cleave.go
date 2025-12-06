@@ -12,7 +12,7 @@ const cdDuration = time.Millisecond * 1500
 func (war *Warrior) registerHeroicStrikeSpell() {
 	getHSDamageMultiplier := func() float64 {
 		has1H := war.MainHand().HandType != proto.HandType_HandTypeTwoHand
-		return core.TernaryFloat64(has1H, 1.4, 1)
+		return core.TernaryFloat64(has1H, 0.4, 0)
 	}
 
 	weaponDamageMod := war.AddDynamicMod(core.SpellModConfig{
@@ -53,8 +53,7 @@ func (war *Warrior) registerHeroicStrikeSpell() {
 		CritMultiplier:   war.DefaultCritMultiplier(),
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			baseDamage := war.CalcScalingSpellDmg(0.40000000596)*getHSDamageMultiplier() + spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())
-
+			baseDamage := war.CalcScalingSpellDmg(0.40000000596) + spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 
 			if !result.Landed() {
@@ -65,12 +64,11 @@ func (war *Warrior) registerHeroicStrikeSpell() {
 }
 
 func (war *Warrior) registerCleaveSpell() {
-	maxTargets := 2
-	results := make([]*core.SpellResult, maxTargets)
+	const maxTargets int32 = 2
 
 	getCleaveDamageMultiplier := func() float64 {
 		has1H := war.MainHand().HandType != proto.HandType_HandTypeTwoHand
-		return core.TernaryFloat64(has1H, 1.15, 0.8)
+		return core.TernaryFloat64(has1H, 0.402439, 0)
 	}
 
 	weaponDamageMod := war.AddDynamicMod(core.SpellModConfig{
@@ -80,6 +78,10 @@ func (war *Warrior) registerCleaveSpell() {
 	})
 
 	war.RegisterItemSwapCallback(core.AllWeaponSlots(), func(_ *core.Simulation, _ proto.ItemSlot) {
+		weaponDamageMod.UpdateFloatValue(getCleaveDamageMultiplier())
+	})
+	war.RegisterResetEffect(func(_ *core.Simulation) {
+		weaponDamageMod.Activate()
 		weaponDamageMod.UpdateFloatValue(getCleaveDamageMultiplier())
 	})
 
@@ -105,23 +107,15 @@ func (war *Warrior) registerCleaveSpell() {
 			},
 		},
 
-		DamageMultiplier: 1,
+		DamageMultiplier: 0.82,
 		ThreatMultiplier: 1,
 		CritMultiplier:   war.DefaultCritMultiplier(),
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			baseDamage := spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())
-
-			for idx, target := range sim.Encounter.TargetUnits {
-				if idx > maxTargets {
-					break
-				}
-				results[idx] = spell.CalcDamage(sim, target, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
-			}
-
-			for _, result := range results {
-				spell.DealDamage(sim, result)
-			}
+			results := spell.CalcCleaveDamage(sim, target, maxTargets, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
+			war.CastNormalizedSweepingStrikesAttack(results, sim)
+			spell.DealBatchedAoeDamage(sim)
 		},
 	})
 

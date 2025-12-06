@@ -16,7 +16,7 @@ func (fire *FireMage) registerPyromaniac() {
 		}).AttachDDBC(DDBC_Pyromaniac, DDBC_Total, &fire.AttackTables, fire.pyromaniacDDBCHandler)
 	})
 
-	core.MakeProcTriggerAura(&fire.Unit, core.ProcTrigger{
+	fire.MakeProcTriggerAura(core.ProcTrigger{
 		Name:           "Pyromaniac - Trigger",
 		ClassSpellMask: mage.MageSpellLivingBombApply | mage.MageSpellFrostBomb | mage.MageSpellNetherTempest,
 		Callback:       core.CallbackOnSpellHitDealt,
@@ -28,7 +28,7 @@ func (fire *FireMage) registerPyromaniac() {
 }
 
 func (fire *FireMage) pyromaniacDDBCHandler(sim *core.Simulation, spell *core.Spell, attackTable *core.AttackTable) float64 {
-	if spell.Matches(mage.FireSpellIgnitable ^ mage.MageSpellScorch) {
+	if spell.Matches(mage.MageSpellFireball | mage.MageSpellFrostfireBolt | mage.MageSpellInfernoBlast | mage.MageSpellPyroblast | mage.MageSpellPyroblastDot) {
 		return 1.1
 	}
 	return 1.0

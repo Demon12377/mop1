@@ -1,6 +1,8 @@
 import { ResourceType } from '../../proto/spell';
 import { resourceNames } from '../../proto_utils/names';
 import SecondaryResource from '../../proto_utils/secondary_resource';
+import i18n from '../../../i18n/config';
+import { translateResourceType } from '../../../i18n/localization';
 import { ResourceMetrics } from '../../proto_utils/sim_result';
 import { orderedResourceTypes } from '../../proto_utils/utils';
 import { ColumnSortType, MetricsTable } from './metrics_table/metrics_table';
@@ -19,6 +21,8 @@ export class ResourceMetricsTable extends ResultComponent {
 			let resourceName = resourceNames.get(resourceType);
 			if (resourceType == ResourceType.ResourceTypeGenericResource && !!config.secondaryResource) {
 				resourceName = config.secondaryResource.name;
+			} else {
+				resourceName = translateResourceType(resourceType);
 			}
 
 			const containerElem = (
@@ -57,28 +61,28 @@ export class TypedResourceMetricsTable extends MetricsTable<ResourceMetrics> {
 				};
 			}),
 			{
-				name: 'Casts',
+				name: i18n.t('results_tab.details.columns.casts'),
 				getValue: (metric: ResourceMetrics) => metric.events,
 				getDisplayString: (metric: ResourceMetrics) => metric.events.toFixed(1),
 			},
 			{
-				name: 'Gain',
+				name: i18n.t('results_tab.details.columns.gain'),
 				sort: ColumnSortType.Descending,
 				getValue: (metric: ResourceMetrics) => metric.gain,
 				getDisplayString: (metric: ResourceMetrics) => metric.gain.toFixed(1),
 			},
 			{
-				name: 'Gain / s',
+				name: i18n.t('results_tab.details.columns.gain_per_second'),
 				getValue: (metric: ResourceMetrics) => metric.gainPerSecond,
 				getDisplayString: (metric: ResourceMetrics) => metric.gainPerSecond.toFixed(1),
 			},
 			{
-				name: 'Avg Gain',
+				name: i18n.t('results_tab.details.columns.avg_gain'),
 				getValue: (metric: ResourceMetrics) => metric.avgGain,
 				getDisplayString: (metric: ResourceMetrics) => metric.avgGain.toFixed(1),
 			},
 			{
-				name: 'Wasted Gain',
+				name: i18n.t('results_tab.details.columns.wasted_gain'),
 				getValue: (metric: ResourceMetrics) => metric.wastedGain,
 				getDisplayString: (metric: ResourceMetrics) => metric.wastedGain.toFixed(1),
 			},

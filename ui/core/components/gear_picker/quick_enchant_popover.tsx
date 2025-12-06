@@ -1,4 +1,5 @@
 import { Player } from '../../player';
+import i18n from '../../../i18n/config';
 import { ItemSlot } from '../../proto/common';
 import { UIEnchant as Enchant } from '../../proto/ui.js';
 import { EquippedItem } from '../../proto_utils/equipped_item';
@@ -7,8 +8,8 @@ import QuickSwapList from '../quick_swap';
 
 export const addQuickEnchantPopover = (player: Player<any>, tooltipElement: HTMLElement, item: EquippedItem, itemSlot: ItemSlot, openDetailTab: () => void) => {
 	return new QuickSwapList({
-		title: 'Favorite Enchants',
-		emptyMessage: 'Add favorite Enchants',
+		title: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_enchants.title'),
+		emptyMessage: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_enchants.empty_message'),
 		tippyElement: tooltipElement,
 		tippyConfig: {
 			appendTo: document.querySelector('.sim-ui')!,
@@ -33,7 +34,7 @@ export const addQuickEnchantPopover = (player: Player<any>, tooltipElement: HTML
 			player.equipItem(TypedEvent.nextEventID(), itemSlot, item.withEnchant(clickedItem));
 		},
 		footerButton: {
-			label: 'Open Enchants',
+			label: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_enchants.open_enchants'),
 			onClick: openDetailTab,
 		},
 	});

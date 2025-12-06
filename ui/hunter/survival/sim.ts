@@ -5,11 +5,10 @@ import * as Mechanics from '../../core/constants/mechanics.js';
 import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_ui';
 import { Player } from '../../core/player';
 import { PlayerClasses } from '../../core/player_classes';
-import { APLAction, APLListItem, APLRotation } from '../../core/proto/apl';
-import { Cooldowns, Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
-import { SurvivalHunter_Rotation } from '../../core/proto/hunter';
-import * as AplUtils from '../../core/proto_utils/apl_utils';
+import { APLRotation } from '../../core/proto/apl';
+import { Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
 import { Stats, UnitStat } from '../../core/proto_utils/stats';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as HunterInputs from '../inputs';
 import { sharedHunterDisplayStatsModifiers } from '../shared';
 import * as SVInputs from './inputs';
@@ -23,9 +22,17 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 	warnings: [],
 	// All stats for which EP should be calculated.
 	epStats: [
-		Stat.StatStamina,
 		Stat.StatAgility,
 		Stat.StatRangedAttackPower,
+		Stat.StatHitRating,
+		Stat.StatCritRating,
+		Stat.StatHasteRating,
+		Stat.StatMasteryRating,
+		Stat.StatExpertiseRating,
+	],
+	gemStats: [
+		Stat.StatStamina,
+		Stat.StatAgility,
 		Stat.StatHitRating,
 		Stat.StatCritRating,
 		Stat.StatHasteRating,
@@ -43,19 +50,12 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 	modifyDisplayStats: (player: Player<Spec.SpecSurvivalHunter>) => {
 		return sharedHunterDisplayStatsModifiers(player);
 	},
-	itemSwapSlots: [
-		ItemSlot.ItemSlotMainHand,
-		ItemSlot.ItemSlotHands,
-		ItemSlot.ItemSlotTrinket1,
-		ItemSlot.ItemSlotTrinket2,
-		ItemSlot.ItemSlotFinger1,
-		ItemSlot.ItemSlotFinger2,
-	],
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotTrinket1, ItemSlot.ItemSlotTrinket2],
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P1_PRESET_GEAR.gear,
+		gear: Presets.P2_PRESET_GEAR.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.P1_EP_PRESET.epWeights,
+		epWeights: Presets.P2_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
 		statCaps: (() => {
 			return new Stats()
@@ -72,6 +72,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 		specOptions: Presets.SVDefaultOptions,
 		// Default raid/party buffs settings.
 		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
 			blessingOfKings: true,
 			trueshotAura: true,
 			leaderOfThePack: true,
@@ -79,8 +80,6 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 			commandingShout: true,
 			unholyAura: true,
 			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
 		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
@@ -109,18 +108,18 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 	},
 
 	presets: {
-		epWeights: [Presets.P1_EP_PRESET],
+		epWeights: [Presets.P2_EP_PRESET, Presets.P3_EP_PRESET],
 		// Preset talents that the user can quickly select.
 		talents: [Presets.DefaultTalents],
 		// Preset rotations that the user can quickly select.
 		rotations: [Presets.ROTATION_PRESET_SV, Presets.ROTATION_PRESET_AOE],
 		// Preset gear configurations that the user can quickly select.
-		builds: [Presets.PRERAID_PRESET, Presets.PRERAID_PRESET_CELESTIAL, Presets.P1_PRESET],
-		gear: [Presets.PRERAID_PRESET_GEAR, Presets.PRERAID_CELESTIAL_PRESET_GEAR, Presets.P1_PRESET_GEAR],
+		builds: [Presets.PRERAID_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
+		gear: [Presets.PRERAID_PRESET_GEAR, Presets.P2_PRESET_GEAR, Presets.P3_PRESET_GEAR],
 	},
 
 	autoRotation: (player: Player<Spec.SpecSurvivalHunter>): APLRotation => {
-		return Presets.ROTATION_PRESET_SV.rotation.rotation!;
+		return player.sim.encounter.targets.length >= 3 ? Presets.ROTATION_PRESET_AOE.rotation.rotation! : Presets.ROTATION_PRESET_SV.rotation.rotation!;
 	},
 
 	raidSimPresets: [
@@ -137,10 +136,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecSurvivalHunter, {
 			defaultGear: {
 				[Faction.Unknown]: {},
 				[Faction.Alliance]: {
-					1: Presets.PRERAID_CELESTIAL_PRESET_GEAR.gear,
+					1: Presets.PRERAID_PRESET_GEAR.gear,
+					2: Presets.P2_PRESET_GEAR.gear,
+					3: Presets.P3_PRESET_GEAR.gear,
 				},
 				[Faction.Horde]: {
-					1: Presets.PRERAID_CELESTIAL_PRESET_GEAR.gear,
+					1: Presets.PRERAID_PRESET_GEAR.gear,
+					2: Presets.P2_PRESET_GEAR.gear,
+					3: Presets.P3_PRESET_GEAR.gear,
 				},
 			},
 			otherDefaults: Presets.OtherDefaults,
@@ -152,12 +155,6 @@ export class SurvivalHunterSimUI extends IndividualSimUI<Spec.SpecSurvivalHunter
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecSurvivalHunter>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this, {
-				getEPDefaults: (player: Player<Spec.SpecSurvivalHunter>) => {
-					return Presets.P1_EP_PRESET.epWeights;
-				},
-			});
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }

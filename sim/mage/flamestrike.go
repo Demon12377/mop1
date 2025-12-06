@@ -8,11 +8,11 @@ import (
 
 func (mage *Mage) registerFlamestrikeSpell() {
 
-	flameStrikeVariance := 0.2    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "Variance"
-	flameStrikeScaling := .46     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "Coefficient"
-	flameStrikeCoefficient := .52 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "BonusCoefficient"
-	flameStrikeDotScaling := .12
-	flameStrikeDotCoefficient := .14
+	flameStrikeVariance := 0.20200000703    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "Variance"
+	flameStrikeScaling := 0.45600000024     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "Coefficient"
+	flameStrikeCoefficient := 0.51800000668 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2120 Field: "BonusCoefficient"
+	flameStrikeDotScaling := 0.11900000274
+	flameStrikeDotCoefficient := 0.13500000536
 
 	mage.Flamestrike = mage.RegisterSpell(core.SpellConfig{
 		ActionID:       core.ActionID{SpellID: 2120},
@@ -40,11 +40,10 @@ func (mage *Mage) registerFlamestrikeSpell() {
 		BonusCoefficient: flameStrikeCoefficient,
 		ThreatMultiplier: 1,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
-				baseDamage := mage.CalcAndRollDamageRange(sim, flameStrikeScaling, flameStrikeVariance)
-				spell.CalcAndDealDamage(sim, aoeTarget, baseDamage, spell.OutcomeMagicHitAndCrit)
-			}
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
+			spell.CalcAndDealAoeDamageWithVariance(sim, spell.OutcomeMagicHitAndCrit, func(sim *core.Simulation, _ *core.Spell) float64 {
+				return mage.CalcAndRollDamageRange(sim, flameStrikeScaling, flameStrikeVariance)
+			})
 
 			spell.RelatedDotSpell.AOEDot().Apply(sim)
 		},
@@ -72,8 +71,8 @@ func (mage *Mage) registerFlamestrikeSpell() {
 			OnSnapshot: func(_ *core.Simulation, target *core.Unit, dot *core.Dot, _ bool) {
 				dot.Snapshot(target, mage.CalcScalingSpellDmg(flameStrikeDotScaling))
 			},
-			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
-				for _, aoeTarget := range sim.Encounter.TargetUnits {
+			OnTick: func(sim *core.Simulation, _ *core.Unit, dot *core.Dot) {
+				for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 					dot.CalcAndDealPeriodicSnapshotDamage(sim, aoeTarget, dot.OutcomeSnapshotCrit)
 				}
 			},

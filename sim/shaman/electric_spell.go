@@ -23,6 +23,7 @@ type ShamSpellConfig struct {
 	Variance            float64
 	SpellSchool         core.SpellSchool
 	Overloads           *[2][]*core.Spell
+	ClassSpellMask      int64
 }
 
 // Shared precomputation logic for LB and CL.
@@ -38,11 +39,12 @@ func (shaman *Shaman) newElectricSpellConfig(config ShamSpellConfig) core.SpellC
 	}
 
 	spell := core.SpellConfig{
-		ActionID:     config.ActionID,
-		SpellSchool:  core.SpellSchoolNature,
-		ProcMask:     mask,
-		Flags:        flags,
-		MetricSplits: 6,
+		ActionID:       config.ActionID,
+		SpellSchool:    core.SpellSchoolNature,
+		ProcMask:       mask,
+		Flags:          flags,
+		MetricSplits:   6,
+		ClassSpellMask: config.ClassSpellMask,
 
 		ManaCost: core.ManaCostOptions{
 			BaseCostPercent: core.TernaryFloat64(config.IsElementalOverload, 0, config.BaseCostPercent),

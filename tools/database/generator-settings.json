@@ -1,6 +1,6 @@
 {
 	"Settings": {
-		"BaseDir": "/mnt/f/World of Warcraft",
+		"BaseDir": "/mnt/c/Program Files/World of Warcraft",
 		"BuildConfig": "buildConfig",
 		"CDNConfig": "cdnConfig",
 		"Region": "us",
@@ -22,6 +22,7 @@
 	"Tables": [
 		"Spell",
 		"Item",
+		"Faction",
 		"GemProperties",
 		"ItemSet",
 		"ItemSetSpell",
@@ -36,6 +37,7 @@
 		"ItemExtendedCost",
 		"ItemRandomSuffix",
 		"RandPropPoints",
+		"RulesetItemUpgrade",
 		"ItemDamageAmmo",
 		"ItemDamageOneHand",
 		"ItemDamageOneHandCaster",
@@ -46,6 +48,7 @@
 		"ItemDamageWand",
 		"ItemNameDescription",
 		"ItemSparse",
+		"ItemUpgrade",
 		"ArmorLocation",
 		"ItemArmorTotal",
 		"ItemArmorShield",
@@ -70,14 +73,24 @@
 		"SpellReagents",
 		"SpellInterrupts",
 		"SpellItemEnchantment",
+		"SpellProcsPerMinuteMod",
 		"SpellCategories",
 		"SpellShapeshift",
 		"SpellEffect",
 		"SpellDuration",
 		"SpellAuraOptions",
+		"SpellDescriptionVariables",
+		"SpellProcsPerMinute",
+		"SpellXDescriptionVariables",
+		"SpellTargetRestrictions",
 		"GlyphProperties",
 		"SpellMechanic",
 		"Talent",
-		"TalentTab"
+		"TalentTab",
+		"Map",
+		"JournalEncounter",
+		"JournalEncounterItem",
+		"AreaTable",
+		"JournalInstance"
 	]
 }

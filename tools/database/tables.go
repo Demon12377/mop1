@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -57,6 +58,8 @@ func ScanRawItemData(rows *sql.Rows) (dbc.Item, error) {
 		&raw.ItemClass,
 		&raw.ItemSubClass,
 		&raw.NameDescription,
+		&raw.UpgradeID,
+		&raw.LimitCategory,
 	)
 	if err != nil {
 		panic(err)
@@ -108,7 +111,7 @@ func LoadAndWriteRawItems(dbHelper *DBHelper, filter string, inputsDir string) (
 			s.StatModifier_bonusStat as bonusStat,
 			s.StatPercentEditor as StatPercentEditor,
 			s.SocketType as SocketTypes,
-			s.Field_1_15_7_59706_036 as SocketEnchantmentId,
+			s.Socket_match_enchantment_ID as SocketEnchantmentId,
 			s.Flags_0 as Flags_0,
 			s.Flags_1 as Flags_1,
 			s.Flags_2 as Flags_2,
@@ -127,7 +130,9 @@ func LoadAndWriteRawItems(dbHelper *DBHelper, filter string, inputsDir string) (
 			 s.StatModifier_bonusAmount,
 			 i.ClassID,
 			 i.SubClassID,
-			 COALESCE(ind.Description_lang, '')
+			 COALESCE(ind.Description_lang, ''),
+			 COALESCE(riu.ItemUpgradeID, 0),
+			s.LimitCategory
 		FROM Item i
 		JOIN ItemSparse s ON i.ID = s.ID
 		JOIN ItemClass ic ON i.ClassID = ic.ClassID
@@ -136,8 +141,9 @@ func LoadAndWriteRawItems(dbHelper *DBHelper, filter string, inputsDir string) (
 		LEFT JOIN ItemArmorShield ias ON s.ItemLevel = ias.ItemLevel
 		LEFT JOIN ItemSet itemset ON s.ItemSet = itemset.ID
 		LEFT JOIN ItemArmorQuality iaq ON s.ItemLevel = iaq.ID
-		LEFT JOIN ItemNameDescription as ind ON i.ID = ind.Field_5_5_0_61000_002
+		LEFT JOIN ItemNameDescription as ind ON s.ItemNameDescriptionID = ind.ID
 		JOIN ItemArmorTotal at ON s.ItemLevel = at.ItemLevel
+		LEFT JOIN RulesetItemUpgrade as riu ON riu.ItemID = i.ID
 		`
 
 	if strings.TrimSpace(filter) != "" {
@@ -396,7 +402,7 @@ func LoadAndWriteRawGems(dbHelper *DBHelper, inputsDir string) ([]dbc.Gem, error
 		s.Flags_0
 		FROM ItemSparse s
 		JOIN Item i ON s.ID = i.ID
-		JOIN GemProperties gp ON s.Field_1_15_7_59706_035  = gp.ID
+		JOIN GemProperties gp ON s.Gem_properties = gp.ID
 		JOIN SpellItemEnchantment sie ON gp.Enchant_ID = sie.ID
 		WHERE i.ClassID = 3 AND s.ItemLevel > 85 AND s.OverallQualityId > 2`
 	items, err := LoadRows(dbHelper.db, query, ScanGemTable)
@@ -831,6 +837,7 @@ func ScanConsumable(rows *sql.Rows) (dbc.Consumable, error) {
 		&consumable.ElixirType,
 		&consumable.Duration,
 		&consumable.CooldownDuration,
+		&consumable.CategoryCooldownDuration,
 	)
 	if err != nil {
 		return consumable, fmt.Errorf("scanning consumable data: %w", err)
@@ -881,7 +888,8 @@ func LoadAndWriteConsumables(dbHelper *DBHelper, inputsDir string) ([]dbc.Consum
 					ELSE 0
 				END AS ElixirType,
 				COALESCE(sd.Duration, 0) as Duration,
-				COALESCE(ie.CoolDownMSec, 0) as CooldownDuration
+				COALESCE(ie.CoolDownMSec, 0) as CooldownDuration,
+				COALESCE(ie.CategoryCoolDownMSec, 0) as CategoryCooldownDuration
 			FROM Item i
 			JOIN ItemSparse s ON i.ID = s.ID
 			LEFT JOIN ItemEffect ie ON i.ID = ie.ParentItemID
@@ -991,7 +999,7 @@ func ScanGlyphs(rows *sql.Rows) (RawGlyph, error) {
 
 func LoadGlyphs(dbHelper *DBHelper) ([]RawGlyph, error) {
 	query := `
-SELECT DISTINCT i.ID, gp.SpellID, is2.Display_lang, glyphSpell.Description_lang, gp.Field_3_4_0_43659_001, i.SubclassID, sm.SpellIconFileDataID
+SELECT DISTINCT i.ID, gp.SpellID, is2.Display_lang, glyphSpell.Description_lang, gp.GlyphType, i.SubclassID, sm.SpellIconFileDataID
 FROM Item i
 LEFT JOIN ItemSparse is2 ON i.ID = is2.ID
 LEFT JOIN ItemEffect ie ON ie.ParentItemID  = i.ID
@@ -1174,7 +1182,7 @@ func ScanSpells(rows *sql.Rows) (dbc.Spell, error) {
 		return spell, fmt.Errorf("scanning spell data: %w", err)
 	}
 
-	spell.Attributes, err = parseIntArrayField(stringAttr, 16)
+	spell.Attributes, err = parseIntArrayField(stringAttr, 17)
 	if err != nil {
 		return spell, fmt.Errorf("parsing attributes args for spell %d (%s): %w", spell.ID, stringAttr, err)
 	}
@@ -1520,14 +1528,16 @@ func LoadCraftedItems(dbHelper *DBHelper) (
 
 func ScanRepItems(rows *sql.Rows) (itemID int, ds *proto.RepSource, err error) {
 	var (
-		rep proto.RepSource
+		minReputation int
+		rep           proto.RepSource
 	)
 
 	err = rows.Scan(
 		&itemID,
 		&rep.RepFactionId,
-		&rep.RepLevel,
+		&minReputation,
 	)
+	rep.RepLevel = dbc.GetRepLevel(minReputation)
 	if err != nil {
 		return 0, nil, fmt.Errorf("scanning rep row: %w", err)
 	}
@@ -1563,4 +1573,54 @@ func LoadRepItems(dbHelper *DBHelper) (
 	}
 	fmt.Println("Loaded rep items", len(sourcesByItem))
 	return sourcesByItem
+}
+
+func ScanItemUpgradePath(rows *sql.Rows) (UpgradeID int, upgradePathID int, ilvl int, err error) {
+	err = rows.Scan(
+		&UpgradeID,
+		&upgradePathID,
+		&ilvl,
+	)
+	if err != nil {
+		return 0, 0, 0, fmt.Errorf("scanning rep row: %w", err)
+	}
+	return UpgradeID, upgradePathID, ilvl, nil
+}
+
+func LoadItemUpgradePath(dbHelper *DBHelper) (upgradePath map[int][]int, err error) {
+	const query = `SELECT
+		iu.ID,
+		iu.ItemUpgradePathID,
+		iu.ItemLevelIncrement
+		FROM ItemUpgrade iu
+    `
+	rows, err := dbHelper.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	upgradeIDToPathID := make(map[int]int)
+	pathIDToIlvls := make(map[int][]int)
+
+	for rows.Next() {
+		ID, pathID, ilvl, scanErr := ScanItemUpgradePath(rows)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+		upgradeIDToPathID[ID] = pathID
+		pathIDToIlvls[pathID] = append(pathIDToIlvls[pathID], ilvl)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, err
+	}
+	upgradePath = make(map[int][]int)
+	for id, upgrade := range upgradeIDToPathID {
+		upgradePath[id] = pathIDToIlvls[upgrade]
+	}
+	for _, ilvls := range upgradePath {
+		slices.Sort(ilvls)
+	}
+	fmt.Println("Loaded Upgrade Path", len(upgradePath))
+	return upgradePath, nil
 }

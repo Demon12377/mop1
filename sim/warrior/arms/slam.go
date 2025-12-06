@@ -14,8 +14,8 @@ func (war *ArmsWarrior) registerSlam() {
 		ActionID:       actionID.WithTag(1), // Real SpellID: 146361
 		SpellSchool:    core.SpellSchoolPhysical,
 		ProcMask:       core.ProcMaskEmpty,
-		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagIgnoreAttackerModifiers | core.SpellFlagNoOnCastComplete,
-		ClassSpellMask: warrior.SpellMaskSlam,
+		Flags:          core.SpellFlagIgnoreArmor | core.SpellFlagIgnoreModifiers | core.SpellFlagMeleeMetrics | core.SpellFlagPassiveSpell | core.SpellFlagNoOnCastComplete,
+		ClassSpellMask: warrior.SpellMaskSweepingSlam,
 		MinRange:       2,
 
 		DamageMultiplier: 0.35,
@@ -52,16 +52,12 @@ func (war *ArmsWarrior) registerSlam() {
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			csDamageMultiplier := core.TernaryFloat64(war.ColossusSmashAuras.Get(target).IsActive(), 1.1, 1.0)
-			baseDamage := war.CalcScalingSpellDmg(1) + spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())*csDamageMultiplier
+			baseDamage := (war.CalcScalingSpellDmg(1) + spell.Unit.MHNormalizedWeaponDamage(sim, spell.MeleeAttackPower())) * csDamageMultiplier
 			result := spell.CalcAndDealDamage(sim, target, baseDamage, spell.OutcomeMeleeWeaponSpecialHitAndCrit)
 
 			if war.SweepingStrikesAura.IsActive() {
 				sweepingStrikesSlamDamage = result.Damage
-				for _, otherTarget := range sim.Encounter.TargetUnits {
-					if otherTarget != target {
-						sweepingStrikesSlam.Cast(sim, otherTarget)
-					}
-				}
+				sweepingStrikesSlam.CastOnAllOtherTargets(sim, target)
 			}
 
 			if !result.Landed() {

@@ -16,7 +16,7 @@ func (prot *ProtectionPaladin) registerGrandCrusader() {
 	prot.CanTriggerHolyAvengerHpGain(hpActionID)
 
 	var grandCrusaderAura *core.Aura
-	grandCrusaderAura = prot.RegisterAura(core.Aura{
+	grandCrusaderAura = core.BlockPrepull(prot.RegisterAura(core.Aura{
 		Label:    "Grand Crusader" + prot.Label,
 		ActionID: core.ActionID{SpellID: 85416},
 		Duration: time.Second * 6,
@@ -24,9 +24,10 @@ func (prot *ProtectionPaladin) registerGrandCrusader() {
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
 			prot.AvengersShield.CD.Reset()
 		},
-	}).AttachProcTrigger(core.ProcTrigger{
-		Callback:       core.CallbackOnCastComplete,
-		ClassSpellMask: paladin.SpellMaskAvengersShield,
+	})).AttachProcTrigger(core.ProcTrigger{
+		Callback:           core.CallbackOnCastComplete,
+		ClassSpellMask:     paladin.SpellMaskAvengersShield,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			prot.HolyPower.Gain(sim, 1, hpActionID)
@@ -34,13 +35,25 @@ func (prot *ProtectionPaladin) registerGrandCrusader() {
 		},
 	})
 
-	core.MakeProcTriggerAura(&prot.Unit, core.ProcTrigger{
-		Name:       "Grand Crusader Trigger" + prot.Label,
-		ActionID:   core.ActionID{SpellID: 85043},
-		Callback:   core.CallbackOnSpellHitTaken,
-		Outcome:    core.OutcomeDodge | core.OutcomeParry,
-		ProcChance: 0.3,
-		ICD:        time.Second,
+	// 2025-11-13: Grand Crusader has been changed to its Patch 5.2.0 version.
+	// Grand Crusader now has a 12% chance to activate when the Paladin dodges or parries a melee attack, or lands a Crusader Strike or Hammer of the Righteous.
+	// (was 30% chance on dodge or parrying a melee attack)
+	spellMask := paladin.SpellMaskCrusaderStrike | paladin.SpellMaskHammerOfTheRighteousMelee
+	prot.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Grand Crusader Trigger" + prot.Label,
+		Callback:           core.CallbackOnSpellHitTaken | core.CallbackOnSpellHitDealt,
+		Outcome:            core.OutcomeDodge | core.OutcomeParry | core.OutcomeLanded,
+		ProcChance:         0.12,
+		ICD:                time.Second,
+		TriggerImmediately: true,
+
+		ExtraCondition: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) bool {
+			if spell.Unit == &prot.Unit {
+				return result.Outcome.Matches(core.OutcomeLanded) && spell.Matches(spellMask)
+			}
+
+			return result.Outcome.Matches(core.OutcomeDodge | core.OutcomeParry)
+		},
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			grandCrusaderAura.Activate(sim)

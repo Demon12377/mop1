@@ -1,3 +1,4 @@
+import i18n from '../../../i18n/config';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Player } from '../../player';
 import { EquipmentSpec, UnitStats } from '../../proto/common';
@@ -8,8 +9,9 @@ import GearPicker from '../gear_picker/gear_picker';
 import { SavedDataManager } from '../saved_data_manager';
 import { SimTab } from '../sim_tab';
 import { GemSummary } from './gem_summary';
-import { PresetConfigurationPicker } from './preset_configuration_picker';
+import { PresetConfigurationCategory, PresetConfigurationPicker } from './preset_configuration_picker';
 import { ReforgeSummary } from './reforge_summary';
+import { UpgradeCostsSummary } from './upgrade_costs_summary';
 
 export class GearTab extends SimTab {
 	protected simUI: IndividualSimUI<any>;
@@ -18,7 +20,7 @@ export class GearTab extends SimTab {
 	readonly rightPanel: HTMLElement;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<any>) {
-		super(parentElem, simUI, { identifier: 'gear-tab', title: 'Gear' });
+		super(parentElem, simUI, { identifier: 'gear-tab', title: i18n.t('gear_tab.title') });
 		this.simUI = simUI;
 
 		this.leftPanel = document.createElement('div');
@@ -47,6 +49,7 @@ export class GearTab extends SimTab {
 
 		new GemSummary(container, this.simUI, this.simUI.player);
 		new ReforgeSummary(container, this.simUI, this.simUI.player);
+		new UpgradeCostsSummary(container, this.simUI, this.simUI.player);
 	}
 
 	private buildGearPickers() {
@@ -54,13 +57,15 @@ export class GearTab extends SimTab {
 	}
 
 	private buildPresetConfigurationPicker() {
-		new PresetConfigurationPicker(this.rightPanel, this.simUI, ['gear']);
+		new PresetConfigurationPicker(this.rightPanel, this.simUI, [PresetConfigurationCategory.Gear]);
 	}
 
 	private buildSavedGearsetPicker() {
 		const savedGearManager = new SavedDataManager<Player<any>, SavedGearSet>(this.rightPanel, this.simUI.player, {
-			header: { title: 'Gear Sets' },
-			label: 'Gear Set',
+			header: { title: i18n.t('gear_tab.gear_sets.title') },
+			label: i18n.t('gear_tab.gear_sets.gear_set'),
+			nameLabel: i18n.t('gear_tab.gear_sets.gear_set_name'),
+			saveButtonText: i18n.t('gear_tab.gear_sets.save_gear_set'),
 			storageKey: this.simUI.getSavedGearStorageKey(),
 			getData: (player: Player<any>) => {
 				return SavedGearSet.create({

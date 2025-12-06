@@ -40,6 +40,7 @@ import {
 	Stat,
 	UnitReference,
 	UnitStats,
+	WeaponType,
 } from './proto/common';
 import { SimDatabase } from './proto/db';
 import {
@@ -53,7 +54,7 @@ import {
 } from './proto/ui';
 import { ActionId } from './proto_utils/action_id';
 import { Database } from './proto_utils/database';
-import { EquippedItem, ReforgeData } from './proto_utils/equipped_item';
+import { EquippedItem, ReforgeData, isShaTouchedWeapon, isThroneOfThunderWeapon } from './proto_utils/equipped_item';
 import { Gear, ItemSwapGear } from './proto_utils/gear';
 import { gemMatchesSocket, isUnrestrictedGem } from './proto_utils/gems';
 import SecondaryResource from './proto_utils/secondary_resource';
@@ -278,9 +279,6 @@ export class Player<SpecType extends Spec> {
 	private static readonly numEpRatios = 6;
 	private epRatios: Array<number> = new Array<number>(Player.numEpRatios).fill(0);
 	private epWeights: Stats = new Stats();
-	private statCaps: Stats = new Stats();
-	private softCapBreakpoints: StatCap[] = [];
-	private breakpointLimits: Stats = new Stats();
 	private currentStats: PlayerStats = PlayerStats.create();
 	private metadata: UnitMetadata = new UnitMetadata();
 	private petMetadatas: UnitMetadataList = new UnitMetadataList();
@@ -300,9 +298,6 @@ export class Player<SpecType extends Spec> {
 	readonly distanceFromTargetChangeEmitter = new TypedEvent<void>('PlayerDistanceFromTarget');
 	readonly healingModelChangeEmitter = new TypedEvent<void>('PlayerHealingModel');
 	readonly epWeightsChangeEmitter = new TypedEvent<void>('PlayerEpWeights');
-	readonly statCapsChangeEmitter = new TypedEvent<void>('StatCaps');
-	readonly softCapBreakpointsChangeEmitter = new TypedEvent<void>('SoftCapBreakpoints');
-	readonly breakpointLimitsChangeEmitter = new TypedEvent<void>('BreakpointLimits');
 	readonly miscOptionsChangeEmitter = new TypedEvent<void>('PlayerMiscOptions');
 	readonly challengeModeChangeEmitter = new TypedEvent<void>('ChallengeMode');
 
@@ -364,8 +359,6 @@ export class Player<SpecType extends Spec> {
 				this.epWeightsChangeEmitter,
 				this.epRatiosChangeEmitter,
 				this.epRefStatChangeEmitter,
-				this.statCapsChangeEmitter,
-				this.breakpointLimitsChangeEmitter,
 				this.challengeModeChangeEmitter,
 			],
 			'PlayerChange',
@@ -531,32 +524,6 @@ export class Player<SpecType extends Spec> {
 		}
 	}
 
-	getStatCaps(): Stats {
-		return this.statCaps;
-	}
-
-	setStatCaps(eventID: EventID, newStatCaps: Stats) {
-		this.statCaps = newStatCaps;
-		this.statCapsChangeEmitter.emit(eventID);
-	}
-
-	getSoftCapBreakpoints(): StatCap[] {
-		return this.softCapBreakpoints;
-	}
-
-	setSoftCapBreakpoints(eventID: EventID, newSoftCapBreakpoints: StatCap[]) {
-		this.softCapBreakpoints = newSoftCapBreakpoints;
-		this.softCapBreakpointsChangeEmitter.emit(eventID);
-	}
-	getBreakpointLimits(): Stats {
-		return this.breakpointLimits;
-	}
-
-	setBreakpointLimits(eventID: EventID, newLimits: Stats) {
-		this.breakpointLimits = newLimits;
-		this.breakpointLimitsChangeEmitter.emit(eventID);
-	}
-
 	getDefaultEpRatios(isTankSpec: boolean, isHealingSpec: boolean): Array<number> {
 		const defaultRatios = new Array(Player.numEpRatios).fill(0);
 		if (isHealingSpec) {
@@ -585,6 +552,10 @@ export class Player<SpecType extends Spec> {
 	setEpRatios(eventID: EventID, newRatios: Array<number>) {
 		this.epRatios = newRatios;
 		this.epRatiosChangeEmitter.emit(eventID);
+	}
+
+	hasCustomEPWeights(): boolean {
+		return !this.getSpecConfig().presets.epWeights.some(epw => epw.epWeights.equals(this.epWeights));
 	}
 
 	async computeStatWeights(
@@ -760,21 +731,12 @@ export class Player<SpecType extends Spec> {
 		this.gearChangeEmitter.emit(eventID);
 	}
 
-	/*
-	setBulkEquipmentSpec(eventID: EventID, newBulkEquipmentSpec: BulkEquipmentSpec) {
-		if (BulkEquipmentSpec.equals(this.bulkEquipmentSpec, newBulkEquipmentSpec))
-			return;
-
-		TypedEvent.freezeAllAndDo(() => {
-			this.bulkEquipmentSpec = newBulkEquipmentSpec;
-			this.bulkGearChangeEmitter.emit(eventID);
-		});
+	async setGearAsync(eventID: EventID, newGear: Gear, forceUpdate?: boolean) {
+		if (newGear.equals(this.gear) && !forceUpdate) return;
+		const statsUpdatePromise = new Promise<void>(resolve => this.currentStatsEmitter.once(() => resolve()));
+		this.setGear(eventID, newGear);
+		await statsUpdatePromise;
 	}
-
-	getBulkEquipmentSpec(): BulkEquipmentSpec {
-		return BulkEquipmentSpec.clone(this.bulkEquipmentSpec);
-	}
-	*/
 
 	getBonusStats(): Stats {
 		return this.bonusStats;
@@ -900,7 +862,7 @@ export class Player<SpecType extends Spec> {
 		return this.simpleRotationGenerator != null;
 	}
 
-	getResolvedAplRotation(): APLRotation {
+	getResolvedAplRotation(forSimming?: boolean): APLRotation {
 		const type = this.getRotationType();
 		if (type == APLRotationType.TypeAuto && this.autoRotationGenerator) {
 			// Clone to avoid modifying preset rotations, which are often returned directly.
@@ -914,8 +876,10 @@ export class Player<SpecType extends Spec> {
 			rot.simple = this.aplRotation.simple;
 			rot.type = APLRotationType.TypeSimple;
 			return rot;
-		} else {
+		} else if (forSimming) {
 			return this.aplRotation;
+		} else {
+			return omitDeep(this.aplRotation, ['uuid']);
 		}
 	}
 
@@ -1149,12 +1113,12 @@ export class Player<SpecType extends Spec> {
 	}
 
 	computeUpgradeEP(equippedItem: EquippedItem, upgradeLevel: ItemLevelState, slot: ItemSlot): number {
-		const cacheKey = `${equippedItem.id}-${slot}-${equippedItem.randomSuffix?.id}-${upgradeLevel}`;
+		const cacheKey = `${equippedItem.id}-${JSON.stringify(this.epWeights)}-${slot}-${equippedItem.randomSuffix?.id}-${upgradeLevel}`;
 		if (this.upgradeEPCache.has(cacheKey)) {
 			return this.upgradeEPCache.get(cacheKey)!;
 		}
 
-		const stats = equippedItem.withUpgrade(upgradeLevel).calcStats(slot);
+		const stats = equippedItem.withUpgrade(upgradeLevel).withDynamicStats().calcStats(slot);
 		const ep = this.computeStatsEP(stats);
 		this.upgradeEPCache.set(cacheKey, ep);
 
@@ -1163,7 +1127,8 @@ export class Player<SpecType extends Spec> {
 
 	computeItemEP(item: Item, slot: ItemSlot): number {
 		if (item == null) return 0;
-		const cacheKey = `${item.id}-${this.challengeModeEnabled}`;
+
+		const cacheKey = `${item.id}-${JSON.stringify(this.epWeights)}-${this.challengeModeEnabled}`;
 
 		const cached = this.itemEPCache[slot].get(cacheKey);
 		if (cached !== undefined) return cached;
@@ -1176,12 +1141,18 @@ export class Player<SpecType extends Spec> {
 
 		// For random suffix items, use the suffix option with the highest EP for the purposes of ranking items in the picker.
 		let maxSuffixEP = 0;
-		if (item.randomSuffixOptions.length > 0) {
+		if (item.randomSuffixOptions.length) {
 			const suffixEPs = equippedItem.item.randomSuffixOptions.map(id => this.computeRandomSuffixEP(this.sim.db.getRandomSuffixById(id)! || 0));
 			maxSuffixEP = (Math.max(...suffixEPs) * equippedItem.item.randPropPoints) / 10000;
 		}
 
-		let ep = itemStats.computeEP(this.epWeights) + maxSuffixEP;
+		let maxReforgingEP = 0;
+		if (this.getAvailableReforgings(equippedItem).length) {
+			const reforgingEPs = this.getAvailableReforgings(equippedItem).map(reforging => this.computeReforgingEP(reforging));
+			maxReforgingEP = Math.max(...reforgingEPs);
+		}
+
+		let ep = itemStats.computeEP(this.epWeights) + maxSuffixEP + maxReforgingEP;
 
 		// unique items are slightly worse than non-unique because you can have only one.
 		if (item.unique) {
@@ -1260,6 +1231,7 @@ export class Player<SpecType extends Spec> {
 		[SourceFilterOption.SourceRaidRF]: DungeonDifficulty.DifficultyRaid25RF,
 		[SourceFilterOption.SourceRaid]: DungeonDifficulty.DifficultyRaid25,
 		[SourceFilterOption.SourceRaidH]: DungeonDifficulty.DifficultyRaid25H,
+		[SourceFilterOption.SourceRaidFlex]: DungeonDifficulty.DifficultyRaidFlex,
 	};
 
 	static readonly HEROIC_TO_NORMAL: Partial<Record<DungeonDifficulty, DungeonDifficulty>> = {
@@ -1269,14 +1241,11 @@ export class Player<SpecType extends Spec> {
 	};
 
 	static readonly RAID_IDS: Partial<Record<RaidFilterOption, number>> = {
-		[RaidFilterOption.RaidIcecrownCitadel]: 4812,
-		[RaidFilterOption.RaidRubySanctum]: 4987,
-		[RaidFilterOption.RaidBlackwingDescent]: 5094,
-		[RaidFilterOption.RaidTheBastionOfTwilight]: 5334,
-		[RaidFilterOption.RaidBaradinHold]: 5600,
-		[RaidFilterOption.RaidThroneOfTheFourWinds]: 5638,
-		[RaidFilterOption.RaidFirelands]: 5723,
-		[RaidFilterOption.RaidDragonSoul]: 5892,
+		[RaidFilterOption.RaidMogushanVaults]: 6125,
+		[RaidFilterOption.RaidHeartOfFear]: 6297,
+		[RaidFilterOption.RaidTerraceOfEndlessSpring]: 6067,
+		[RaidFilterOption.RaidThroneOfThunder]: 6622,
+		[RaidFilterOption.RaidSiegeOfOrgrimmar]: 6738,
 	};
 
 	get armorSpecializationArmorType() {
@@ -1302,6 +1271,13 @@ export class Player<SpecType extends Spec> {
 		});
 	}
 
+	hasEotBPItemEquipped() {
+		return [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand].some(itemSlot => {
+			const item = this.getEquippedItem(itemSlot)?.item;
+			return item && (isShaTouchedWeapon(item) || isThroneOfThunderWeapon(item));
+		});
+	}
+
 	filterItemData<T>(itemData: Array<T>, getItemFunc: (val: T) => Item, slot: ItemSlot): Array<T> {
 		const filters = this.sim.getFilters();
 
@@ -1323,6 +1299,9 @@ export class Player<SpecType extends Spec> {
 			);
 		}
 
+		if (!filters.sources.includes(SourceFilterOption.SourceSoldBy)) {
+			itemData = filterItems(itemData, item => !item.sources.some(itemSrc => itemSrc.source.oneofKind == 'soldBy'));
+		}
 		if (!filters.sources.includes(SourceFilterOption.SourceCrafting)) {
 			itemData = filterItems(itemData, item => !item.sources.some(itemSrc => itemSrc.source.oneofKind == 'crafted'));
 		}
@@ -1338,6 +1317,7 @@ export class Player<SpecType extends Spec> {
 
 		for (const [srcOptionStr, difficulty] of Object.entries(Player.DIFFICULTY_SRCS)) {
 			const srcOption = parseInt(srcOptionStr) as SourceFilterOption;
+
 			if (!filters.sources.includes(srcOption)) {
 				itemData = filterItems(
 					itemData,
@@ -1482,10 +1462,7 @@ export class Player<SpecType extends Spec> {
 		const exportCategory = (cat: SimSettingCategories) => !exportCategories || exportCategories.length == 0 || exportCategories.includes(cat);
 
 		const gear = this.getGear();
-		const aplRotation = forSimming
-			? this.getResolvedAplRotation()
-			: // When exporting we want to omit the uuid field to prevent bloat
-			  omitDeep(this.aplRotation, ['uuid']);
+		const aplRotation = forSimming ? this.getResolvedAplRotation(forSimming) : omitDeep(this.aplRotation, ['uuid']);
 
 		let player = PlayerProto.create({
 			class: this.getClass(),
@@ -1630,5 +1607,56 @@ export class Player<SpecType extends Spec> {
 		if (!(proto.apiVersion < CURRENT_API_VERSION)) {
 			return;
 		}
+	}
+
+	getSpecConfig(): IndividualSimUIConfig<SpecType> {
+		return this.specConfig;
+	}
+
+	// Returns true/false for main-hand / off-hand
+	getActiveRacialExpertiseBonuses(): [boolean, boolean] {
+		const mainHand = this.getEquippedItem(ItemSlot.ItemSlotMainHand);
+		const offHand = this.getEquippedItem(ItemSlot.ItemSlotOffHand);
+
+		if (!mainHand && !offHand) {
+			return [false, false];
+		}
+
+		switch (this.getRace()) {
+			case Race.RaceDwarf:
+				return [
+					mainHand?.item.weaponType === WeaponType.WeaponTypeMace ||
+						mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeBow ||
+						mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeCrossbow ||
+						mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeGun,
+					offHand?.item.weaponType === WeaponType.WeaponTypeMace,
+				];
+			case Race.RaceGnome:
+				return [
+					mainHand?.item.weaponType === WeaponType.WeaponTypeDagger ||
+						(mainHand?.item.handType !== HandType.HandTypeTwoHand && mainHand?.item.weaponType === WeaponType.WeaponTypeSword),
+					offHand?.item.weaponType === WeaponType.WeaponTypeDagger ||
+						(offHand?.item.handType !== HandType.HandTypeTwoHand && offHand?.item.weaponType === WeaponType.WeaponTypeSword),
+				];
+			case Race.RaceHuman:
+				return [
+					mainHand?.item.weaponType === WeaponType.WeaponTypeMace || mainHand?.item.weaponType === WeaponType.WeaponTypeSword,
+					offHand?.item.weaponType === WeaponType.WeaponTypeMace || offHand?.item.weaponType === WeaponType.WeaponTypeSword,
+				];
+			case Race.RaceOrc:
+				return [
+					mainHand?.item.weaponType === WeaponType.WeaponTypeAxe || mainHand?.item.weaponType === WeaponType.WeaponTypeFist,
+					offHand?.item.weaponType === WeaponType.WeaponTypeAxe || offHand?.item.weaponType === WeaponType.WeaponTypeFist,
+				];
+			case Race.RaceTroll:
+				return [
+					mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeBow ||
+						mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeCrossbow ||
+						mainHand?.item.rangedWeaponType === RangedWeaponType.RangedWeaponTypeGun,
+					false,
+				];
+		}
+
+		return [false, false];
 	}
 }

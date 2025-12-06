@@ -1,3 +1,5 @@
+import i18n from '../../../i18n/config';
+import { trackEvent } from '../../../tracking/utils';
 import { IndividualSimUI } from '../../individual_sim_ui';
 import { Player } from '../../player';
 import { Class, Glyphs, Spec } from '../../proto/common';
@@ -8,7 +10,7 @@ import { EventID, TypedEvent } from '../../typed_event';
 import { PetSpecPicker } from '../pickers/pet_spec_picker';
 import { SavedDataManager } from '../saved_data_manager';
 import { SimTab } from '../sim_tab';
-import { PresetConfigurationPicker } from './preset_configuration_picker';
+import { PresetConfigurationCategory, PresetConfigurationPicker } from './preset_configuration_picker';
 
 export class TalentsTab<SpecType extends Spec> extends SimTab {
 	protected simUI: IndividualSimUI<any>;
@@ -17,7 +19,7 @@ export class TalentsTab<SpecType extends Spec> extends SimTab {
 	readonly rightPanel: HTMLElement;
 
 	constructor(parentElem: HTMLElement, simUI: IndividualSimUI<SpecType>) {
-		super(parentElem, simUI, { identifier: 'talents-tab', title: 'Talents' });
+		super(parentElem, simUI, { identifier: 'talents-tab', title: i18n.t('talents_tab.title') });
 		this.simUI = simUI;
 
 		this.leftPanel = (<div className="talents-tab-left tab-panel-left" />) as HTMLElement;
@@ -50,19 +52,24 @@ export class TalentsTab<SpecType extends Spec> extends SimTab {
 			changedEvent: (player: Player<any>) => player.talentsChangeEmitter,
 			getValue: (player: Player<any>) => player.getTalentsString(),
 			setValue: (eventID: EventID, player: Player<any>, newValue: string) => {
+				trackEvent({
+					action: 'settings',
+					category: 'talents',
+					label: 'update',
+				});
 				player.setTalentsString(eventID, newValue);
 			},
 		});
 	}
 
 	private buildPresetConfigurationPicker() {
-		new PresetConfigurationPicker(this.rightPanel, this.simUI, ['talents']);
+		new PresetConfigurationPicker(this.rightPanel, this.simUI, [PresetConfigurationCategory.Talents]);
 	}
 
 	private buildSavedTalentsPicker() {
 		const savedTalentsManager = new SavedDataManager<Player<any>, SavedTalents>(this.rightPanel, this.simUI.player, {
-			label: 'Talents',
-			header: { title: 'Saved Talents' },
+			label: i18n.t('talents_tab.saved_talents.label'),
+			header: { title: i18n.t('talents_tab.saved_talents.title') },
 			storageKey: this.simUI.getSavedTalentsStorageKey(),
 			getData: (player: Player<any>) =>
 				SavedTalents.create({
@@ -79,6 +86,12 @@ export class TalentsTab<SpecType extends Spec> extends SimTab {
 			equals: (a: SavedTalents, b: SavedTalents) => SavedTalents.equals(a, b),
 			toJson: (a: SavedTalents) => SavedTalents.toJson(a),
 			fromJson: (obj: any) => SavedTalents.fromJson(obj),
+			nameLabel: i18n.t('talents_tab.saved_talents.name_label'),
+			saveButtonText: i18n.t('talents_tab.saved_talents.save_button'),
+			deleteTooltip: i18n.t('talents_tab.saved_talents.delete.tooltip'),
+			deleteConfirmMessage: i18n.t('talents_tab.saved_talents.delete.confirm'),
+			chooseNameAlert: i18n.t('talents_tab.saved_talents.alerts.choose_name'),
+			nameExistsAlert: i18n.t('talents_tab.saved_talents.alerts.name_exists'),
 		});
 
 		this.simUI.sim.waitForInit().then(() => {

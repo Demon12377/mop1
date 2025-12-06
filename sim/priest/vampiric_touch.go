@@ -57,12 +57,17 @@ func (priest *Priest) registerVampiricTouchSpell() {
 			if result.Landed() {
 				spell.Dot(target).Apply(sim)
 				spell.DealOutcome(sim, result)
+
+				// Custom code for tracking T15 2PC extension logic
+				// which recalculates the snapshot if you extend after
+				// the initial duration.
+				priest.T15_2PC_ExtensionTracker[target.Index].VT = spell.Dot(target).ExpiresAt()
 			}
 		},
 		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
 			dot := spell.Dot(target)
 			if useSnapshot {
-				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedMagicSnapshotCrit)
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
 				result.Damage /= dot.TickPeriod().Seconds()
 				return result
 			} else {

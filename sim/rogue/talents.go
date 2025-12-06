@@ -62,14 +62,15 @@ func (rogue *Rogue) ApplyTalents() {
 				},
 			},
 			ApplyEffects: func(sim *core.Simulation, unit *core.Unit, spell *core.Spell) {
-				rogue.AddComboPoints(sim, 5, mfdMetrics)
+				rogue.AddComboPoints(sim, 5, rogue.CurrentComboTarget, mfdMetrics)
 			},
 		})
 
 		rogue.AddMajorCooldown(core.MajorCooldown{
-			Spell:    mfdSpell,
-			Type:     core.CooldownTypeDPS,
-			Priority: core.CooldownPriorityDefault,
+			Spell:              mfdSpell,
+			Type:               core.CooldownTypeDPS,
+			Priority:           core.CooldownPriorityDefault,
+			AllowSpellQueueing: true,
 		})
 	}
 
@@ -78,7 +79,7 @@ func (rogue *Rogue) ApplyTalents() {
 		action := core.ActionID{SpellID: 114015}
 		antiMetrics := rogue.NewComboPointMetrics(action)
 
-		rogue.AnticipationAura = rogue.RegisterAura(core.Aura{
+		rogue.AnticipationAura = core.BlockPrepull(rogue.RegisterAura(core.Aura{
 			Label:     "Anticipation",
 			ActionID:  action,
 			Duration:  time.Second * 15,
@@ -88,12 +89,12 @@ func (rogue *Rogue) ApplyTalents() {
 
 			OnSpellHitDealt: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 				if result.Landed() && spell.Flags.Matches(SpellFlagFinisher) {
-					rogue.AddComboPoints(sim, aura.GetStacks(), antiMetrics)
+					rogue.AddComboPoints(sim, aura.GetStacks(), rogue.CurrentComboTarget, antiMetrics)
 					aura.SetStacks(sim, 0)
 					aura.Deactivate(sim)
 				}
 			},
-		})
+		}))
 	}
 }
 

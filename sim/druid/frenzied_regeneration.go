@@ -37,10 +37,11 @@ func (druid *Druid) registerFrenziedRegenerationSpell() {
 		ActionID:         actionID,
 		SpellSchool:      core.SpellSchoolPhysical,
 		ProcMask:         core.ProcMaskSpellHealing,
-		Flags:            core.SpellFlagNoOnCastComplete | core.SpellFlagAPL,
+		Flags:            core.SpellFlagAPL,
 		DamageMultiplier: 1,
 		CritMultiplier:   druid.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
+		ClassSpellMask:   DruidSpellFrenziedRegeneration,
 
 		Cast: core.CastConfig{
 			CD: core.Cooldown{

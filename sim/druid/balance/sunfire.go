@@ -38,11 +38,13 @@ func (moonkin *BalanceDruid) registerSunfireDoTSpell() {
 				Label: "Sunfire",
 				OnSpellHitTaken: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 					if result.Landed() && result.DidCrit() && spell.Matches(druid.DruidSpellWrath|druid.DruidSpellStarsurge) {
-						oldDuration := moonkin.Sunfire.Dot(aura.Unit).RemainingDuration(sim)
-						moonkin.Sunfire.Dot(aura.Unit).AddTick()
+						dot := moonkin.Sunfire.Dot(aura.Unit)
+						oldDuration := dot.RemainingDuration(sim)
+						oldTickrate := dot.TickPeriod()
+						dot.DurationExtend(sim, dot.CalcTickPeriod())
 
 						if sim.Log != nil {
-							moonkin.Log(sim, "[DEBUG]: %s extended %s. Old Duration: %0.0f, new duration: %0.0f.", spell.ActionID, moonkin.Sunfire.ActionID, oldDuration.Seconds(), moonkin.Sunfire.Dot(aura.Unit).RemainingDuration(sim).Seconds())
+							moonkin.Log(sim, "[DEBUG]: %s extended %s. Old Duration: %0.2f, new duration: %0.2f. Old Tickrate: %0.2f, new Tickrate: %0.2f", spell.ActionID, moonkin.Sunfire.ActionID, oldDuration.Seconds(), dot.RemainingDuration(sim).Seconds(), oldTickrate.Seconds(), dot.TickPeriod().Seconds())
 						}
 					}
 				},
@@ -65,6 +67,19 @@ func (moonkin *BalanceDruid) registerSunfireDoTSpell() {
 
 			spell.Dot(target).Apply(sim)
 			spell.DealOutcome(sim, result)
+		},
+
+		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
+			dot := spell.Dot(target)
+			if useSnapshot {
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
+				result.Damage /= dot.TickPeriod().Seconds()
+				return result
+			} else {
+				result := spell.CalcPeriodicDamage(sim, target, moonkin.CalcScalingSpellDmg(SunfireDotCoeff), spell.OutcomeExpectedMagicCrit)
+				result.Damage /= dot.CalcTickPeriod().Round(time.Millisecond).Seconds()
+				return result
+			}
 		},
 	})
 }

@@ -28,9 +28,14 @@ func RegisterAfflictionWarlock() {
 
 func NewAfflictionWarlock(character *core.Character, options *proto.Player) *AfflictionWarlock {
 	affOptions := options.GetAfflictionWarlock().Options
+
 	affliction := &AfflictionWarlock{
-		Warlock: warlock.NewWarlock(character, options, affOptions.ClassOptions),
+		Warlock:      warlock.NewWarlock(character, options, affOptions.ClassOptions),
+		ExhaleWindow: time.Duration(affOptions.ExhaleWindow * int32(time.Millisecond)),
 	}
+
+	affliction.MaleficGraspMaleficEffectMultiplier = 0.3
+	affliction.DrainSoulMaleficEffectMultiplier = 0.6
 
 	return affliction
 }
@@ -41,11 +46,17 @@ type AfflictionWarlock struct {
 	SoulShards         core.SecondaryResourceBar
 	Agony              *core.Spell
 	UnstableAffliction *core.Spell
-	SoulBurnAura       *core.Aura
-	HauntDebuffAuras   core.AuraArray
-	LastCorruption     *core.Dot // Tracks the last corruption we've applied
-	ProcMaleficEffect  func(target *core.Unit, coeff float64, sim *core.Simulation)
-	HauntImpactTime    time.Duration
+
+	SoulBurnAura *core.Aura
+
+	LastCorruptionTarget *core.Unit // Tracks the last target we've applied corruption to
+	LastInhaleTarget     *core.Unit
+
+	DrainSoulMaleficEffectMultiplier    float64
+	MaleficGraspMaleficEffectMultiplier float64
+	ProcMaleficEffect                   func(target *core.Unit, coeff float64, sim *core.Simulation)
+
+	ExhaleWindow time.Duration
 }
 
 func (affliction AfflictionWarlock) getMasteryBonus() float64 {
@@ -56,25 +67,24 @@ func (affliction *AfflictionWarlock) GetWarlock() *warlock.Warlock {
 	return affliction.Warlock
 }
 
+const MaxSoulShards = 4.0
+
 func (affliction *AfflictionWarlock) Initialize() {
 	affliction.Warlock.Initialize()
 
 	affliction.SoulShards = affliction.RegisterNewDefaultSecondaryResourceBar(core.SecondaryResourceConfig{
 		Type:    proto.SecondaryResourceType_SecondaryResourceTypeSoulShards,
-		Max:     4,
-		Default: 4,
+		Max:     MaxSoulShards,
+		Default: MaxSoulShards,
 	})
 
 	affliction.registerPotentAffliction()
 	affliction.registerHaunt()
-	corruption := affliction.RegisterCorruption(func(resultList []core.SpellResult, spell *core.Spell, sim *core.Simulation) {
+	affliction.RegisterCorruption(func(resultList core.SpellResultSlice, spell *core.Spell, sim *core.Simulation) {
 		if resultList[0].Landed() {
-			affliction.LastCorruption = spell.Dot(resultList[0].Target)
+			affliction.LastCorruptionTarget = resultList[0].Target
 		}
-	})
-
-	// June 16th Beta Changes +33% for affliction
-	corruption.DamageMultiplier *= 1.33
+	}, nil)
 
 	affliction.registerAgony()
 	affliction.registerNightfall()
@@ -87,7 +97,9 @@ func (affliction *AfflictionWarlock) Initialize() {
 	affliction.registerSeed()
 	affliction.registerSoulSwap()
 
-	affliction.registerGlpyhs()
+	affliction.registerGlyphs()
+
+	affliction.registerHotfixes()
 }
 
 func (affliction *AfflictionWarlock) ApplyTalents() {
@@ -97,11 +109,25 @@ func (affliction *AfflictionWarlock) ApplyTalents() {
 func (affliction *AfflictionWarlock) Reset(sim *core.Simulation) {
 	affliction.Warlock.Reset(sim)
 
-	affliction.LastCorruption = nil
-	affliction.HauntImpactTime = 0
+	affliction.LastCorruptionTarget = nil
 }
 
-func calculateDoTBaseTickDamage(dot *core.Dot) float64 {
+func (affliction *AfflictionWarlock) OnEncounterStart(sim *core.Simulation) {
+	defaultShards := MaxSoulShards
+	if affliction.SoulBurnAura.IsActive() {
+		defaultShards -= 1
+	}
+
+	haunt := affliction.GetSpell(core.ActionID{SpellID: HauntSpellID})
+	count := float64(affliction.SpellsInFlight[haunt])
+	defaultShards -= count
+
+	affliction.SoulShards.ResetBarTo(sim, defaultShards)
+	affliction.Warlock.OnEncounterStart(sim)
+}
+
+func calculateDoTBaseTickDamage(dot *core.Dot, target *core.Unit) float64 {
 	stacks := math.Max(float64(dot.Aura.GetStacks()), 1)
-	return dot.SnapshotBaseDamage * dot.SnapshotAttackerMultiplier * stacks
+	attackTable := dot.Spell.Unit.AttackTables[target.UnitIndex]
+	return dot.SnapshotBaseDamage * dot.Spell.AttackerDamageMultiplier(attackTable, true) * stacks
 }

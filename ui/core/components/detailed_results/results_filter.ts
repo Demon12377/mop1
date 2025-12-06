@@ -1,6 +1,7 @@
 import { UnitReference, UnitReference_Type as UnitType } from '../../proto/common';
 import { SimResult, SimResultFilter } from '../../proto_utils/sim_result';
 import { EventID, TypedEvent } from '../../typed_event';
+import i18n from '../../../i18n/config';
 import { UnitPicker, UnitValue, UnitValueConfig } from '../pickers/unit_picker';
 import { ResultComponent, ResultComponentConfig, SimResultData } from './result_component';
 
@@ -83,13 +84,13 @@ export class ResultsFilter extends ResultComponent {
 		} else if (ref.type == UnitType.AllPlayers) {
 			return {
 				iconUrl: '',
-				text: 'All Players',
+				text: i18n.t('results_tab.details.all_players'),
 				value: ref,
 			};
 		} else if (ref.type == UnitType.AllTargets) {
 			return {
 				iconUrl: '',
-				text: 'All Targets',
+				text: i18n.t('results_tab.details.all_targets'),
 				value: ref,
 			};
 		} else if (this.hasLastSimResult()) {
@@ -98,13 +99,17 @@ export class ResultsFilter extends ResultComponent {
 				ref.type == UnitType.Player
 					? simResult.result.getPlayerWithRaidIndex(ref.index)
 					: ref.type == UnitType.Target
-					? simResult.result.getTargetWithEncounterIndex(ref.index)
-					: null;
+						? simResult.result.getTargetWithEncounterIndex(ref.index)
+						: null;
 
 			if (unit) {
+				let displayText = unit.label;
+				if (ref.type == UnitType.Target) {
+					displayText = i18n.t('results_tab.details.target_number', { number: ref.index + 1 });
+				}
 				return {
 					iconUrl: unit.iconUrl || '',
-					text: unit.label,
+					text: displayText,
 					color: unit.classColor || '',
 					value: ref,
 				};

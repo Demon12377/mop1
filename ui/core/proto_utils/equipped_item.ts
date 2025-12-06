@@ -12,6 +12,7 @@ import {
 	ReforgeStat,
 	ScalingItemProperties,
 	Stat,
+	WeaponType,
 } from '../proto/common.js';
 import { UIEnchant as Enchant, UIGem as Gem, UIItem as Item } from '../proto/ui.js';
 import { distinct } from '../utils.js';
@@ -24,6 +25,13 @@ export const getWeaponDPS = (item: Item, upgradeStep: ItemLevelState = ItemLevel
 	const { weaponDamageMin, weaponDamageMax } = item.scalingOptions[upgradeStep];
 	return (weaponDamageMin + weaponDamageMax) / 2 / (item.weaponSpeed || 1);
 };
+
+export const isThroneOfThunderWeapon = (item: Item) =>
+	[ItemType.ItemTypeWeapon, ItemType.ItemTypeRanged].includes(item.type) &&
+	![WeaponType.WeaponTypeOffHand, WeaponType.WeaponTypeShield].includes(item.weaponType) &&
+	item.phase == 3 &&
+	item.sources.some(itemSource => itemSource.source.oneofKind === 'drop' && itemSource.source.drop.zoneId === 6622);
+export const isShaTouchedWeapon = (item: Item) => item.gemSockets.some(socket => socket === GemColor.GemColorShaTouched);
 
 export const getWeaponStatsBySlot = (item: Item, slot: ItemSlot, upgradeStep: ItemLevelState = ItemLevelState.Base) => {
 	let itemStats = new Stats();
@@ -87,7 +95,7 @@ export class EquippedItem {
 		this._gems = gems || [];
 		this._randomSuffix = randomSuffix || null;
 		this._reforge = reforge || null;
-		this._upgrade = upgrade ?? ItemLevelState.Base;
+		this._upgrade = (this.hasUpgrade(upgrade) && upgrade) || ItemLevelState.Base;
 		this._challengeMode = challengeMode ?? false;
 
 		this.numPossibleSockets = this.numSockets(true);
@@ -125,11 +133,15 @@ export class EquippedItem {
 		// Make a defensive copy
 		return this._gems.map(gem => (gem == null ? null : Gem.clone(gem)));
 	}
+	get gemSockets(): Array<GemColor> {
+		// Make a defensive copy
+		return [...this._item.gemSockets];
+	}
 	get upgrade(): ItemLevelState {
 		let upgradeLevel: ItemLevelState;
 		if (!this._challengeMode) {
 			upgradeLevel = this._upgrade;
-		} else if (this._item.scalingOptions[ItemLevelState.Base].ilvl <= MAX_CHALLENGE_MODE_ILVL) {
+		} else if (this._item.scalingOptions[this._upgrade].ilvl <= MAX_CHALLENGE_MODE_ILVL) {
 			upgradeLevel = ItemLevelState.Base;
 		} else {
 			upgradeLevel = ItemLevelState.ChallengeMode;
@@ -184,32 +196,39 @@ export class EquippedItem {
 		return scalingOptions;
 	}
 
-	equals(other: EquippedItem) {
-		if (!Item.equals(this._item, other.item)) return false;
+	getMaxUpgradeCount(): number {
+		return Object.keys(this.getUpgrades()).length - 1;
+	}
+
+	equals(other: EquippedItem, ignoreReforge?: boolean, ignoreEnchants?: boolean, ignoreGems?: boolean, ignoreUpgrades?: boolean) {
+		if (this.id != other.id) return false;
+		if (!Item.equals(this._item, other.item) && !ignoreUpgrades) return false;
 
 		if ((this._randomSuffix == null) != (other.randomSuffix == null)) return false;
 
 		if (this._randomSuffix && other.randomSuffix && !ItemRandomSuffix.equals(this._randomSuffix, other.randomSuffix)) return false;
 
-		if ((this._reforge == null) != (other.reforge == null)) return false;
+		if (((this._reforge == null) != (other.reforge == null)) && !ignoreReforge) return false;
 
-		if (this._reforge && other.reforge && !ReforgeStat.equals(this._reforge, other.reforge)) return false;
+		if (this._reforge && other.reforge && !ReforgeStat.equals(this._reforge, other.reforge) && !ignoreReforge) return false;
 
-		if ((this._enchant == null) != (other.enchant == null)) return false;
-		if ((this._tinker == null) != (other.tinker == null)) return false;
+		if (((this._enchant == null) != (other.enchant == null)) && !ignoreEnchants) return false;
+		if (((this._tinker == null) != (other.tinker == null)) && !ignoreEnchants) return false;
 
-		if (this._enchant && other.enchant && !Enchant.equals(this._enchant, other.enchant)) return false;
-		if (this._tinker && other.tinker && !Enchant.equals(this._tinker, other.tinker)) return false;
+		if (this._enchant && other.enchant && !Enchant.equals(this._enchant, other.enchant) && !ignoreEnchants) return false;
+		if (this._tinker && other.tinker && !Enchant.equals(this._tinker, other.tinker) && !ignoreEnchants) return false;
 
-		if (this._gems.length != other.gems.length) return false;
+		if ((this._gems.length != other.gems.length) && !ignoreGems) return false;
 
-		for (let i = 0; i < this._gems.length; i++) {
-			if ((this._gems[i] == null) != (other.gems[i] == null)) return false;
+		if (!ignoreGems) {
+			for (let i = 0; i < this._gems.length; i++) {
+				if ((this._gems[i] == null) != (other.gems[i] == null)) return false;
 
-			if (this._gems[i] && other.gems[i] && !Gem.equals(this._gems[i]!, other.gems[i]!)) return false;
+				if (this._gems[i] && other.gems[i] && !Gem.equals(this._gems[i]!, other.gems[i]!)) return false;
+			}
 		}
 
-		if (this._upgrade !== other.upgrade) return false;
+		if ((this._upgrade !== other._upgrade) && !ignoreUpgrades) return false;
 
 		if (this._challengeMode !== other._challengeMode) return false;
 
@@ -251,6 +270,7 @@ export class EquippedItem {
 			enchant: newEnchant,
 			tinker: newTinker,
 			gems: newGems,
+			upgrade: this._upgrade,
 			challengeMode: this._challengeMode,
 		});
 	}
@@ -412,7 +432,7 @@ export class EquippedItem {
 	withDynamicStats() {
 		const item = this.item;
 		const scalingOptions = item.scalingOptions[this.upgrade];
-		item.stats = item.stats.map((stat, index) => scalingOptions.stats[index] || stat);
+		item.stats = new Stats().asProtoArray().map((_, index) => scalingOptions.stats[index] || 0);
 		item.weaponDamageMin = scalingOptions.weaponDamageMin;
 		item.weaponDamageMax = scalingOptions.weaponDamageMax;
 		item.randPropPoints = scalingOptions.randPropPoints;
@@ -473,17 +493,17 @@ export class EquippedItem {
 		}
 	}
 
-	// Whether this item could have an extra socket, assuming Blacksmithing.
+	// Whether this item could have an extra socket
 	couldHaveExtraSocket(): boolean {
-		return [ItemType.ItemTypeWaist, ItemType.ItemTypeWrist, ItemType.ItemTypeHands].includes(this.item.type);
+		return [ItemType.ItemTypeWrist, ItemType.ItemTypeHands].includes(this.item.type);
 	}
 
 	requiresExtraSocket(): boolean {
-		return [ItemType.ItemTypeWrist, ItemType.ItemTypeHands].includes(this.item.type) && this.hasExtraGem() && this._gems[this._gems.length - 1] != null;
+		return this.couldHaveExtraSocket() && this.hasExtraGem() && this._gems[this._gems.length - 1] != null;
 	}
 
 	hasExtraSocket(isBlacksmithing: boolean): boolean {
-		return this.item.type == ItemType.ItemTypeWaist || (isBlacksmithing && [ItemType.ItemTypeWrist, ItemType.ItemTypeHands].includes(this.item.type));
+		return isBlacksmithing && this.couldHaveExtraSocket();
 	}
 
 	numSockets(isBlacksmithing: boolean): number {
@@ -512,6 +532,10 @@ export class EquippedItem {
 		return !!Object.keys(this._item.scalingOptions).filter(upgradeStep => Number(upgradeStep) > 0).length;
 	}
 
+	hasUpgrade(upgrade?: ItemLevelState | null): boolean {
+		return !!(upgrade && this.getUpgrades()[upgrade]);
+	}
+
 	hasExtraGem(): boolean {
 		return this._gems.length > this.item.gemSockets.length;
 	}
@@ -521,10 +545,10 @@ export class EquippedItem {
 	}
 
 	allSocketColors(): Array<GemColor> {
-		return this.couldHaveExtraSocket() ? this._item.gemSockets.concat([GemColor.GemColorPrismatic]) : this._item.gemSockets;
+		return this.couldHaveExtraSocket() ? this.gemSockets.concat([GemColor.GemColorPrismatic]) : this.gemSockets;
 	}
 	curSocketColors(isBlacksmithing: boolean): Array<GemColor> {
-		return this.hasExtraSocket(isBlacksmithing) ? this._item.gemSockets.concat([GemColor.GemColorPrismatic]) : this._item.gemSockets;
+		return this.hasExtraSocket(isBlacksmithing) ? this.gemSockets.concat([GemColor.GemColorPrismatic]) : this.gemSockets;
 	}
 
 	curGems(isBlacksmithing: boolean): Array<Gem | null> {

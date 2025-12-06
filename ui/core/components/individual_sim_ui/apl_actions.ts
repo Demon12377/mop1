@@ -14,6 +14,9 @@ import {
 	APLActionChangeTarget,
 	APLActionChannelSpell,
 	APLActionCustomRotation,
+	APLActionGroupReference,
+	APLActionGuardianHotwDpsRotation,
+	APLActionGuardianHotwDpsRotation_Strategy as HotwStrategy,
 	APLActionItemSwap,
 	APLActionItemSwap_SwapSet as ItemSwapSet,
 	APLActionMove,
@@ -29,15 +32,18 @@ import {
 	APLActionWait,
 	APLActionWaitUntil,
 	APLValue,
+	APLActionWarlockNextExhaleTarget,
 } from '../../proto/apl.js';
 import { Spec } from '../../proto/common.js';
 import { FeralDruid_Rotation_AplType } from '../../proto/druid.js';
 import { EventID } from '../../typed_event.js';
 import { randomUUID } from '../../utils';
 import { Input, InputConfig } from '../input.js';
+import i18n from '../../../i18n/config';
 import { TextDropdownPicker } from '../pickers/dropdown_picker.jsx';
 import { ListItemPickerConfig, ListPicker } from '../pickers/list_picker.jsx';
 import * as AplHelpers from './apl_helpers.js';
+import { itemSwapSetFieldConfig } from './apl_helpers.js';
 import * as AplValues from './apl_values.js';
 
 export interface APLActionPickerConfig extends InputConfig<Player<any>, APLAction> {}
@@ -60,8 +66,9 @@ export class APLActionPicker extends Input<Player<any>, APLAction> {
 
 	constructor(parent: HTMLElement, player: Player<any>, config: APLActionPickerConfig) {
 		super(parent, 'apl-action-picker-root', player, config);
+
 		this.conditionPicker = new AplValues.APLValuePicker(this.rootElem, this.modObject, {
-			label: 'If:',
+			label: i18n.t('rotation_tab.apl.priority_list.if_label'),
 			changedEvent: (player: Player<any>) => player.rotationChangeEmitter,
 			getValue: (_player: Player<any>) => this.getSourceValue()?.condition,
 			setValue: (eventID: EventID, player: Player<any>, newValue: APLValue | undefined) => {
@@ -93,7 +100,7 @@ export class APLActionPicker extends Input<Player<any>, APLAction> {
 
 		this.kindPicker = new TextDropdownPicker(this.actionDiv, player, {
 			id: randomUUID(),
-			defaultLabel: 'Action',
+			defaultLabel: i18n.t('rotation_tab.apl.priority_list.item_label'),
 			values: allActionKinds.map(actionKind => {
 				const factory = actionKindFactories[actionKind];
 				return {
@@ -192,9 +199,12 @@ export class APLActionPicker extends Input<Player<any>, APLAction> {
 			return;
 		}
 
-		this.conditionPicker.setInputValue(newValue.condition || APLValue.create({
-			uuid: { value: randomUUID() }
-		}));
+		this.conditionPicker.setInputValue(
+			newValue.condition ||
+				APLValue.create({
+					uuid: { value: randomUUID() },
+				}),
+		);
 
 		const newActionKind = newValue.action.oneofKind;
 		this.updateActionPicker(newActionKind);
@@ -257,30 +267,13 @@ type ActionKindConfig<T> = {
 	factory: (parent: HTMLElement, player: Player<any>, config: InputConfig<Player<any>, T>) => Input<Player<any>, T>;
 };
 
-function itemSwapSetFieldConfig(field: string): AplHelpers.APLPickerBuilderFieldConfig<any, any> {
-	return {
-		field: field,
-		newValue: () => ItemSwapSet.Swap1,
-		factory: (parent, player, config) =>
-			new TextDropdownPicker(parent, player, {
-				id: randomUUID(),
-				...config,
-				defaultLabel: 'None',
-				equals: (a, b) => a == b,
-				values: [
-					{ value: ItemSwapSet.Main, label: 'Main' },
-					{ value: ItemSwapSet.Swap1, label: 'Swapped' },
-				],
-			}),
-	};
-}
-
 function actionFieldConfig(field: string): AplHelpers.APLPickerBuilderFieldConfig<any, any> {
 	return {
 		field: field,
-		newValue: () => APLValue.create({
-			uuid: { value: randomUUID() }
-		}) ,
+		newValue: () =>
+			APLValue.create({
+				uuid: { value: randomUUID() },
+			}),
 		factory: (parent, player, config) => new APLActionPicker(parent, player, config),
 	};
 }
@@ -300,7 +293,7 @@ function actionListFieldConfig(field: string): AplHelpers.APLPickerBuilderFieldC
 						newValue.map(val => val || APLAction.create()),
 					);
 				},
-				itemLabel: 'Action',
+				itemLabel: 'action',
 				newItem: APLAction.create,
 				copyItem: (oldValue: APLAction) => (oldValue ? APLAction.clone(oldValue) : oldValue),
 				newItemPicker: (
@@ -341,22 +334,22 @@ function inputBuilder<T>(config: {
 
 const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig<APLActionImplTypesUnion[f]> } = {
 	['castSpell']: inputBuilder({
-		label: 'Cast',
-		shortDescription: 'Casts the spell if possible, i.e. resource/cooldown/GCD/etc requirements are all met.',
+		label: i18n.t('rotation_tab.apl.actions.cast.label'),
+		shortDescription: i18n.t('rotation_tab.apl.actions.cast.tooltip'),
 		newValue: APLActionCastSpell.create,
 		fields: [AplHelpers.actionIdFieldConfig('spellId', 'castable_spells', ''), AplHelpers.unitFieldConfig('target', 'targets')],
 	}),
 	['castFriendlySpell']: inputBuilder({
-		label: 'Cast at Player',
-		shortDescription: 'Casts a friendly spell if possible, i.e. resource/cooldown/GCD/etc requirements are all met.',
+		label: i18n.t('rotation_tab.apl.actions.cast_at_player.label'),
+		shortDescription: i18n.t('rotation_tab.apl.actions.cast_at_player.tooltip'),
 		newValue: APLActionCastFriendlySpell.create,
 		fields: [AplHelpers.actionIdFieldConfig('spellId', 'friendly_spells', ''), AplHelpers.unitFieldConfig('target', 'players')],
-		includeIf: (player: Player<any>, _isPrepull: boolean) => (player.getRaid()!.size() > 1) || player.shouldEnableTargetDummies(),
+		includeIf: (player: Player<any>, _isPrepull: boolean) => player.getRaid()!.size() > 1 || player.shouldEnableTargetDummies(),
 	}),
 	['multidot']: inputBuilder({
-		label: 'Multi Dot',
-		submenu: ['Casting'],
-		shortDescription: 'Keeps a DoT active on multiple targets by casting the specified spell.',
+		label: i18n.t('rotation_tab.apl.actions.multi_dot.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.multi_dot.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: () =>
 			APLActionMultidot.create({
@@ -373,19 +366,19 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 		fields: [
 			AplHelpers.actionIdFieldConfig('spellId', 'castable_dot_spells', ''),
 			AplHelpers.numberFieldConfig('maxDots', false, {
-				label: 'Max Dots',
-				labelTooltip: 'Maximum number of DoTs to simultaneously apply.',
+				label: i18n.t('rotation_tab.apl.actions.multi_dot.max_dots.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.multi_dot.max_dots.tooltip'),
 			}),
 			AplValues.valueFieldConfig('maxOverlap', {
-				label: 'Overlap',
-				labelTooltip: 'Maximum amount of time before a DoT expires when it may be refreshed.',
+				label: i18n.t('rotation_tab.apl.actions.multi_dot.overlap.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.multi_dot.overlap.tooltip'),
 			}),
 		],
 	}),
 	['strictMultidot']: inputBuilder({
-		label: 'Strict Multi Dot',
-		submenu: ['Casting'],
-		shortDescription: 'Like a regular <b>Multi Dot</b>, except all Dots are applied immediately after each other. Keeps a DoT active on multiple targets by casting the specified spell. Will take Cast Time/GCD into account when refreshing subsequent DoTs.',
+		label: i18n.t('rotation_tab.apl.actions.strict_multi_dot.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.strict_multi_dot.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: () =>
 			APLActionStrictMultidot.create({
@@ -402,19 +395,19 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 		fields: [
 			AplHelpers.actionIdFieldConfig('spellId', 'castable_dot_spells', ''),
 			AplHelpers.numberFieldConfig('maxDots', false, {
-				label: 'Max Dots',
-				labelTooltip: 'Maximum number of DoTs to simultaneously apply.',
+				label: i18n.t('rotation_tab.apl.actions.strict_multi_dot.max_dots.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.strict_multi_dot.max_dots.tooltip'),
 			}),
 			AplValues.valueFieldConfig('maxOverlap', {
-				label: 'Overlap',
-				labelTooltip: 'Maximum amount of time before a DoT expires when it may be refreshed.',
+				label: i18n.t('rotation_tab.apl.actions.strict_multi_dot.overlap.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.strict_multi_dot.overlap.tooltip'),
 			}),
 		],
 	}),
 	['multishield']: inputBuilder({
-		label: 'Multi Shield',
-		submenu: ['Casting'],
-		shortDescription: 'Keeps a Shield active on multiple targets by casting the specified spell.',
+		label: i18n.t('rotation_tab.apl.actions.multi_shield.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.multi_shield.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull && player.getSpec().isHealingSpec,
 		newValue: () =>
 			APLActionMultishield.create({
@@ -431,29 +424,20 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 		fields: [
 			AplHelpers.actionIdFieldConfig('spellId', 'shield_spells', ''),
 			AplHelpers.numberFieldConfig('maxShields', false, {
-				label: 'Max Shields',
-				labelTooltip: 'Maximum number of Shields to simultaneously apply.',
+				label: i18n.t('rotation_tab.apl.actions.multi_shield.max_shields.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.multi_shield.max_shields.tooltip'),
 			}),
 			AplValues.valueFieldConfig('maxOverlap', {
-				label: 'Overlap',
-				labelTooltip: 'Maximum amount of time before a Shield expires when it may be refreshed.',
+				label: i18n.t('rotation_tab.apl.actions.multi_shield.overlap.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.multi_shield.overlap.tooltip'),
 			}),
 		],
 	}),
 	['channelSpell']: inputBuilder({
-		label: 'Channel',
-		submenu: ['Casting'],
-		shortDescription: 'Channels the spell if possible, i.e. resource/cooldown/GCD/etc requirements are all met.',
-		fullDescription: `
-			<p>The difference between channeling a spell vs casting the spell is that channels can be interrupted. If the <b>Interrupt If</b> parameter is empty, this action is equivalent to <b>Cast</b>.</p>
-			<p>The channel will be interrupted only if all of the following are true:</p>
-			<ul>
-				<li>Immediately following a tick of the channel</li>
-				<li>The <b>Interrupt If</b> condition evaluates to <b>True</b></li>
-				<li>Another action in the APL list is available</li>
-			</ul>
-			<p>Note that if you simply want to allow other actions to interrupt the channel, set <b>Interrupt If</b> to <b>True</b>.</p>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.channel.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.channel.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.channel.full'),
 		newValue: () =>
 			APLActionChannelSpell.create({
 				interruptIf: {
@@ -467,54 +451,40 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 			AplHelpers.actionIdFieldConfig('spellId', 'channel_spells', ''),
 			AplHelpers.unitFieldConfig('target', 'targets'),
 			AplValues.valueFieldConfig('interruptIf', {
-				label: 'Interrupt If',
-				labelTooltip: 'Condition which must be true to allow the channel to be interrupted.',
+				label: i18n.t('rotation_tab.apl.actions.channel.interrupt_if.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.channel.interrupt_if.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('allowRecast', 'Recast', {
-				labelTooltip: 'If checked, interrupts of this channel will recast the spell.',
+			AplHelpers.booleanFieldConfig('allowRecast', i18n.t('rotation_tab.apl.actions.channel.recast.label'), {
+				labelTooltip: i18n.t('rotation_tab.apl.actions.channel.recast.tooltip'),
 			}),
 		],
 	}),
 	['castAllStatBuffCooldowns']: inputBuilder({
-		label: 'Cast All Stat Buff Cooldowns',
-		submenu: ['Casting'],
-		shortDescription: 'Casts all cooldowns that buff the specified stat type(s).',
-		fullDescription: `
-			<ul>
-				<li>Does not cast cooldowns which are already controlled by other actions in the priority list.</li>
-				<li>By default, this action will cast such cooldowns greedily as they become available. However, when embedded in a sequence, the action will only fire when ALL cooldowns matching the specified buff type(s) are ready.</li>
-			</ul>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.cast_all_stat_buff_cooldowns.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.cast_all_stat_buff_cooldowns.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.cast_all_stat_buff_cooldowns.full'),
 		newValue: () =>
 			APLActionCastAllStatBuffCooldowns.create({
 				statType1: -1,
 				statType2: -1,
 				statType3: -1,
 			}),
-		fields: [
-			AplHelpers.statTypeFieldConfig('statType1'),
-			AplHelpers.statTypeFieldConfig('statType2'),
-			AplHelpers.statTypeFieldConfig('statType3'),
-		],
+		fields: [AplHelpers.statTypeFieldConfig('statType1'), AplHelpers.statTypeFieldConfig('statType2'), AplHelpers.statTypeFieldConfig('statType3')],
 	}),
 	['autocastOtherCooldowns']: inputBuilder({
-		label: 'Autocast Other Cooldowns',
-		submenu: ['Casting'],
-		shortDescription: 'Auto-casts cooldowns as soon as they are ready.',
-		fullDescription: `
-			<ul>
-				<li>Does not auto-cast cooldowns which are already controlled by other actions in the priority list.</li>
-				<li>Cooldowns are usually cast immediately upon becoming ready, but there are some basic smart checks in place, e.g. don't use Mana CDs when near full mana.</li>
-			</ul>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.autocast_other_cooldowns.label'),
+		submenu: ['casting'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.autocast_other_cooldowns.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.autocast_other_cooldowns.full'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: APLActionAutocastOtherCooldowns.create,
 		fields: [],
 	}),
 	['wait']: inputBuilder({
-		label: 'Wait',
-		submenu: ['Timing'],
-		shortDescription: 'Pauses all APL actions for a specified amount of time.',
+		label: i18n.t('rotation_tab.apl.actions.wait.label'),
+		submenu: ['timing'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.wait.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: () =>
 			APLActionWait.create({
@@ -530,17 +500,17 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 		fields: [AplValues.valueFieldConfig('duration')],
 	}),
 	['waitUntil']: inputBuilder({
-		label: 'Wait Until',
-		submenu: ['Timing'],
-		shortDescription: 'Pauses all APL actions until the specified condition is <b>True</b>.',
+		label: i18n.t('rotation_tab.apl.actions.wait_until.label'),
+		submenu: ['timing'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.wait_until.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: () => APLActionWaitUntil.create(),
 		fields: [AplValues.valueFieldConfig('condition')],
 	}),
 	['schedule']: inputBuilder({
-		label: 'Scheduled Action',
-		submenu: ['Timing'],
-		shortDescription: 'Executes the inner action once at each specified timing.',
+		label: i18n.t('rotation_tab.apl.actions.scheduled_action.label'),
+		submenu: ['timing'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.scheduled_action.tooltip'),
 		includeIf: (player: Player<any>, isPrepull: boolean) => !isPrepull,
 		newValue: () =>
 			APLActionSchedule.create({
@@ -551,79 +521,75 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 			}),
 		fields: [
 			AplHelpers.stringFieldConfig('schedule', {
-				label: 'Do At',
-				labelTooltip: 'Comma-separated list of timings. The inner action will be performed once at each timing.',
+				label: i18n.t('rotation_tab.apl.actions.scheduled_action.do_at.label'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.scheduled_action.do_at.tooltip'),
 			}),
 			actionFieldConfig('innerAction'),
 		],
 	}),
 	['sequence']: inputBuilder({
-		label: 'Sequence',
-		submenu: ['Sequences'],
-		shortDescription: 'A list of sub-actions to execute in the specified order.',
-		fullDescription: `
-			<p>Once one of the sub-actions has been performed, the next sub-action will not necessarily be immediately executed next. The system will restart at the beginning of the whole actions list (not the sequence). If the sequence is executed again, it will perform the next sub-action.</p>
-			<p>When all actions have been performed, the sequence does NOT automatically reset; instead, it will be skipped from now on. Use the <b>Reset Sequence</b> action to reset it, if desired.</p>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.sequence.label'),
+		submenu: ['sequences'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.sequence.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.sequence.full'),
 		includeIf: (_, isPrepull: boolean) => !isPrepull,
 		newValue: APLActionSequence.create,
 		fields: [AplHelpers.stringFieldConfig('name'), actionListFieldConfig('actions')],
 	}),
 	['resetSequence']: inputBuilder({
-		label: 'Reset Sequence',
-		submenu: ['Sequences'],
-		shortDescription: 'Restarts a sequence, so that the next time it executes it will perform its first sub-action.',
-		fullDescription: `
-			<p>Use the <b>name</b> field to refer to the sequence to be reset. The desired sequence must have the same (non-empty) value for its <b>name</b>.</p>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.reset_sequence.label'),
+		submenu: ['sequences'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.reset_sequence.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.reset_sequence.full'),
 		includeIf: (_, isPrepull: boolean) => !isPrepull,
 		newValue: APLActionResetSequence.create,
 		fields: [AplHelpers.stringFieldConfig('sequenceName')],
 	}),
 	['strictSequence']: inputBuilder({
-		label: 'Strict Sequence',
-		submenu: ['Sequences'],
-		shortDescription:
-			'Like a regular <b>Sequence</b>, except all sub-actions are executed immediately after each other and the sequence resets automatically upon completion.',
-		fullDescription: `
-			<p>Strict Sequences do not begin unless ALL sub-actions are ready.</p>
-		`,
+		label: i18n.t('rotation_tab.apl.actions.strict_sequence.label'),
+		submenu: ['sequences'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.strict_sequence.tooltip'),
+		fullDescription: i18n.t('rotation_tab.apl.actions.strict_sequence.full'),
 		includeIf: (_, isPrepull: boolean) => !isPrepull,
 		newValue: APLActionStrictSequence.create,
 		fields: [actionListFieldConfig('actions')],
 	}),
 	['changeTarget']: inputBuilder({
-		label: 'Change Target',
-		submenu: ['Misc'],
-		shortDescription: 'Sets the current target, which is the target of auto attacks and most casts by default.',
+		label: i18n.t('rotation_tab.apl.actions.change_target.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.change_target.tooltip'),
 		newValue: () => APLActionChangeTarget.create(),
 		fields: [AplHelpers.unitFieldConfig('newTarget', 'targets')],
 	}),
 	['activateAura']: inputBuilder({
-		label: 'Activate Aura',
-		submenu: ['Misc'],
-		shortDescription: 'Activates an aura',
+		label: i18n.t('rotation_tab.apl.actions.activate_aura.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.activate_aura.tooltip'),
 		includeIf: (_, isPrepull: boolean) => isPrepull,
 		newValue: () => APLActionActivateAura.create(),
 		fields: [AplHelpers.actionIdFieldConfig('auraId', 'auras')],
 	}),
 	['activateAuraWithStacks']: inputBuilder({
-		label: 'Activate Aura With Stacks',
-		submenu: ['Misc'],
-		shortDescription: 'Activates an aura with the specified number of stacks',
+		label: i18n.t('rotation_tab.apl.actions.activate_aura_with_stacks.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.activate_aura_with_stacks.tooltip'),
 		includeIf: (_, isPrepull: boolean) => isPrepull,
-		newValue: () => APLActionActivateAuraWithStacks.create({
-			numStacks: 1,
-		}),
-		fields: [AplHelpers.actionIdFieldConfig('auraId', 'stackable_auras'), AplHelpers.numberFieldConfig('numStacks', false, {
-			label: 'stacks',
-			labelTooltip: 'Desired number of initial aura stacks.',
-		})],
+		newValue: () =>
+			APLActionActivateAuraWithStacks.create({
+				numStacks: 1,
+			}),
+		fields: [
+			AplHelpers.actionIdFieldConfig('auraId', 'stackable_auras'),
+			AplHelpers.numberFieldConfig('numStacks', false, {
+				label: i18n.t('rotation_tab.apl.actions.activate_aura_with_stacks.stacks'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.activate_aura_with_stacks.stacks_tooltip'),
+			}),
+		],
 	}),
 	['activateAllStatBuffProcAuras']: inputBuilder({
-		label: 'Activate All Stat Buff Proc Auras',
-		submenu: ['Misc'],
-		shortDescription: 'Activates all item/enchant proc auras that buff the specified stat type(s) using the specified item set.',
+		label: i18n.t('rotation_tab.apl.actions.activate_all_stat_buff_proc_auras.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.activate_all_stat_buff_proc_auras.tooltip'),
 		includeIf: (_, isPrepull: boolean) => isPrepull,
 		newValue: () =>
 			APLActionActivateAllStatBuffProcAuras.create({
@@ -640,136 +606,167 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 		],
 	}),
 	['cancelAura']: inputBuilder({
-		label: 'Cancel Aura',
-		submenu: ['Misc'],
-		shortDescription: 'Deactivates an aura, equivalent to /cancelaura.',
+		label: i18n.t('rotation_tab.apl.actions.cancel_aura.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.cancel_aura.tooltip'),
 		newValue: () => APLActionCancelAura.create(),
 		fields: [AplHelpers.actionIdFieldConfig('auraId', 'auras')],
 	}),
 	['triggerIcd']: inputBuilder({
-		label: 'Trigger ICD',
-		submenu: ['Misc'],
-		shortDescription: "Triggers an aura's ICD, putting it on cooldown. Example usage would be to desync an ICD cooldown before combat starts.",
+		label: i18n.t('rotation_tab.apl.actions.trigger_icd.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.trigger_icd.tooltip'),
 		includeIf: (_, isPrepull: boolean) => isPrepull,
 		newValue: () => APLActionTriggerICD.create(),
 		fields: [AplHelpers.actionIdFieldConfig('auraId', 'icd_auras')],
 	}),
 	['itemSwap']: inputBuilder({
-		label: 'Item Swap',
-		submenu: ['Misc'],
-		shortDescription: 'Swaps items, using the swap set specified in Settings.',
+		label: i18n.t('rotation_tab.apl.actions.item_swap.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.item_swap.tooltip'),
 		includeIf: (player: Player<any>, _isPrepull: boolean) => itemSwapEnabledSpecs.includes(player.getSpec()),
 		newValue: () => APLActionItemSwap.create(),
 		fields: [itemSwapSetFieldConfig('swapSet')],
 	}),
 	['move']: inputBuilder({
-		label: 'Move',
-		submenu: ['Misc'],
-		shortDescription: 'Starts a move to the desired range from target.',
+		label: i18n.t('rotation_tab.apl.actions.move.label'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.move.tooltip'),
 		newValue: () => APLActionMove.create(),
 		fields: [
 			AplValues.valueFieldConfig('rangeFromTarget', {
-				label: 'to Range',
-				labelTooltip: 'Desired range from target.',
+				label: i18n.t('rotation_tab.apl.actions.move.to_range'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.move.to_range_tooltip'),
 			}),
 		],
 	}),
 	['moveDuration']: inputBuilder({
-		label: 'Move duration',
-		submenu: ['Misc'],
-		shortDescription: 'The characters moves for the given duration.',
+		label: i18n.t('rotation_tab.apl.actions.move.move_duration'),
+		submenu: ['misc'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.move.move_duration_tooltip'),
 		newValue: () => APLActionMoveDuration.create(),
 		fields: [
 			AplValues.valueFieldConfig('duration', {
-				label: 'Duration',
-				labelTooltip: 'Amount of time the character should move.',
+				label: i18n.t('rotation_tab.apl.actions.move.duration'),
+				labelTooltip: i18n.t('rotation_tab.apl.actions.move.duration_tooltip'),
 			}),
 		],
 	}),
 	['customRotation']: inputBuilder({
-		label: 'Custom Rotation',
+		label: i18n.t('rotation_tab.apl.actions.custom_rotation.label'),
 		//submenu: ['Misc'],
-		shortDescription: 'INTERNAL ONLY',
+		shortDescription: i18n.t('rotation_tab.apl.actions.custom_rotation.tooltip'),
 		includeIf: (_player: Player<any>, _isPrepull: boolean) => false, // Never show this, because its internal only.
 		newValue: () => APLActionCustomRotation.create(),
 		fields: [],
 	}),
+	['groupReference']: inputBuilder({
+		label: 'Group Reference',
+		submenu: ['Groups'],
+		shortDescription: 'References an action group defined in the Groups section.',
+		fullDescription: `
+			<p>Executes all actions in the referenced group in order. Groups allow you to create reusable action sequences.</p>
+			<p>Example: If you have a group named "careful_aim" with actions [serpent_sting, chimera_shot, steady_shot],
+			referencing this group will execute those three actions in sequence.</p>
+		`,
+		newValue: () =>
+			APLActionGroupReference.create({
+				groupName: '',
+				variables: [],
+			}),
+		fields: [
+			AplHelpers.groupNameFieldConfig('groupName', {
+				labelTooltip: 'Name of the group to reference (must match a group defined in the Groups section)',
+			}),
+			AplHelpers.groupReferenceVariablesFieldConfig('variables', 'groupName', {
+				label: 'Group Variables',
+				labelTooltip: "Variables to pass to the group. These will override the group's internal variables.",
+			}),
+		],
+	}),
 
 	// Class/spec specific actions
 	['catOptimalRotationAction']: inputBuilder({
-		label: 'Optimal Rotation Action',
-		submenu: ['Feral Druid'],
-		shortDescription: 'Executes optimized Feral DPS rotation using hardcoded algorithm.',
+		label: i18n.t('rotation_tab.apl.actions.optimal_rotation_action.label'),
+		submenu: ['feral_druid'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.optimal_rotation_action.tooltip'),
 		includeIf: (player: Player<any>, _isPrepull: boolean) => player.getSpec() == Spec.SpecFeralDruid,
 		newValue: () =>
 			APLActionCatOptimalRotationAction.create({
 				rotationType: FeralDruid_Rotation_AplType.SingleTarget,
-				maintainFaerieFire: true,
 				manualParams: true,
-				minRoarOffset: 31.0,
-				ripLeeway: 1,
-				useRake: true,
+				minRoarOffset: 40,
+				ripLeeway: 4,
 				useBite: true,
-				biteTime: 11.0,
-				berserkBiteTime: 6.0,
-				biteDuringExecute: true,
+				biteTime: 6,
+				berserkBiteTime: 5,
 				allowAoeBerserk: false,
-				meleeWeave: true,
 				bearWeave: true,
 				snekWeave: true,
-				cancelPrimalMadness: false,
+				useNs: true,
+				wrathWeave: false,
 			}),
 		fields: [
 			AplHelpers.rotationTypeFieldConfig('rotationType'),
-			AplHelpers.booleanFieldConfig('maintainFaerieFire', 'Maintain Faerie Fire', {
-				labelTooltip: 'Maintain Faerie Fire debuff. Overwrites any external Sunder effects specified in settings.',
+			AplHelpers.booleanFieldConfig('bearWeave', i18n.t('rotation_tab.options.druid.feral.bear_weave.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.bear_weave.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('meleeWeave', 'Enable leave-weaving', {
-				labelTooltip: 'Weave out of melee range for Stampede procs. Ignored for AoE rotation or if Stampede is not talented.',
+			AplHelpers.booleanFieldConfig('snekWeave', i18n.t('rotation_tab.options.druid.feral.snek_weave.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.snek_weave.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('bearWeave', 'Enable bear-weaving', {
-				labelTooltip: 'Weave into Bear Form while pooling Energy. Ignored for AoE rotation.',
+			AplHelpers.booleanFieldConfig('useNs', i18n.t('rotation_tab.options.druid.feral.use_ns.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.use_ns.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('snekWeave', 'Use Albino Snake', {
-				labelTooltip: 'Reset swing timer at the end of bear-weaves using Albino Snake pet. Ignored if not bear-weaving.',
+			AplHelpers.booleanFieldConfig('wrathWeave', i18n.t('rotation_tab.apl.actions.optimal_rotation_action.wrath_weave.label'), {
+				labelTooltip: i18n.t('rotation_tab.apl.actions.optimal_rotation_action.wrath_weave.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('allowAoeBerserk', 'Allow AoE Berserk', {
-				labelTooltip: 'Allow Berserk usage in AoE rotation. Ignored for single target rotation.',
+			AplHelpers.booleanFieldConfig('allowAoeBerserk', i18n.t('rotation_tab.options.druid.feral.allow_aoe_berserk.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.allow_aoe_berserk.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('manualParams', 'Manual Advanced Parameters', {
-				labelTooltip: 'Manually specify advanced parameters, otherwise will use preset defaults.',
+			AplHelpers.booleanFieldConfig('manualParams', i18n.t('rotation_tab.options.druid.feral.manual_params.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.manual_params.tooltip'),
 			}),
 			AplHelpers.numberFieldConfig('minRoarOffset', true, {
-				label: 'Roar Offset',
-				labelTooltip: 'Targeted offset in Rip/Roar timings. Ignored for AOE rotation or if not using manual advanced parameters.',
+				label: i18n.t('rotation_tab.options.druid.feral.roar_offset.label'),
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.roar_offset.tooltip'),
 			}),
 			AplHelpers.numberFieldConfig('ripLeeway', false, {
-				label: 'Rip Leeway',
-				labelTooltip: 'Rip leeway when optimizing Roar clips. Ignored for AOE rotation or if not using manual advanced parameters.',
+				label: i18n.t('rotation_tab.options.druid.feral.rip_leeway.label'),
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.rip_leeway.tooltip'),
 			}),
-			AplHelpers.booleanFieldConfig('useRake', 'Use Rake', {
-				labelTooltip: 'Use Rake during rotation. Ignored for AOE rotation or if not using manual advanced parameters.',
-			}),
-			AplHelpers.booleanFieldConfig('useBite', 'Bite during rotation', {
-				labelTooltip:
-					'Use Bite during rotation rather than exclusively at end of fight. Ignored for AOE rotation or if not using manual advanced parameters.',
+			AplHelpers.booleanFieldConfig('useBite', i18n.t('rotation_tab.options.druid.feral.bite_during_rotation.label'), {
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.bite_during_rotation.tooltip'),
 			}),
 			AplHelpers.numberFieldConfig('biteTime', true, {
-				label: 'Bite Time',
-				labelTooltip: 'Min seconds remaining on Rip/Roar to allow a Bite. Ignored if not Biting during rotation.',
+				label: i18n.t('rotation_tab.options.druid.feral.bite_time.label'),
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.bite_time.tooltip'),
 			}),
 			AplHelpers.numberFieldConfig('berserkBiteTime', true, {
-				label: 'Bite Time during Berserk',
-				labelTooltip: 'More aggressive threshold when Berserk is active.',
-			}),
-			AplHelpers.booleanFieldConfig('biteDuringExecute', 'Bite during Execute phase', {
-				labelTooltip:
-					'Bite aggressively during Execute phase. Ignored if Blood in the Water is not talented, or if not using manual advanced parameters.',
-			}),
-			AplHelpers.booleanFieldConfig('cancelPrimalMadness', 'Enable Primal Madness cancellation', {
-				labelTooltip:
-					'Click off Primal Madness buff when doing so will result in net Energy gains. Ignored if Primal Madness is not talented, or if not using manual advanced parameters.',
+				label: i18n.t('rotation_tab.options.druid.feral.berserk_bite_time.label'),
+				labelTooltip: i18n.t('rotation_tab.options.druid.feral.berserk_bite_time.tooltip'),
 			}),
 		],
+	}),
+
+	['guardianHotwDpsRotation']: inputBuilder({
+		label: i18n.t('rotation_tab.apl.actions.guardian_hotw_dps_rotation.label'),
+		submenu: ['guardian_druid'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.guardian_hotw_dps_rotation.tooltip'),
+		includeIf: (player: Player<any>, _isPrepull: boolean) => player.getSpec() == Spec.SpecGuardianDruid,
+		newValue: () =>
+			APLActionGuardianHotwDpsRotation.create({
+				strategy: HotwStrategy.Caster,
+			}),
+		fields: [AplHelpers.hotwStrategyFieldConfig('strategy')],
+	}),
+
+	['warlockNextExhaleTarget']: inputBuilder({
+		label: i18n.t('rotation_tab.apl.actions.warlock_next_exhale_target.label'),
+		submenu: ['warlock'],
+		shortDescription: i18n.t('rotation_tab.apl.actions.warlock_next_exhale_target.tooltip'),
+		includeIf: (player: Player<any>, _isPrepull: boolean) => player.getSpec() == Spec.SpecAfflictionWarlock,
+		newValue: () =>
+			APLActionWarlockNextExhaleTarget.create({}),
+		fields: [],
 	}),
 };

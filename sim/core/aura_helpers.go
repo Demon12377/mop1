@@ -32,26 +32,27 @@ type ProcHandler func(sim *Simulation, spell *Spell, result *SpellResult)
 type ProcExtraCondition func(sim *Simulation, spell *Spell, result *SpellResult) bool
 
 type ProcTrigger struct {
-	Name              string
-	ActionID          ActionID
-	MetricsActionID   ActionID
-	Duration          time.Duration
-	Callback          AuraCallback
-	ProcMask          ProcMask
-	ProcMaskExclude   ProcMask
-	SpellFlags        SpellFlag
-	SpellFlagsExclude SpellFlag
-	Outcome           HitOutcome
-	Harmful           bool
-	ProcChance        float64
-	DPM               *DynamicProcManager
-	ICD               time.Duration
-	Handler           ProcHandler
-	ClassSpellMask    int64
-	ExtraCondition    ProcExtraCondition
+	Name               string
+	ActionID           ActionID
+	MetricsActionID    ActionID
+	Duration           time.Duration
+	Callback           AuraCallback
+	ProcMask           ProcMask
+	ProcMaskExclude    ProcMask
+	SpellFlags         SpellFlag
+	SpellFlagsExclude  SpellFlag
+	Outcome            HitOutcome
+	RequireDamageDealt bool
+	ProcChance         float64
+	DPM                *DynamicProcManager
+	ICD                time.Duration
+	Handler            ProcHandler
+	TriggerImmediately bool // If false (default), the handler will be called one spell batch window later for improved realism.
+	ClassSpellMask     int64
+	ExtraCondition     ProcExtraCondition
 }
 
-func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
+func (procAura *Aura) AttachProcTriggerCallback(unit *Unit, config ProcTrigger) {
 	var icd Cooldown
 	if config.ICD != 0 {
 		icd = Cooldown{
@@ -68,6 +69,29 @@ func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
 	}
 
 	handler := config.Handler
+
+	applyHandler := func(sim *Simulation, spell *Spell, result *SpellResult) {
+		if config.TriggerImmediately {
+			handler(sim, spell, result)
+			return
+		}
+
+		pa := sim.GetConsumedPendingActionFromPool()
+		pa.NextActionAt = sim.CurrentTime + SpellBatchWindow
+		pa.Priority = ActionPriorityDOT
+
+		// Due to the result struct possibly being disposed of after this handler is triggered
+		// we need to clone the result to make sure the values don't get overwritten
+		newResult := spell.CloneResult(result)
+
+		pa.OnAction = func(sim *Simulation) {
+			handler(sim, spell, newResult)
+			spell.DisposeResult(newResult)
+		}
+
+		sim.AddPendingAction(pa)
+	}
+
 	callback := func(aura *Aura, sim *Simulation, spell *Spell, result *SpellResult) {
 		if config.SpellFlags != SpellFlagNone && !spell.Flags.Matches(config.SpellFlags) {
 			return
@@ -87,7 +111,7 @@ func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
 		if config.Outcome != OutcomeEmpty && !result.Outcome.Matches(config.Outcome) {
 			return
 		}
-		if config.Harmful && result.Damage == 0 {
+		if config.RequireDamageDealt && result.Damage == 0 {
 			return
 		}
 		if icd.Duration != 0 && !icd.IsReady(sim) {
@@ -105,7 +129,7 @@ func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
 		if icd.Duration != 0 {
 			icd.Use(sim)
 		}
-		handler(sim, spell, result)
+		applyHandler(sim, spell, result)
 	}
 
 	if config.ProcChance == 0 {
@@ -151,7 +175,7 @@ func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
 			if icd.Duration != 0 {
 				icd.Use(sim)
 			}
-			handler(sim, spell, nil)
+			applyHandler(sim, spell, nil)
 		}
 	}
 	if config.Callback.Matches(CallbackOnApplyEffects) {
@@ -174,16 +198,24 @@ func ApplyProcTriggerCallback(unit *Unit, procAura *Aura, config ProcTrigger) {
 			if config.ProcChance != 1 && sim.RandomFloat(config.Name) > config.ProcChance {
 				return
 			}
+			emptyResult := spell.NewResult(target)
+			defer spell.DisposeResult(emptyResult)
+			if config.ExtraCondition != nil {
+				extraConditionMet := config.ExtraCondition(sim, spell, emptyResult)
+				if !extraConditionMet {
+					return
+				}
+			}
 
 			if icd.Duration != 0 {
 				icd.Use(sim)
 			}
-			handler(sim, spell, &SpellResult{Target: target})
+			applyHandler(sim, spell, emptyResult)
 		}
 	}
 }
 
-func MakeProcTriggerAura(unit *Unit, config ProcTrigger) *Aura {
+func (unit *Unit) MakeProcTriggerAura(config ProcTrigger) *Aura {
 	aura := Aura{
 		Label:           config.Name,
 		ActionIDForProc: config.ActionID,
@@ -197,7 +229,7 @@ func MakeProcTriggerAura(unit *Unit, config ProcTrigger) *Aura {
 		}
 	}
 
-	ApplyProcTriggerCallback(unit, &aura, config)
+	aura.AttachProcTriggerCallback(unit, config)
 
 	return unit.GetOrRegisterAura(aura)
 }
@@ -278,6 +310,12 @@ func MakePermanent(aura *Aura) *Aura {
 	return aura
 }
 
+func BlockPrepull(aura *Aura) *Aura {
+	return aura.ApplyOnEncounterStart(func(aura *Aura, sim *Simulation) {
+		aura.Deactivate(sim)
+	})
+}
+
 type TemporaryStatBuffWithStacksConfig struct {
 	StackingAuraLabel    string
 	StackingAuraActionID ActionID
@@ -310,11 +348,13 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 				stackingAura.Activate(sim)
 				StartPeriodicAction(sim, PeriodicActionOptions{
 					Period:          config.TimePerStack,
-					NumTicks:        10,
+					NumTicks:        int(config.MaxStacks),
 					TickImmediately: config.TickImmediately,
 					OnAction: func(sim *Simulation) {
-						stackingAura.Activate(sim)
-						stackingAura.AddStack(sim)
+						// Aura might not be active because of stuff like mage alter time being cast right before this aura being activated
+						if stackingAura.IsActive() {
+							stackingAura.AddStack(sim)
+						}
 					},
 				})
 			},
@@ -400,7 +440,7 @@ func (parentAura *Aura) MakeDependentProcTriggerAura(unit *Unit, config ProcTrig
 		return parentAura.IsActive() && ((oldExtraCondition == nil) || oldExtraCondition(sim, spell, result))
 	}
 
-	aura := MakeProcTriggerAura(unit, config)
+	aura := unit.MakeProcTriggerAura(config)
 
 	return aura
 }
@@ -410,7 +450,7 @@ func (parentAura *Aura) MakeDependentProcTriggerAura(unit *Unit, config ProcTrig
 // For non standard use-cases see: MakeDependentProcTriggerAura
 // Returns parent aura for chaining
 func (parentAura *Aura) AttachProcTrigger(config ProcTrigger) *Aura {
-	ApplyProcTriggerCallback(parentAura.Unit, parentAura, config)
+	parentAura.AttachProcTriggerCallback(parentAura.Unit, config)
 
 	return parentAura
 }
@@ -537,6 +577,18 @@ func (parentAura *Aura) AttachMultiplyMeleeSpeed(multiplier float64) *Aura {
 	return parentAura
 }
 
+func (parentAura *Aura) AttachMultiplyAttackSpeed(multiplier float64) *Aura {
+	parentAura.ApplyOnGain(func(_ *Aura, sim *Simulation) {
+		parentAura.Unit.MultiplyAttackSpeed(sim, multiplier)
+	})
+
+	parentAura.ApplyOnExpire(func(_ *Aura, sim *Simulation) {
+		parentAura.Unit.MultiplyAttackSpeed(sim, 1/multiplier)
+	})
+
+	return parentAura
+}
+
 // Attaches a Damage Done By Caster buff to a parent Aura
 // Returns parent aura for chaining
 func (parentAura *Aura) AttachDDBC(index int, maxIndex int, attackTables *[]*AttackTable, handler DynamicDamageDoneByCaster) *Aura {
@@ -562,6 +614,7 @@ type ShieldShouldApplyCondition func(sim *Simulation, spell *Spell, result *Spel
 type AbsorptionAuraConfig struct {
 	Aura                     Aura
 	DamageMultiplier         float64
+	MaxAbsorbPerHit          float64
 	ShieldStrengthCalculator ShieldStrengthCalculator
 	OnDamageAbsorbed         OnDamageAbsorbedCallback
 	ShouldApplyToResult      ShieldShouldApplyCondition
@@ -605,11 +658,17 @@ func (unit *Unit) NewDamageAbsorptionAura(config AbsorptionAuraConfig) *DamageAb
 		aura.ShieldStrength = 0
 	})
 
-	extraSpellCheck := config.ShouldApplyToResult
+	extraSpellCheck := func(sim *Simulation, spell *Spell, result *SpellResult, isPeriodic bool) bool {
+		return !spell.Flags.Matches(SpellFlagBypassAbsorbs) && ((config.ShouldApplyToResult == nil) || config.ShouldApplyToResult(sim, spell, result, isPeriodic))
+	}
 
 	unit.AddDynamicDamageTakenModifier(func(sim *Simulation, spell *Spell, result *SpellResult, isPeriodic bool) {
-		if aura.Aura.IsActive() && result.Damage > 0 && (extraSpellCheck == nil || extraSpellCheck(sim, spell, result, isPeriodic)) {
+		if aura.Aura.IsActive() && (result.Damage > 0) && extraSpellCheck(sim, spell, result, isPeriodic) {
 			absorbedDamage := min(aura.ShieldStrength, result.Damage*config.DamageMultiplier)
+			if config.MaxAbsorbPerHit > 0 {
+				absorbedDamage = min(config.MaxAbsorbPerHit, absorbedDamage)
+			}
+
 			result.Damage -= absorbedDamage
 			aura.ShieldStrength -= absorbedDamage
 

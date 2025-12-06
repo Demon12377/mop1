@@ -18,6 +18,9 @@ const BossGCD = time.Millisecond * 1620
 const MaxSpellQueueWindow = time.Millisecond * 400
 const SpellBatchWindow = time.Millisecond * 10
 const PetUpdateInterval = time.Millisecond * 5250
+const RppmLastCheckCap = time.Second * 10
+const RppmLastProcCap = time.Second * 1000
+const RppmLastProcResetValue = time.Second * 120
 const MaxMeleeRange = 5.0 // in yards
 
 const DefaultAttackPowerPerDPS = 14.0
@@ -26,7 +29,12 @@ const DefaultAttackPowerPerDPS = 14.0
 const EnemyAutoAttackAPCoefficient = 1.0 / (14.0 * 177.0)
 
 // Used by Protection Warriors, Protection Paladins and Blood Death Knights
-const StrengthToParryRating = (1 / 951.158596) * ParryRatingPerParryPercent
+const StrengthToParryPercent = 1 / 95115.8596
+const StrengthToParryRating = StrengthToParryPercent * 100 * ParryRatingPerParryPercent
+
+// Used by Monks and Druids
+const AgilityToDodgePercent = 1 / 95115.8596
+const AgilityToDodgeRating = AgilityToDodgePercent * 100 * DodgeRatingPerDodgePercent
 
 // IDs for items used in core
 // const ()

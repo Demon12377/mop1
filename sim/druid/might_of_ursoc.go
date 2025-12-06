@@ -31,8 +31,9 @@ func (druid *Druid) registerMightOfUrsocCD() {
 	})
 
 	druid.MightOfUrsoc = druid.RegisterSpell(Any, core.SpellConfig{
-		ActionID: actionID,
-		Flags:    core.SpellFlagReadinessTrinket,
+		ActionID:       actionID,
+		Flags:          core.SpellFlagReadinessTrinket,
+		ClassSpellMask: DruidSpellMightOfUrsoc,
 
 		Cast: core.CastConfig{
 			CD: core.Cooldown{
@@ -48,6 +49,7 @@ func (druid *Druid) registerMightOfUrsocCD() {
 
 			druid.MightOfUrsocAura.Activate(sim)
 		},
+		RelatedSelfBuff: druid.MightOfUrsocAura,
 	})
 
 	druid.AddMajorCooldown(core.MajorCooldown{

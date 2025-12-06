@@ -15,6 +15,7 @@ import { orderedResourceTypes } from '../../proto_utils/utils';
 import { TypedEvent } from '../../typed_event';
 import { bucket, distinct, fragmentToString, maxIndex, stringComparator } from '../../utils';
 import { actionColors } from './color_settings';
+import i18n from '../../../i18n/config';
 import { ResultComponent, ResultComponentConfig, SimResultData } from './result_component';
 
 type TooltipHandler = (dataPointIndex: number) => Element;
@@ -74,21 +75,19 @@ export class Timeline extends ResultComponent {
 				<div className="d-flex flex-column">
 					<p>
 						<i className="warning fa fa-exclamation-triangle fa-xl me-2"></i>
-						Timeline data visualizes only 1 sim iteration.
+						{i18n.t('results_tab.details.timeline.disclaimer')}
 					</p>
-					<p>
-						Note: You can move the timeline by holding <kbd>Shift</kbd> while scrolling, or by clicking and dragging.
-					</p>
+					<p>{i18n.t('results_tab.details.timeline.note')}</p>
 				</div>
 				<select className="timeline-chart-picker form-select">
 					<option className="rotation-option" value="rotation">
-						Rotation
+						{i18n.t('results_tab.details.timeline.chart_types.rotation')}
 					</option>
 					<option className="dps-option" value="dps">
-						DPS
+						{i18n.t('results_tab.details.timeline.chart_types.dps')}
 					</option>
 					<option className="threat-option" value="threat">
-						Threat
+						{i18n.t('results_tab.details.timeline.chart_types.threat')}
 					</option>
 				</select>
 			</div>,
@@ -129,11 +128,11 @@ export class Timeline extends ResultComponent {
 			series: [], // Set dynamically
 			xaxis: {
 				title: {
-					text: 'Time (s)',
+					text: i18n.t('results_tab.details.timeline.chart_options.time_axis'),
 				},
 			},
 			noData: {
-				text: 'Waiting for data...',
+				text: i18n.t('results_tab.details.timeline.chart_options.waiting_for_data'),
 			},
 			stroke: {
 				width: 2,
@@ -368,13 +367,13 @@ export class Timeline extends ResultComponent {
 		const axisMax = Math.ceil(maxThreat / 10000) * 10000;
 		options.yaxis.push({
 			color: threatColor,
-			seriesName: 'Threat',
+			seriesName: i18n.t('results_tab.details.timeline.tooltips.threat'),
 			min: 0,
 			max: axisMax,
 			tickAmount: 10,
 			decimalsInFloat: 0,
 			title: {
-				text: 'Threat',
+				text: i18n.t('results_tab.details.timeline.tooltips.threat'),
 				style: {
 					color: threatColor,
 				},
@@ -480,7 +479,7 @@ export class Timeline extends ResultComponent {
 	private addThreatSeries(unit: UnitMetrics, options: any, colorOverride: string): TooltipHandler | null {
 		options.colors.push(colorOverride || threatColor);
 		options.series.push({
-			name: 'Threat',
+			name: i18n.t('results_tab.details.timeline.tooltips.threat'),
 			type: 'line',
 			data: unit.threatLogs
 				.filter(log => log.timestamp >= 0)
@@ -558,7 +557,6 @@ export class Timeline extends ResultComponent {
 		if (targets.length == 0) {
 			return;
 		}
-		const target = targets[0];
 
 		this.clearRotationChart();
 
@@ -572,9 +570,16 @@ export class Timeline extends ResultComponent {
 
 		const buffsById = Object.values(bucket(player.auraUptimeLogs, log => log.actionId!.toString()));
 		buffsById.sort((a, b) => stringComparator(a[0].actionId!.name, b[0].actionId!.name));
-		const debuffsById = Object.values(bucket(target.auraUptimeLogs, log => log.actionId!.toString()));
-		debuffsById.sort((a, b) => stringComparator(a[0].actionId!.name, b[0].actionId!.name));
-		const buffsAndDebuffsById = buffsById.concat(debuffsById);
+		const debuffsByTargetById = targets.map(target =>
+			Object.values(bucket(target.auraUptimeLogs, log => log.actionId!.toString())).sort((a, b) =>
+				stringComparator(a[0].actionId!.name, b[0].actionId!.name),
+			),
+		);
+
+		const buffsAndDebuffsById = buffsById.concat(
+			// Only pick target 0 to prevent overlapping cast rows
+			debuffsByTargetById[0]
+		);
 
 		auraAsResource.forEach(auraId => {
 			const auraIndex = buffsById.findIndex(auraUptimeLogs => auraUptimeLogs?.[0].actionId!.spellId === auraId);
@@ -623,18 +628,23 @@ export class Timeline extends ResultComponent {
 			buffsToShow.forEach(auraUptimeLogs => this.addAuraRow(auraUptimeLogs, duration));
 		}
 
-		const targetCastsByAbility = this.getSortedCastsByAbility(target);
-		if (targetCastsByAbility.length > 0) {
-			this.addSeparatorRow(duration);
-			targetCastsByAbility.forEach(castLogs => this.addCastRow(castLogs, buffsAndDebuffsById, duration));
-		}
+		targets.forEach(target => {
+			const targetCastsByAbility = this.getSortedCastsByAbility(target);
+			if (targetCastsByAbility.length > 0) {
+				this.addSeparatorRow(duration);
+				this.addTargetRow(target.label, duration);
+				targetCastsByAbility.forEach(castLogs => this.addCastRow(castLogs, buffsAndDebuffsById, duration));
+			}
+		});
 
 		// Add a row for all debuffs, even those which have already been visualized in a cast row.
-		const debuffsToShow = debuffsById;
-		if (debuffsToShow.length > 0) {
-			this.addSeparatorRow(duration);
-			debuffsToShow.forEach(auraUptimeLogs => this.addAuraRow(auraUptimeLogs, duration));
-		}
+		debuffsByTargetById.forEach((debuffsToShow, index) => {
+			if (debuffsToShow.length > 0) {
+				this.addSeparatorRow(duration);
+				this.addTargetRow(targets?.[index]?.label, duration);
+				debuffsToShow.forEach(auraUptimeLogs => this.addAuraRow(auraUptimeLogs, duration));
+			}
+		});
 	}
 
 	private getSortedCastsByAbility(player: UnitMetrics): Array<Array<CastLog>> {
@@ -770,6 +780,18 @@ export class Timeline extends ResultComponent {
 			iconElem.appendChild(labelElem);
 		});
 
+		this.rotationTimeline.appendChild(rowElem);
+	}
+
+	private addTargetRow(targetName: string, duration: number) {
+		const rowElem = this.makeRowElem(ActionId.fromEmpty(), duration);
+		this.rotationLabels.appendChild(
+			<div>
+				<div className="rotation-label rotation-row">
+					<span className="rotation-label-text">{targetName}</span>
+				</div>
+			</div>,
+		);
 		this.rotationTimeline.appendChild(rowElem);
 	}
 
@@ -925,6 +947,11 @@ export class Timeline extends ResultComponent {
 						{castLog.castTime > 0 && `${castLog.castTime.toFixed(2)}s, `} {castLog.effectiveTime.toFixed(2)}s GCD Time)
 						{travelTimeStr.length > 0 && travelTimeStr}
 					</span>
+					{totalDamage > 0 && (
+						<span>
+							Total: {totalDamage.toFixed(2)} ({(totalDamage / (castLog.effectiveTime || 1)).toFixed(2)} DPET)
+						</span>
+					)}
 					{castLog.damageDealtLogs.length > 0 && (
 						<ul className="rotation-timeline-cast-damage-list">
 							{castLog.damageDealtLogs.map(ddl => (
@@ -932,15 +959,15 @@ export class Timeline extends ResultComponent {
 									<span>
 										{ddl.timestamp.toFixed(2)}s - {ddl.result()}
 									</span>
-									{ddl.source?.isTarget && <span className="threat-metrics"> ({ddl.threat.toFixed(1)} Threat)</span>}
+									{ddl.source?.isTarget && (
+										<span className="threat-metrics">
+											{' '}
+											({ddl.threat.toFixed(1)} {i18n.t('results_tab.details.timeline.tooltips.threat')})
+										</span>
+									)}
 								</li>
 							))}
 						</ul>
-					)}
-					{totalDamage > 0 && (
-						<span>
-							Total: {totalDamage.toFixed(2)} ({(totalDamage / (castLog.effectiveTime || 1)).toFixed(2)} DPET)
-						</span>
 					)}
 				</div>
 			);
@@ -969,7 +996,12 @@ export class Timeline extends ResultComponent {
 							<span>
 								{ddl.timestamp.toFixed(2)}s - {ddl.actionId!.name} {ddl.result()}
 							</span>
-							{ddl.source?.isTarget && <span className="threat-metrics"> ({ddl.threat.toFixed(1)} Threat)</span>}
+							{ddl.source?.isTarget && (
+								<span className="threat-metrics">
+									{' '}
+									({ddl.threat.toFixed(1)} {i18n.t('results_tab.details.timeline.tooltips.threat')})
+								</span>
+							)}
 						</div>
 					);
 
@@ -984,9 +1016,9 @@ export class Timeline extends ResultComponent {
 		// If there are any auras that correspond to this cast, visualize them in the same row.
 		aurasById
 			.filter(auraUptimeLogs => {
-				return idsToGroupForRotation.includes(actionId.spellId) ?
-				actionId.equalsIgnoringTag(buffAuraToSpellIdMap[auraUptimeLogs[0].actionId!.spellId] ?? auraUptimeLogs[0].actionId!) :
-				actionId.equals(buffAuraToSpellIdMap[auraUptimeLogs[0].actionId!.spellId] ?? auraUptimeLogs[0].actionId!)
+				return idsToGroupForRotation.includes(actionId.spellId)
+					? actionId.equalsIgnoringTag(buffAuraToSpellIdMap[auraUptimeLogs[0].actionId!.spellId] ?? auraUptimeLogs[0].actionId!)
+					: actionId.equals(buffAuraToSpellIdMap[auraUptimeLogs[0].actionId!.spellId] ?? auraUptimeLogs[0].actionId!);
 			})
 			.forEach(auraUptimeLogs => this.applyAuraUptimeLogsToRow(auraUptimeLogs, rowElem, true));
 
@@ -1125,7 +1157,9 @@ export class Timeline extends ResultComponent {
 				<div className="timeline-tooltip-body">
 					<ul className="timeline-dps-events">{log.damageLogs.map(damageLog => this.tooltipLogItem(damageLog, damageLog.result()))}</ul>
 					<div className="timeline-tooltip-body-row">
-						<span className="series-color">DPS: {log.dps.toFixed(2)}</span>
+						<span className="series-color">
+							{i18n.t('results_tab.details.timeline.tooltips.dps')}: {log.dps.toFixed(2)}
+						</span>
 					</div>
 				</div>
 				{this.tooltipAurasSection(log)}
@@ -1151,11 +1185,24 @@ export class Timeline extends ResultComponent {
 				</div>
 				<div className="timeline-tooltip-body">
 					<div className="timeline-tooltip-body-row">
-						<span className="series-color">Before: {log.threatBefore.toFixed(1)}</span>
+						<span className="series-color">
+							{i18n.t('results_tab.details.timeline.tooltips.before')}: {log.threatBefore.toFixed(1)}
+						</span>
 					</div>
-					<ul className="timeline-threat-events">{log.logs.map(log => this.tooltipLogItem(log, <>{log.threat.toFixed(1)} Threat</>))}</ul>
+					<ul className="timeline-threat-events">
+						{log.logs.map(log =>
+							this.tooltipLogItem(
+								log,
+								<>
+									{log.threat.toFixed(1)} {i18n.t('results_tab.details.timeline.tooltips.threat')}
+								</>,
+							),
+						)}
+					</ul>
 					<div className="timeline-tooltip-body-row">
-						<span className="series-color">After: {log.threatAfter.toFixed(1)}</span>
+						<span className="series-color">
+							{i18n.t('results_tab.details.timeline.tooltips.after')}: {log.threatAfter.toFixed(1)}
+						</span>
 					</div>
 				</div>
 				{includeAuras ? this.tooltipAurasSection(log) : null}
@@ -1175,13 +1222,17 @@ export class Timeline extends ResultComponent {
 				</div>
 				<div className="timeline-tooltip-body">
 					<div className="timeline-tooltip-body-row">
-						<span className="series-color">Before: {valToDisplayString(log.valueBefore)}</span>
+						<span className="series-color">
+							{i18n.t('results_tab.details.timeline.tooltips.before')}: {valToDisplayString(log.valueBefore)}
+						</span>
 					</div>
 					<ul className="timeline-mana-events">
 						{log.logs.map(manaChangedLog => this.tooltipLogItemElem(manaChangedLog, <>{manaChangedLog.resultString()}</>))}
 					</ul>
 					<div className="timeline-tooltip-body-row">
-						<span className="series-color">After: {valToDisplayString(log.valueAfter)}</span>
+						<span className="series-color">
+							{i18n.t('results_tab.details.timeline.tooltips.after')}: {valToDisplayString(log.valueAfter)}
+						</span>
 					</div>
 				</div>
 				{includeAuras && this.tooltipAurasSectionElem(log)}
@@ -1222,7 +1273,7 @@ export class Timeline extends ResultComponent {
 		return (
 			<div className="timeline-tooltip-auras">
 				<div className="timeline-tooltip-body-row">
-					<span className="bold">Active Auras</span>
+					<span className="bold">{i18n.t('results_tab.details.timeline.tooltips.active_auras')}</span>
 				</div>
 				<ul className="timeline-active-auras">
 					{log.activeAuras.map(auraLog => (
@@ -1316,14 +1367,13 @@ const idToCategoryMap: Record<number, number> = {
 	[34490]: MELEE_ACTION_CATEGORY + 0.29, // Silencing Shot
 	[49001]: MELEE_ACTION_CATEGORY + 0.3, // Serpent Sting
 	[53238]: MELEE_ACTION_CATEGORY + 0.31, // Piercing Shots
-	[63672]: MELEE_ACTION_CATEGORY + 0.32, // Black Arrow
+	[3674]: MELEE_ACTION_CATEGORY + 0.32, // Black Arrow
 	[49067]: MELEE_ACTION_CATEGORY + 0.33, // Explosive Trap
 	[77767]: MELEE_ACTION_CATEGORY + 0.34, // Cobra Shot
 
 	// Paladin
 	[76672]: MELEE_ACTION_CATEGORY + 0.01, // Hand of Light (mastery)
 	[35395]: MELEE_ACTION_CATEGORY + 0.02, // Crusader Strike
-	[99092]: MELEE_ACTION_CATEGORY + 0.03, // Flames of the Faithful (ret T12 2pc)
 	[53595]: MELEE_ACTION_CATEGORY + 0.04, // Hammer of the Righteous (Physical)
 	[88263]: MELEE_ACTION_CATEGORY + 0.05, // Hammer of the Righteous (Holy)
 	[53385]: MELEE_ACTION_CATEGORY + 0.06, // Divine Storm
@@ -1333,7 +1383,6 @@ const idToCategoryMap: Record<number, number> = {
 	[31803]: MELEE_ACTION_CATEGORY + 0.1, // Censure (Seal of Truth)
 	[101423]: MELEE_ACTION_CATEGORY + 0.11, // Seal of Righteousness
 	[53600]: MELEE_ACTION_CATEGORY + 0.12, // Shield of the Righteous
-	[99075]: MELEE_ACTION_CATEGORY + 0.13, // Righteous Flames (prot T12 2pc)
 	[879]: MELEE_ACTION_CATEGORY + 0.15, // Exorcism
 	[26573]: MELEE_ACTION_CATEGORY + 0.16, // Consecration
 	[119072]: MELEE_ACTION_CATEGORY + 0.17, // Holy Wrath
@@ -1347,7 +1396,6 @@ const idToCategoryMap: Record<number, number> = {
 	[84963]: SPELL_ACTION_CATEGORY + 0.01, // Inquisition
 	[54428]: SPELL_ACTION_CATEGORY + 0.02, // Divine Plea
 	[498]: SPELL_ACTION_CATEGORY + 0.03, // Divine Protection
-	[99090]: SPELL_ACTION_CATEGORY + 0.04, // Flaming Aegis (Prot T12 4pc)
 	[66233]: SPELL_ACTION_CATEGORY + 0.05, // Ardent Defender
 	[31884]: SPELL_ACTION_CATEGORY + 0.06, // Avenging Wrath
 	[114232]: SPELL_ACTION_CATEGORY + 0.07, // Sanctified Wrath
@@ -1468,29 +1516,34 @@ const idToCategoryMap: Record<number, number> = {
 	[12867]: SPELL_ACTION_CATEGORY + 0.51, // Deep Wounds
 	[58874]: SPELL_ACTION_CATEGORY + 0.52, // Damage Shield
 	[47296]: SPELL_ACTION_CATEGORY + 0.53, // Critical Block
-	[46924]: SPELL_ACTION_CATEGORY + 0.61, // Bladestorm
+	[46924]: MELEE_ACTION_CATEGORY + 0.61, // Bladestorm
+	[46968]: MELEE_ACTION_CATEGORY + 0.61, // Shockwave
+	[118000]: MELEE_ACTION_CATEGORY + 0.61, // Dragon Roar
 	[2565]: SPELL_ACTION_CATEGORY + 0.62, // Shield Block
-	[64382]: SPELL_ACTION_CATEGORY + 0.65, // Shattering Throw
+	[112048]: SPELL_ACTION_CATEGORY + 0.63, // Shield Barrier
+	[76857]: SPELL_ACTION_CATEGORY + 0.64, // Mastery: Critical Block
+	[1249459]: SPELL_ACTION_CATEGORY + 0.65, // Shattering Throw
 	[71]: DEFAULT_ACTION_CATEGORY + 0.1, // Defensive Stance
 	[2457]: DEFAULT_ACTION_CATEGORY + 0.1, // Battle Stance
-	[2458]: DEFAULT_ACTION_CATEGORY + 0.1, // Berserker Stance
+	[6673]: DEFAULT_ACTION_CATEGORY + 0.1, // Battle Shout
+	[469]: DEFAULT_ACTION_CATEGORY + 0.1, // Commanding Shout
 
 	// Death Knight
 	[49998]: MELEE_ACTION_CATEGORY + 0.01, // Death Strike
 	[45470]: MELEE_ACTION_CATEGORY + 0.02, // Death Strike (Heal)
 	[77535]: MELEE_ACTION_CATEGORY + 0.03, // Blood Shield
-	[51425]: MELEE_ACTION_CATEGORY + 0.05, // Obliterate
-	[55268]: MELEE_ACTION_CATEGORY + 0.1, // Frost strike
-	[49930]: MELEE_ACTION_CATEGORY + 0.15, // Blood strike
+	[49184]: MELEE_ACTION_CATEGORY + 0.04, // Howling Blast
+	[49020]: MELEE_ACTION_CATEGORY + 0.05, // Obliterate
+	[49143]: MELEE_ACTION_CATEGORY + 0.1, // Frost strike
+	[45902]: MELEE_ACTION_CATEGORY + 0.15, // Blood strike
 	[50842]: MELEE_ACTION_CATEGORY + 0.2, // Pestilence
-	[51411]: MELEE_ACTION_CATEGORY + 0.25, // Howling Blast
-	[49895]: MELEE_ACTION_CATEGORY + 0.25, // Death Coil
-	[49938]: MELEE_ACTION_CATEGORY + 0.25, // Death and Decay
-	[63560]: MELEE_ACTION_CATEGORY + 0.25, // Ghoul Frenzy
+	[47541]: MELEE_ACTION_CATEGORY + 0.25, // Death Coil
+	[43265]: MELEE_ACTION_CATEGORY + 0.25, // Death and Decay
+	[63560]: MELEE_ACTION_CATEGORY + 0.25, // Dark Transformation
 	[50536]: MELEE_ACTION_CATEGORY + 0.25, // Unholy Blight
 	[57623]: MELEE_ACTION_CATEGORY + 0.25, // HoW
-	[59131]: MELEE_ACTION_CATEGORY + 0.3, // Icy touch
-	[49921]: MELEE_ACTION_CATEGORY + 0.3, // Plague strike
+	[45477]: MELEE_ACTION_CATEGORY + 0.3, // Icy touch
+	[45462]: MELEE_ACTION_CATEGORY + 0.3, // Plague strike
 	[114866]: MELEE_ACTION_CATEGORY + 0.31, // Soul Reaper
 	[130735]: MELEE_ACTION_CATEGORY + 0.31, // Soul Reaper
 	[130736]: MELEE_ACTION_CATEGORY + 0.31, // Soul Reaper
@@ -1502,10 +1555,7 @@ const idToCategoryMap: Record<number, number> = {
 	[46584]: MELEE_ACTION_CATEGORY + 0.35, // Raise Dead
 	[55095]: MELEE_ACTION_CATEGORY + 0.4, // Frost Fever
 	[55078]: MELEE_ACTION_CATEGORY + 0.4, // Blood Plague
-	[49655]: MELEE_ACTION_CATEGORY + 0.4, // Wandering Plague
 	[50401]: MELEE_ACTION_CATEGORY + 0.5, // Razor Frost
-	[51460]: MELEE_ACTION_CATEGORY + 0.5, // Necrosis
-	[50463]: MELEE_ACTION_CATEGORY + 0.5, // BCB
 	[50689]: DEFAULT_ACTION_CATEGORY + 0.1, // Blood Presence
 	[48263]: DEFAULT_ACTION_CATEGORY + 0.1, // Frost Presence
 	[48265]: DEFAULT_ACTION_CATEGORY + 0.1, // Unholy Presence
@@ -1536,6 +1586,8 @@ const idToCategoryMap: Record<number, number> = {
 	[1247275]: SPELL_ACTION_CATEGORY + 0.02, // Tigereye Brew
 	[115399]: SPELL_ACTION_CATEGORY + 0.03, // Chi Brew
 	[115288]: SPELL_ACTION_CATEGORY + 0.04, // Energizing Brew
+	[123402]: SPELL_ACTION_CATEGORY + 0.04, // Guard
+	[115295]: SPELL_ACTION_CATEGORY + 0.04, // Guard
 	[126456]: SPELL_ACTION_CATEGORY + 0.05, // Fortifying Brew
 	[123904]: SPELL_ACTION_CATEGORY + 0.06, // Invoke Xuen, the White Tiger
 	[115008]: SPELL_ACTION_CATEGORY + 0.06, // Chi Torpedo
@@ -1548,31 +1600,17 @@ const idToCategoryMap: Record<number, number> = {
 	[40536]: SPELL_ACTION_CATEGORY + 0.942, // Explosive Decoy
 	[41119]: SPELL_ACTION_CATEGORY + 0.943, // Saronite Bomb
 	[40771]: SPELL_ACTION_CATEGORY + 0.944, // Cobalt Frag Bomb
-
-	// Souldrinker - to pair up the damage part with the healing
-	[109828]: SPELL_ACTION_CATEGORY + 0.945, // Drain Life - LFR
-	[108022]: SPELL_ACTION_CATEGORY + 0.946, // Drain Life - Normal
-	[109831]: SPELL_ACTION_CATEGORY + 0.947, // Drain Life - Heroic
-
-	// No'Kaled - to pair up the different spells it can proc
-	[109871]: SPELL_ACTION_CATEGORY + 0.948, // Flameblast - LFR
-	[109869]: SPELL_ACTION_CATEGORY + 0.949, // Iceblast - LFR
-	[109867]: SPELL_ACTION_CATEGORY + 0.95, // Shadowblast - LFR
-	[107785]: SPELL_ACTION_CATEGORY + 0.951, // Flameblast - Normal
-	[107789]: SPELL_ACTION_CATEGORY + 0.952, // Iceblast - Normal
-	[107787]: SPELL_ACTION_CATEGORY + 0.953, // Shadowblast - Normal
-	[109872]: SPELL_ACTION_CATEGORY + 0.954, // Flameblast - Heroic
-	[109870]: SPELL_ACTION_CATEGORY + 0.955, // Iceblast - Heroic
-	[109868]: SPELL_ACTION_CATEGORY + 0.956, // Shadowblast - Heroic
+	[120687]: DEFAULT_ACTION_CATEGORY + 0.945, // Stormlash Totem
+	[114206]: DEFAULT_ACTION_CATEGORY + 0.946, // Skull Bnaner
 };
 
 const idsToGroupForRotation: Array<number> = [
-	5171, 	// Rogue - Slice and Dice
-	2098, 	// Rogue - Eviscerate
-	1943, 	// Rogue - Rupture
-	51690, 	// Rogue - Killing Spree
-	32645, 	// Rogue - Envenom
-	16511, 	// Rogue - Hemorrhage
+	5171, // Rogue - Slice and Dice
+	2098, // Rogue - Eviscerate
+	1943, // Rogue - Rupture
+	51690, // Rogue - Killing Spree
+	32645, // Rogue - Envenom
+	16511, // Rogue - Hemorrhage
 	121471, // Rogue - Shadow Blades
 ];
 

@@ -7,8 +7,8 @@ import (
 	"github.com/wowsims/mop/sim/warlock"
 )
 
-const doomScale = 0.9375 * 1.33
-const doomCoeff = 0.9375 * 1.33
+const doomScale = 0.9375
+const doomCoeff = 0.9375
 
 func (demonology *DemonologyWarlock) registerDoom() {
 	demonology.RegisterSpell(core.SpellConfig{
@@ -42,13 +42,13 @@ func (demonology *DemonologyWarlock) registerDoom() {
 		},
 
 		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
-			return demonology.IsInMeta() && demonology.DemonicFury.CanSpend(core.TernaryInt32(demonology.T15_2pc.IsActive(), 42, 60))
+			return demonology.IsInMeta() && demonology.CanSpendDemonicFury(60)
 		},
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
 			result := spell.CalcOutcome(sim, target, spell.OutcomeMagicHitNoHitCounter)
 			if result.Landed() {
-				demonology.DemonicFury.Spend(sim, core.TernaryInt32(demonology.T15_2pc.IsActive(), 42, 60), spell.ActionID)
+				demonology.SpendDemonicFury(sim, 60, spell.ActionID)
 				demonology.ApplyDotWithPandemic(spell.Dot(target), sim)
 			}
 			spell.DealOutcome(sim, result)
@@ -57,7 +57,7 @@ func (demonology *DemonologyWarlock) registerDoom() {
 		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
 			dot := spell.Dot(target)
 			if useSnapshot {
-				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedMagicSnapshotCrit)
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
 				result.Damage /= dot.TickPeriod().Seconds()
 				return result
 			} else {

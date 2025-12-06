@@ -27,7 +27,7 @@ func (comRogue *CombatRogue) registerBanditsGuile() {
 			actionID = core.ActionID{SpellID: 84747}
 		}
 
-		damageBonus := []float64{0.1, 0.2, 0.3}[index]
+		damageBonus := []float64{0.2, 0.3, 0.4}[index]
 
 		bgDamageMod := comRogue.AddDynamicMod(core.SpellModConfig{
 			Kind:       core.SpellMod_DamageDone_Pct,

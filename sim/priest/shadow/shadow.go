@@ -24,6 +24,8 @@ func RegisterShadowPriest() {
 	)
 }
 
+const MaxShadowOrbs = 3
+
 func NewShadowPriest(character *core.Character, options *proto.Player) *ShadowPriest {
 	shadowOptions := options.GetShadowPriest()
 
@@ -41,8 +43,8 @@ func NewShadowPriest(character *core.Character, options *proto.Player) *ShadowPr
 
 	spriest.ShadowOrbs = spriest.NewDefaultSecondaryResourceBar(core.SecondaryResourceConfig{
 		Type:    proto.SecondaryResourceType_SecondaryResourceTypeShadowOrbs,
-		Default: 3, // We now generate 1 orb every 6 seconds out of combat, so should pretty much start with 3 always
-		Max:     3,
+		Default: MaxShadowOrbs, // We now generate 1 orb every 6 seconds out of combat, so should pretty much start with 3 always
+		Max:     MaxShadowOrbs,
 	})
 	spriest.RegisterSecondaryResourceBar(spriest.ShadowOrbs)
 	return spriest
@@ -52,7 +54,7 @@ type ShadowPriest struct {
 	*priest.Priest
 	options      *proto.ShadowPriest_Options
 	ShadowOrbs   core.SecondaryResourceBar
-	orbsConsumed int32 // Number of orbs consumed by the last devouring plague cast
+	orbsConsumed float64 // Number of orbs consumed by the last devouring plague cast
 
 	// Shadow Spells
 	DevouringPlague *core.Spell
@@ -83,12 +85,19 @@ func (spriest *ShadowPriest) Reset(sim *core.Simulation) {
 	spriest.Priest.Reset(sim)
 }
 
+func (spriest *ShadowPriest) OnEncounterStart(sim *core.Simulation) {
+	spriest.ShadowOrbs.ResetBarTo(sim, MaxShadowOrbs)
+	spriest.Priest.OnEncounterStart(sim)
+}
+
 func (spriest *ShadowPriest) ApplyTalents() {
 	spriest.Priest.ApplyTalents()
 
-	// apply shadow spec specific auras
+	// Apply shadow spec specific auras
+	// 2025-07-01 - Shadowform’s damage increase increased to 35% (was 25%).
+	// 2025-11-13 - Shadowform’s damage decreased to 32% (was 35%).
 	spriest.AddStaticMod(core.SpellModConfig{
-		FloatValue: 0.3,
+		FloatValue: 0.25 + 0.07,
 		School:     core.SpellSchoolShadow,
 		Kind:       core.SpellMod_DamageDone_Pct,
 	})
@@ -109,4 +118,5 @@ func (spriest *ShadowPriest) ApplyTalents() {
 	spriest.registerHalo()
 	spriest.registerCascade()
 	spriest.registerDivineStar()
+	spriest.registerHotfixes()
 }

@@ -14,7 +14,7 @@ func tigerStrikesBuffAura(unit *core.Unit) {
 	var tigerStrikesMHSpell *core.Spell
 	var tigerStrikesOHSpell *core.Spell
 	var tigerStrikesBuff *core.Aura
-	tigerStrikesBuff = unit.RegisterAura(core.Aura{
+	tigerStrikesBuff = core.BlockPrepull(unit.RegisterAura(core.Aura{
 		Label:     "Tiger Strikes" + unit.Label,
 		ActionID:  core.ActionID{SpellID: 120273},
 		Duration:  time.Second * 15,
@@ -63,14 +63,15 @@ func tigerStrikesBuffAura(unit *core.Unit) {
 				tigerStrikesOHSpell.Cast(sim, result.Target)
 			}
 		},
-	})
+	}))
 
-	core.MakeProcTriggerAura(unit, core.ProcTrigger{
-		Name:       "Tiger Strikes Buff Trigger" + unit.Label,
-		ActionID:   core.ActionID{SpellID: 120272},
-		Callback:   core.CallbackOnSpellHitDealt,
-		ProcMask:   core.ProcMaskWhiteHit,
-		ProcChance: 1,
+	unit.MakeProcTriggerAura(core.ProcTrigger{
+		Name:               "Tiger Strikes Buff Trigger" + unit.Label,
+		ActionID:           core.ActionID{SpellID: 120272},
+		Callback:           core.CallbackOnSpellHitDealt,
+		ProcMask:           core.ProcMaskWhiteHit,
+		ProcChance:         1,
+		TriggerImmediately: true,
 
 		Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			if spell.Matches(MonkSpellTigerStrikes) {

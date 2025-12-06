@@ -4,7 +4,6 @@ import (
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
-	"github.com/wowsims/mop/sim/core/stats"
 	"github.com/wowsims/mop/sim/warrior"
 )
 
@@ -16,11 +15,13 @@ func (war *ProtectionWarrior) registerShieldBlock() {
 	atkTable := core.NewAttackTable(atkTableAttacker, &war.Unit)
 
 	extraAvoidance := 0.0
-	war.ShieldBlockAura = war.RegisterAura(core.Aura{
+	war.ShieldBlockAura = core.BlockPrepull(war.RegisterAura(core.Aura{
 		Label:    "Shield Block",
 		ActionID: actionId,
 		Duration: time.Second * 6,
 		OnGain: func(aura *core.Aura, sim *core.Simulation) {
+			war.PseudoStats.BaseBlockChance += 100
+
 			avoidance := war.GetTotalAvoidanceChance(atkTable)
 			if avoidance > core.CombatTableCoverageCap {
 				extraAvoidance = avoidance - core.CombatTableCoverageCap
@@ -30,11 +31,13 @@ func (war *ProtectionWarrior) registerShieldBlock() {
 			}
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
+			war.PseudoStats.BaseBlockChance -= 100
+
 			if extraAvoidance > 0.0 {
 				war.CriticalBlockChance[1] -= extraAvoidance
 			}
 		},
-	}).AttachStatBuff(stats.BlockPercent, 100)
+	}))
 
 	war.RegisterSpell(core.SpellConfig{
 		ActionID:       actionId,
@@ -58,6 +61,10 @@ func (war *ProtectionWarrior) registerShieldBlock() {
 				Timer:    war.NewTimer(),
 				Duration: time.Millisecond * 1500,
 			},
+		},
+
+		ExtraCastCondition: func(sim *core.Simulation, target *core.Unit) bool {
+			return war.PseudoStats.CanBlock
 		},
 
 		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, _ *core.Spell) {

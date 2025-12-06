@@ -15,18 +15,18 @@ func (dk *DeathKnight) registerBloodBoil() {
 	rpMetric := dk.NewRunicPowerMetrics(core.ActionID{SpellID: 65658})
 	hasGlyphOfFesteringBlood := dk.HasMajorGlyph(proto.DeathKnightMajorGlyph_GlyphOfFesteringBlood)
 	hasReaping := dk.Inputs.Spec == proto.Spec_SpecUnholyDeathKnight
-	results := make([]*core.SpellResult, dk.Env.GetNumTargets())
+	results := make([]*core.SpellResult, dk.Env.TotalTargetCount())
 
 	dk.RegisterSpell(core.SpellConfig{
 		ActionID:       BloodBoilActionID,
-		Flags:          core.SpellFlagAoE | core.SpellFlagAPL,
+		Flags:          core.SpellFlagAoE | core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		SpellSchool:    core.SpellSchoolShadow,
 		ProcMask:       core.ProcMaskSpellDamage,
 		ClassSpellMask: DeathKnightSpellBloodBoil,
 
 		RuneCost: core.RuneCostOptions{
 			BloodRuneCost: 1,
-			// Not actually refundable, but setting this to `true` if specced into blood
+			// Not actually refundable, but setting this to `true` if specced into unholy
 			// makes the default SpendCost function skip handling the rune cost and
 			// lets us manually spend it with death rune conversion in ApplyEffects.
 			Refundable: hasReaping,
@@ -41,9 +41,9 @@ func (dk *DeathKnight) registerBloodBoil() {
 		CritMultiplier:   dk.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
 			anyHit := false
-			for idx, aoeTarget := range sim.Encounter.TargetUnits {
+			for idx, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				baseDamage := dk.CalcAndRollDamageRange(sim, 3.09599995613, 0.20000000298) +
 					0.1099999994*spell.MeleeAttackPower()
 				baseDamage *= core.TernaryFloat64(hasGlyphOfFesteringBlood || dk.DiseasesAreActive(aoeTarget), 1.5, 1.0)
@@ -53,30 +53,33 @@ func (dk *DeathKnight) registerBloodBoil() {
 			}
 
 			if hasReaping {
-				spell.SpendRefundableCostAndConvertBloodRune(sim, true)
+				// In terms of keeping Death runes Death through Reaping, abilities using Blood runes look at both Blood and Frost slots
+				// when deciding if they should be converted back to their defaults.
+				// Spending an Frost (Death) rune on BB keeps it as a Death rune, but an Unholy (Death) rune gets converted back to Unholy.
+				spell.SpendRefundableCostAndConvertBloodOrFrostRune(sim, true)
 			}
 
 			if anyHit {
 				dk.AddRunicPower(sim, 10, rpMetric)
 			}
 
-			for _, result := range results {
-				spell.DealDamage(sim, result)
+			for idx := range sim.Encounter.ActiveTargetUnits {
+				spell.DealDamage(sim, results[idx])
 			}
 		},
 	})
 }
 
 func (dk *DeathKnight) registerDrwBloodBoil() *core.Spell {
-	results := make([]*core.SpellResult, dk.Env.GetNumTargets())
+	results := make([]*core.SpellResult, dk.Env.TotalTargetCount())
 	return dk.RuneWeapon.RegisterSpell(core.SpellConfig{
 		ActionID:    BloodBoilActionID,
 		SpellSchool: core.SpellSchoolShadow,
 		Flags:       core.SpellFlagAoE,
 		ProcMask:    core.ProcMaskSpellDamage,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			for idx, aoeTarget := range sim.Encounter.TargetUnits {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
+			for idx, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 				baseDamage := dk.CalcAndRollDamageRange(sim, 3.09599995613, 0.20000000298) +
 					0.1099999994*spell.MeleeAttackPower()
 
@@ -88,8 +91,8 @@ func (dk *DeathKnight) registerDrwBloodBoil() *core.Spell {
 				results[idx] = spell.CalcDamage(sim, aoeTarget, baseDamage, spell.OutcomeMagicHitAndCrit)
 			}
 
-			for _, result := range results {
-				spell.DealDamage(sim, result)
+			for idx := range sim.Encounter.ActiveTargetUnits {
+				spell.DealDamage(sim, results[idx])
 			}
 		},
 	})

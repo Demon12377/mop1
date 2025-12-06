@@ -29,14 +29,13 @@ func (hunter *Hunter) registerRapidFireCD() {
 					}
 				},
 			})
-
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			aura.Unit.MultiplyRangedHaste(sim, 1/hasteMultiplier)
 		},
 	})
 
-	rapidFire := hunter.RegisterSpell(core.SpellConfig{
+	hunter.RapidFire = hunter.RegisterSpell(core.SpellConfig{
 		ActionID:       actionID,
 		ClassSpellMask: HunterSpellRapidFire,
 		Flags:          core.SpellFlagReadinessTrinket,
@@ -58,7 +57,7 @@ func (hunter *Hunter) registerRapidFireCD() {
 	})
 
 	hunter.AddMajorCooldown(core.MajorCooldown{
-		Spell: rapidFire,
+		Spell: hunter.RapidFire,
 		Type:  core.CooldownTypeDPS,
 	})
 }

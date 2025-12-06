@@ -9,11 +9,17 @@ import (
 
 func (fire *FireMage) registerPyroblastSpell() {
 	actionID := core.ActionID{SpellID: 11366}
-	pyroblastVariance := 0.24    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "Variance"
-	pyroblastScaling := 1.98     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "Coefficient"
-	pyroblastCoefficient := 1.98 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=exact%253A2948 Field: "BonusCoefficient"
-	pyroblastDotScaling := .36
-	pyroblastDotCoefficient := .36
+	pyroblastVariance := 0.23800000548    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11366 Field: "Variance"
+	pyroblastScaling := 1.98000001907     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11366 Field: "Coefficient"
+	pyroblastCoefficient := 1.98000001907 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.61217&filter%5BSpellID%5D=11366 Field: "BonusCoefficient"
+	pyroblastDotScaling := 0.36000001431
+	pyroblastDotCoefficient := 0.36000001431
+
+	instantPyroblastDotMod := fire.AddDynamicMod(core.SpellModConfig{
+		Kind:       core.SpellMod_DamageDone_Pct,
+		FloatValue: .25,
+		ClassMask:  mage.MageSpellPyroblastDot,
+	})
 
 	fire.Pyroblast = fire.RegisterSpell(core.SpellConfig{
 		ActionID:       actionID,
@@ -33,20 +39,29 @@ func (fire *FireMage) registerPyroblastSpell() {
 			},
 		},
 
-		DamageMultiplier: 1 * 1.12, //https://us.forums.blizzard.com/en/wow/t/feedback-mists-of-pandaria-class-changes/2117387/327
+		DamageMultiplier: 1,
 		CritMultiplier:   fire.DefaultCritMultiplier(),
 		BonusCoefficient: pyroblastCoefficient,
 		ThreatMultiplier: 1,
 
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			if !fire.InstantPyroblastAura.IsActive() && fire.PresenceOfMindAura != nil {
+			hasInstantPyroblast := fire.InstantPyroblastAura.IsActive()
+			if !hasInstantPyroblast && fire.PresenceOfMindAura != nil {
 				fire.PresenceOfMindAura.Deactivate(sim)
 			}
-			fire.InstantPyroblastAura.Deactivate(sim)
 			baseDamage := fire.CalcAndRollDamageRange(sim, pyroblastScaling, pyroblastVariance)
 			result := spell.CalcDamage(sim, target, baseDamage, spell.OutcomeMagicHitAndCrit)
+			if hasInstantPyroblast {
+				fire.InstantPyroblastAura.Deactivate(sim)
+			}
 			fire.HeatingUpSpellHandler(sim, spell, result, func() {
+				if hasInstantPyroblast {
+					instantPyroblastDotMod.Activate()
+				}
 				spell.RelatedDotSpell.Cast(sim, target)
+				if hasInstantPyroblast {
+					instantPyroblastDotMod.Deactivate()
+				}
 				spell.DealDamage(sim, result)
 			})
 		},
@@ -59,7 +74,7 @@ func (fire *FireMage) registerPyroblastSpell() {
 		ClassSpellMask: mage.MageSpellPyroblastDot,
 		Flags:          core.SpellFlagNoOnCastComplete | core.SpellFlagPassiveSpell,
 
-		DamageMultiplier: 1 * 1.12, //https://us.forums.blizzard.com/en/wow/t/feedback-mists-of-pandaria-class-changes/2117387/327
+		DamageMultiplier: 1,
 		CritMultiplier:   fire.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 

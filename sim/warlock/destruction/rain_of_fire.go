@@ -48,10 +48,11 @@ func (destruction DestructionWarlock) registerRainOfFire() {
 			TickLength:           time.Second,
 			NumberOfTicks:        8,
 			HasteReducesDuration: true,
+			AffectedByCastSpeed:  true,
 			IsAOE:                true,
 			BonusCoefficient:     rofCoeff,
 			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
-				for _, aoeTarget := range sim.Encounter.TargetUnits {
+				for _, aoeTarget := range sim.Encounter.ActiveTargetUnits {
 					result := dot.Spell.CalcAndDealPeriodicDamage(sim, aoeTarget, baseDamage, dot.OutcomeTickMagicCrit)
 					if result.Landed() && sim.Proc(0.125, "RoF - Ember Proc") {
 						destruction.BurningEmbers.Gain(sim, 2, dot.ActionID)

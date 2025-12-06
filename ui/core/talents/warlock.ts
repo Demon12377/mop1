@@ -22,7 +22,7 @@ export const warlockGlyphsConfig: GlyphsConfig = {
 		},
 		[WarlockMajorGlyph.GlyphOfDemonTraining]: {
 			name: "Glyph of Demon Training",
-			description: "Improves your demon\'s special abilities:\u000D\u000A\u000D\u000A Your Fel Imp \'s Firebolt cast time is reduced by 50% and fires in bursts of three.\u000D\u000A\u000D\u000A Increases your Voidlord \'s total armor by 10%.\u000D\u000A\u000D\u000A Your Shivarra \'s Mesmerizes ability also removes all damage over time effects from the target.\u000D\u000A\u000D\u000A When your Observer uses Clone Magic, you will also be healed for that amount.\u000D\u000A\u000D\u000A Increases your Wrathguard \'s total health by 20%.",
+			description: "Improves your demon\'s special abilities:\u000D\u000A\u000D\u000A Your Fel Imp \'s Firebolt cast time is reduced by 50% and fires in bursts of three.\u000D\u000A\u000D\u000A Increases your Voidlord \'s total armor by 10%.\u000D\u000A\u000D\u000A Your Shivarra and Archincubus \'s Mesmerizes ability also removes all damage over time effects from the target.\u000D\u000A\u000D\u000A When your Observer uses Clone Magic, you will also be healed for that amount.\u000D\u000A\u000D\u000A Increases your Wrathguard \'s total health by 20%.",
 			iconUrl: "https://wow.zamimg.com/images/wow/icons/large/spell_shadow_summonfelhunter.jpg",
 		},
 		[WarlockMajorGlyph.GlyphOfHealthstone]: {

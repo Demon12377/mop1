@@ -18,8 +18,6 @@ func init() {
 		character := agent.GetCharacter()
 		label := "Xing-Ho, Breath of Yu'lon"
 
-		numTargets := min(character.Env.GetNumTargets(), 5)
-
 		spell := character.RegisterSpell(core.SpellConfig{
 			ActionID:    core.ActionID{SpellID: 146198},
 			SpellSchool: core.SpellSchoolFirestorm,
@@ -43,9 +41,11 @@ func init() {
 					dot.Snapshot(target, dot.Spell.SpellPower()*2)
 				},
 				OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
+					numTargets := min(sim.Environment.ActiveTargetCount(), 5)
+
 					for range numTargets {
 						dot.CalcAndDealPeriodicSnapshotDamage(sim, target, dot.OutcomeSnapshotCrit)
-						target = sim.Environment.NextTargetUnit(target)
+						target = sim.Environment.NextActiveTargetUnit(target)
 					}
 				},
 			},
@@ -55,10 +55,10 @@ func init() {
 			},
 		})
 
-		proctrigger := core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
-			Name:    label,
-			Harmful: true,
-			DPM: character.NewRPPMProcManager(102246, false, core.ProcMaskSpellOrSpellProc, core.RPPMConfig{
+		proctrigger := character.MakeProcTriggerAura(core.ProcTrigger{
+			Name: label,
+
+			DPM: character.NewRPPMProcManager(102246, false, false, core.ProcMaskSpellOrSpellProc, core.RPPMConfig{
 				PPM: 2.61100006104,
 			}.WithHasteMod().
 				WithSpecMod(0.25, proto.Spec_SpecArcaneMage).
@@ -76,7 +76,10 @@ func init() {
 				WithSpecMod(0.15000000596, proto.Spec_SpecDestructionWarlock).
 				WithSpecMod(-0.75, proto.Spec_SpecBrewmasterMonk),
 			),
-			Callback: core.CallbackOnSpellHitDealt,
+
+			Callback:           core.CallbackOnSpellHitDealt,
+			TriggerImmediately: true,
+
 			Handler: func(sim *core.Simulation, _ *core.Spell, result *core.SpellResult) {
 				spell.Cast(sim, result.Target)
 			},
@@ -88,7 +91,6 @@ func init() {
 	newXuenCloakEffect := func(label string, itemID int32) {
 		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
 			character := agent.GetCharacter()
-			numHits := min(5, character.Env.GetNumTargets())
 
 			flurrySpell := character.RegisterSpell(core.SpellConfig{
 				ActionID:    core.ActionID{SpellID: 147891},
@@ -115,23 +117,27 @@ func init() {
 						Period:          time.Millisecond * 300,
 						NumTicks:        10,
 						TickImmediately: true,
+
 						OnAction: func(sim *core.Simulation) {
 							target := aura.Unit.CurrentTarget
+							numHits := min(5, sim.Environment.ActiveTargetCount())
+
 							for range numHits {
 								flurrySpell.Cast(sim, target)
-								target = sim.Environment.NextTargetUnit(target)
+								target = sim.Environment.NextActiveTargetUnit(target)
 							}
 						},
 					})
 				},
 			})
 
-			procTrigger := core.MakeProcTriggerAura(&character.Unit, core.ProcTrigger{
-				Name:     fmt.Sprintf("%s - Trigger", label),
-				ActionID: core.ActionID{SpellID: 146195},
-				Harmful:  true,
-				ICD:      time.Second * 3,
+			procTrigger := character.MakeProcTriggerAura(core.ProcTrigger{
+				Name:               fmt.Sprintf("%s - Trigger", label),
+				ActionID:           core.ActionID{SpellID: 146195},
+				RequireDamageDealt: true,
+				ICD:                time.Second * 3,
 				DPM: character.NewRPPMProcManager(itemID,
+					false,
 					false,
 					core.ProcMaskMeleeOrMeleeProc|core.ProcMaskRangedOrRangedProc,
 					core.RPPMConfig{

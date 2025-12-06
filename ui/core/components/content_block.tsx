@@ -2,6 +2,7 @@ import tippy from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 
 import { Component } from './component.js';
+import { TooltipButton } from './tooltip_button';
 
 export interface ContentBlockHeaderConfig {
 	title: string;
@@ -55,10 +56,9 @@ export class ContentBlock extends Component {
 				header.classList.add(...this.config.header.extraCssClasses);
 			}
 
-			if (this.config.header.tooltip)
-				tippy(titleRef.value!, {
-					content: this.config.header.tooltip,
-				});
+			if (this.config.header.tooltip) {
+				new TooltipButton(titleRef.value!, this.config.header.tooltip, ['ms-2']);
+			}
 
 			this.rootElem.appendChild(header);
 

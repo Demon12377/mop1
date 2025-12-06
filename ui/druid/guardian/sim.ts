@@ -6,17 +6,20 @@ import { IndividualSimUI, registerSpecConfig } from '../../core/individual_sim_u
 import { Player } from '../../core/player.js';
 import { PlayerClasses } from '../../core/player_classes';
 import { APLAction, APLListItem, APLPrepullAction, APLRotation, APLRotation_Type as APLRotationType, SimpleRotation } from '../../core/proto/apl.js';
-import { Cooldowns, Debuffs, Faction, IndividualBuffs, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common.js';
+import { Cooldowns, Debuffs, Faction, IndividualBuffs, ItemSlot, PartyBuffs, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common.js';
 import { GuardianDruid_Rotation as DruidRotation } from '../../core/proto/druid.js';
 import { StatCapType } from '../../core/proto/ui';
 import * as AplUtils from '../../core/proto_utils/apl_utils.js';
 import { StatCap, Stats, UnitStat } from '../../core/proto_utils/stats.js';
+import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import * as DruidInputs from './inputs.js';
 import * as Presets from './presets.js';
 
 const SPEC_CONFIG = registerSpecConfig(Spec.SpecGuardianDruid, {
 	cssClass: 'guardian-druid-sim-ui',
 	cssScheme: PlayerClasses.getCssClass(PlayerClasses.Druid),
+	// Override required talent rows - Guardian only requires rows 1, 3, and 5 instead of all rows
+	requiredTalentRows: [1, 3, 5],
 	// List any known bugs / issues here and they'll be shown on the site.
 	knownIssues: [],
 	warnings: [],
@@ -67,32 +70,44 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecGuardianDruid, {
 		// Default equipped gear.
 		gear: Presets.PRERAID_PRESET.gear,
 		// Default EP weights for sorting gear in the gear picker.
-		epWeights: Presets.SURVIVAL_EP_PRESET.epWeights,
+		epWeights: Presets.BALANCED_EP_PRESET.epWeights,
 		// Default stat caps for the Reforge Optimizer
 		statCaps: (() => {
-			return new Stats().withStat(Stat.StatExpertiseRating, 15 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION).withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5).withPseudoStat(PseudoStat.PseudoStatSpellHitPercent, 15);
+			return new Stats()
+				.withStat(Stat.StatExpertiseRating, 15 * 4 * Mechanics.EXPERTISE_PER_QUARTER_PERCENT_REDUCTION)
+				.withPseudoStat(PseudoStat.PseudoStatPhysicalHitPercent, 7.5)
+				.withPseudoStat(PseudoStat.PseudoStatSpellHitPercent, 15);
 		})(),
 		other: Presets.OtherDefaults,
 		// Default consumes settings.
 		consumables: Presets.DefaultConsumables,
 		// Default rotation settings.
-		rotationType: APLRotationType.TypeSimple,
+		rotationType: APLRotationType.TypeAPL,
 		simpleRotation: Presets.DefaultSimpleRotation,
 		// Default talents.
-		talents: Presets.StandardTalents.data,
+		talents: Presets.DefaultTalents.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 		// Default raid/party buffs settings.
-		raidBuffs: RaidBuffs.create({}),
+		raidBuffs: RaidBuffs.create({
+			...defaultRaidBuffMajorDamageCooldowns(),
+			trueshotAura: true,
+			unholyAura: true,
+			leaderOfThePack: true,
+			graceOfAir: true,
+			markOfTheWild: true,
+			powerWordFortitude: true,
+			bloodlust: true,
+		}),
 		partyBuffs: PartyBuffs.create({}),
 		individualBuffs: IndividualBuffs.create({}),
 		debuffs: Debuffs.create({
-			// ebonPlaguebringer: true,
-			// criticalMass: true,
-			// bloodFrenzy: true,
-			// frostFever: true,
+			physicalVulnerability: true,
+			lightningBreath: true,
 		}),
 	},
+
+	defaultBuild: Presets.PRESET_BUILD_DEFAULT,
 
 	// IconInputs to include in the 'Player' section on the settings tab.
 	playerIconInputs: [],
@@ -112,26 +127,26 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecGuardianDruid, {
 			OtherInputs.AbsorbFrac,
 			OtherInputs.BurstWindow,
 			OtherInputs.HpPercentForDefensives,
-			DruidInputs.StartingRage,
 			OtherInputs.InFrontOfTarget,
+			DruidInputs.SymbiosisSelection,
 		],
 	},
+	itemSwapSlots: [ItemSlot.ItemSlotMainHand, ItemSlot.ItemSlotOffHand],
 	encounterPicker: {
 		// Whether to include 'Execute Duration (%)' in the 'Encounter' section of the settings tab.
 		showExecuteProportion: false,
 	},
 
 	presets: {
-		epWeights: [Presets.SURVIVAL_EP_PRESET, Presets.BALANCED_EP_PRESET],
+		epWeights: [Presets.SURVIVAL_EP_PRESET, Presets.BALANCED_EP_PRESET, Presets.OFFENSIVE_EP_PRESET],
 		// Preset talents that the user can quickly select.
-		talents: [Presets.StandardTalents, Presets.InfectedWoundsBuild],
+		talents: [Presets.DefaultTalents],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.ROTATION_PRESET_SIMPLE, Presets.ROTATION_DEFAULT, Presets.ROTATION_CLEAVE, Presets.ROTATION_NEF],
+		rotations: [Presets.ROTATION_DEFAULT, Presets.ROTATION_HOTW, Presets.ROTATION_EMPRESS, Presets.ROTATION_SHA, Presets.ROTATION_HORRIDON],
 		// Preset gear configurations that the user can quickly select.
-		gear: [Presets.PRERAID_PRESET, Presets.P1_PRESET, Presets.P3_PRESET, Presets.P4_PRESET],
-		builds: [
-			//Presets.PRESET_BUILD_BOSS_DUMMY,
-		],
+		gear: [Presets.PRERAID_PRESET, Presets.MSV_PRESET, Presets.HOF_PRESET, Presets.P2_PRESET, Presets.P2_OFFENSIVE_PRESET, Presets.P3_PRESET, Presets.P3_OFFENSIVE_PRESET],
+		itemSwaps: [Presets.ITEM_SWAP_PRESET],
+		builds: [Presets.PRESET_BUILD_DEFAULT, Presets.PRESET_BUILD_GARAJAL, Presets.PRESET_BUILD_EMPRESS, Presets.PRESET_BUILD_SHA, Presets.PRESET_BUILD_HORRIDON],
 	},
 
 	autoRotation: (_player: Player<Spec.SpecGuardianDruid>): APLRotation => {
@@ -217,7 +232,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecGuardianDruid, {
 	raidSimPresets: [
 		{
 			spec: Spec.SpecGuardianDruid,
-			talents: Presets.StandardTalents.data,
+			talents: Presets.DefaultTalents.data,
 			specOptions: Presets.DefaultOptions,
 			consumables: Presets.DefaultConsumables,
 			defaultFactionRaces: {
@@ -249,8 +264,6 @@ export class GuardianDruidSimUI extends IndividualSimUI<Spec.SpecGuardianDruid> 
 	constructor(parentElem: HTMLElement, player: Player<Spec.SpecGuardianDruid>) {
 		super(parentElem, player, SPEC_CONFIG);
 
-		player.sim.waitForInit().then(() => {
-			new ReforgeOptimizer(this);
-		});
+		this.reforger = new ReforgeOptimizer(this);
 	}
 }

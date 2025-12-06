@@ -6,11 +6,11 @@ import (
 	"github.com/wowsims/mop/sim/core"
 )
 
-func (mage *Mage) registerfrostNovaSpell() {
+func (mage *Mage) registerFrostNovaSpell() {
 
-	frostNovaCoefficient := 0.19 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "EffetBonusCoefficient"
-	frostNovaScaling := 0.53     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "Coefficient"
-	frostNovaVariance := 0.15    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "Variance"
+	frostNovaVariance := 0.15000000596    // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "Variance"
+	frostNovaCoefficient := 0.18799999356 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "EffetBonusCoefficient"
+	frostNovaScaling := 0.52999997139     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=exact%253A122 Field "Coefficient"
 
 	mage.RegisterSpell(core.SpellConfig{
 		ActionID:       core.ActionID{SpellID: 122},
@@ -38,11 +38,10 @@ func (mage *Mage) registerfrostNovaSpell() {
 		BonusCoefficient: frostNovaCoefficient,
 		ThreatMultiplier: 1,
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			for _, aoeTarget := range sim.Encounter.TargetUnits {
-				baseDamage := mage.CalcAndRollDamageRange(sim, frostNovaScaling, frostNovaVariance)
-				spell.CalcAndDealDamage(sim, aoeTarget, baseDamage, spell.OutcomeMagicHitAndCrit)
-			}
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
+			spell.CalcAndDealAoeDamageWithVariance(sim, spell.OutcomeMagicHitAndCrit, func(sim *core.Simulation, _ *core.Spell) float64 {
+				return mage.CalcAndRollDamageRange(sim, frostNovaScaling, frostNovaVariance)
+			})
 		},
 	})
 }

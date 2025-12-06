@@ -10,11 +10,12 @@ func (mage *Mage) registerNetherTempest() {
 	if !mage.Talents.NetherTempest {
 		return
 	}
-	netherTempestCoefficient := 0.24 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=114923 Field "EffetBonusCoefficient"
-	netherTempestScaling := .31      // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=114923 Field "Coefficient"
+	actionID := core.ActionID{SpellID: 114923}
+	netherTempestCoefficient := 0.24359999597 // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=114923 Field "EffetBonusCoefficient"
+	netherTempestScaling := 0.31220000982     // Per https://wago.tools/db2/SpellEffect?build=5.5.0.60802&filter%5BSpellID%5D=114923 Field "Coefficient"
 
 	ntCleaveSpell := mage.RegisterSpell(core.SpellConfig{
-		ActionID:       core.ActionID{SpellID: 114954},
+		ActionID:       actionID.WithTag(2), // Real SpellID: 114954
 		SpellSchool:    core.SpellSchoolArcane,
 		ProcMask:       core.ProcMaskSpellDamage,
 		ClassSpellMask: MageSpellNetherTempestDot,
@@ -24,7 +25,7 @@ func (mage *Mage) registerNetherTempest() {
 		CritMultiplier:   mage.DefaultCritMultiplier(),
 		ThreatMultiplier: 1,
 		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
-			nextTarget := mage.Env.NextTargetUnit(target)
+			nextTarget := mage.Env.NextActiveTargetUnit(target)
 			spell.DamageMultiplier /= 2
 			result := spell.CalcDamage(sim, nextTarget, mage.NetherTempest.Dot(target).SnapshotBaseDamage, spell.OutcomeMagicHitAndCrit)
 			spell.WaitTravelTime(sim, func(sim *core.Simulation) {
@@ -35,7 +36,7 @@ func (mage *Mage) registerNetherTempest() {
 	})
 
 	mage.NetherTempest = mage.GetOrRegisterSpell(core.SpellConfig{
-		ActionID:       core.ActionID{SpellID: 114923},
+		ActionID:       actionID,
 		SpellSchool:    core.SpellSchoolArcane,
 		ProcMask:       core.ProcMaskSpellDamage,
 		Flags:          core.SpellFlagAPL,
@@ -61,10 +62,9 @@ func (mage *Mage) registerNetherTempest() {
 	})
 
 	mage.NetherTempest.RelatedDotSpell = mage.RegisterSpell(core.SpellConfig{
-		ActionID:       core.ActionID{SpellID: 114923}.WithTag(1),
+		ActionID:       actionID.WithTag(1),
 		SpellSchool:    core.SpellSchoolArcane,
 		ProcMask:       core.ProcMaskSpellDamage,
-		Flags:          core.SpellFlagAPL,
 		ClassSpellMask: MageSpellNetherTempestDot,
 
 		DamageMultiplier: 1,
@@ -84,7 +84,7 @@ func (mage *Mage) registerNetherTempest() {
 			},
 			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
 				dot.CalcAndDealPeriodicSnapshotDamage(sim, target, dot.OutcomeSnapshotCrit)
-				if mage.Env.GetNumTargets() > 1 {
+				if mage.Env.ActiveTargetCount() > 1 {
 					ntCleaveSpell.Cast(sim, target)
 				}
 			},

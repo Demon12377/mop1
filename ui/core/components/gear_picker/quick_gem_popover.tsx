@@ -1,4 +1,5 @@
 import { Player } from '../../player';
+import i18n from '../../../i18n/config';
 import { ItemSlot } from '../../proto/common';
 import { EquippedItem } from '../../proto_utils/equipped_item';
 import { TypedEvent } from '../../typed_event';
@@ -13,8 +14,8 @@ export const addQuickGemPopover = (
 	openDetailTab: () => void,
 ) => {
 	return new QuickSwapList({
-		title: 'Favorite gems',
-		emptyMessage: 'Add favorite gems.',
+		title: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_gems.title'),
+		emptyMessage: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_gems.empty_message'),
 		tippyElement: tooltipElement,
 		tippyConfig: {
 			appendTo: document.querySelector('.sim-ui')!,
@@ -37,7 +38,7 @@ export const addQuickGemPopover = (
 			player.equipItem(TypedEvent.nextEventID(), itemSlot, item.withGem(clickedItem, socketIdx));
 		},
 		footerButton: {
-			label: 'Open Gems',
+			label: i18n.t('gear_tab.gear_picker.quick_popovers.favorite_gems.open_gems'),
 			onClick: openDetailTab,
 		},
 	});

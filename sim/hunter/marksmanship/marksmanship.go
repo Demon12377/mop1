@@ -43,17 +43,16 @@ func (mm *MarksmanshipHunter) applyMastery() {
 		},
 	})
 
-	mm.RegisterAura(core.Aura{
-		Label:    "Wild Quiver Mastery",
-		Duration: core.NeverExpires,
-		OnReset: func(aura *core.Aura, sim *core.Simulation) {
-			aura.Activate(sim)
-		},
+	core.MakePermanent(mm.RegisterAura(core.Aura{
+		Label: "Wild Quiver Mastery",
 		OnSpellHitDealt: func(aura *core.Aura, sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
 			if spell.ProcMask != core.ProcMaskRangedSpecial && spell != mm.AutoAttacks.RangedAuto() {
 				return
 			}
 			procChance := (mm.CalculateMasteryPoints() + 8) * 0.02
+			if spell.ClassSpellMask == hunter.HunterSpellBarrage {
+				procChance = procChance / 6
+			}
 			if sim.RandomFloat("Wild Quiver") < procChance {
 				wqSpell.Cast(sim, result.Target)
 			}
@@ -68,7 +67,7 @@ func (mm *MarksmanshipHunter) applyMastery() {
 				wqSpell.Cast(sim, result.Target)
 			}
 		},
-	})
+	}))
 }
 func NewMarksmanshipHunter(character *core.Character, options *proto.Player) *MarksmanshipHunter {
 	mmOptions := options.GetMarksmanshipHunter().Options
@@ -81,13 +80,6 @@ func NewMarksmanshipHunter(character *core.Character, options *proto.Player) *Ma
 }
 func (mmHunter *MarksmanshipHunter) Initialize() {
 	mmHunter.Hunter.Initialize()
-	// MM Hunter Spec Bonus
-	// mmHunter.AddStaticMod(core.SpellModConfig{
-	// 	Kind:       core.SpellMod_DamageDone_Flat,
-	// 	ProcMask:   core.ProcMaskRangedAuto,
-	// 	FloatValue: 0.15,
-	// })
-
 	mmHunter.registerAimedShotSpell()
 	mmHunter.registerChimeraShotSpell()
 	mmHunter.registerSteadyShotSpell()
@@ -97,6 +89,11 @@ func (mmHunter *MarksmanshipHunter) Initialize() {
 
 type MarksmanshipHunter struct {
 	*hunter.Hunter
+
+	MarksmanshipOptions *proto.MarksmanshipHunter_Options
+
+	steadyFocusAura *core.Aura
+	readySetAimAura *core.Aura
 }
 
 func (mmHunter *MarksmanshipHunter) GetHunter() *hunter.Hunter {

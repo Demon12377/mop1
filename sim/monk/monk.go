@@ -54,6 +54,9 @@ type Monk struct {
 
 	SummonHealingSphere func(sim *core.Simulation)
 
+	// Windwalker
+	SEFAura *core.Aura
+
 	// Brewmaster
 	ElusiveBrewAura   *core.Aura
 	ElusiveBrewStacks int32
@@ -77,12 +80,15 @@ type Monk struct {
 	PowerStrikesChiMetrics *core.ResourceMetrics
 
 	// Set Bonuses
-	T14Brewmaster4P *core.Aura
-	T15Windwalker4P *core.Aura
-	T15Brewmaster2P *core.Aura
-	T15Brewmaster4P *core.Aura
-	T16Windwalker4P *core.Aura
-	T16Brewmaster4P *core.Aura
+	T14Brewmaster4P            *core.Aura
+	T15Windwalker2PSphereAura  *core.Aura
+	T15Windwalker2PSphereSpell *core.Spell
+	T15Windwalker4P            *core.Aura
+	T15Brewmaster2P            *core.Aura
+	T15Brewmaster4P            *core.Aura
+	T15Brewmaster4PProcEffect  *core.Aura
+	T16Windwalker4P            *core.Aura
+	T16Brewmaster4P            *core.Aura
 }
 
 func (monk *Monk) ChangeStance(sim *core.Simulation, newStance Stance) {
@@ -109,7 +115,7 @@ func (monk *Monk) RegisterOnStanceChanged(onStanceChanged OnStanceChanged) {
 }
 
 func (monk *Monk) AddChi(sim *core.Simulation, spell *core.Spell, pointsToAdd int32, metrics *core.ResourceMetrics) {
-	monk.AddComboPoints(sim, pointsToAdd, metrics)
+	monk.AddComboPoints(sim, pointsToAdd, &monk.Unit, metrics)
 
 	if spell != nil && spell.Flags.Matches(SpellFlagBuilder) {
 		// TODO: Verify that RJW can trigger Power Strikes
@@ -172,7 +178,6 @@ func (monk *Monk) Initialize() {
 		monk.OHAutoSpell = monk.AutoAttacks.OHAuto()
 	})
 
-	monk.registerStances()
 	monk.applyGlyphs()
 	monk.registerPassives()
 	monk.registerSpells()
@@ -221,6 +226,9 @@ func (monk *Monk) Reset(sim *core.Simulation) {
 	monk.ElusiveBrewStacks = 0
 }
 
+func (monk *Monk) OnEncounterStart(sim *core.Simulation) {
+}
+
 func (monk *Monk) GetHandType() proto.HandType {
 	mh := monk.GetMHWeapon()
 
@@ -244,12 +252,23 @@ func NewMonk(character *core.Character, options *proto.MonkOptions, talents stri
 	monk.PseudoStats.CanParry = true
 	monk.PseudoStats.BaseParryChance += 0.03
 	monk.PseudoStats.BaseDodgeChance += 0.03
+
+	// Base Agility to Dodge is not affected by Diminishing Returns
+	baseAgility := monk.GetBaseStats()[stats.Agility]
+	monk.PseudoStats.BaseDodgeChance += baseAgility * core.AgilityToDodgePercent
+	monk.AddStat(stats.DodgeRating, -baseAgility*core.AgilityToDodgeRating) // Does not apply to base Agility
+	monk.AddStatDependency(stats.Agility, stats.DodgeRating, core.AgilityToDodgeRating)
+	monk.AddStatDependency(stats.Strength, stats.ParryRating, 0.1/10000.0/100.0)
+
+	monk.AddStatDependency(stats.Agility, stats.PhysicalCritPercent, core.CritPerAgiMaxLevel[character.Class])
+
 	monk.XuenPet = monk.NewXuen()
 
 	monk.EnableEnergyBar(core.EnergyBarOptions{
-		MaxComboPoints: 4,
-		MaxEnergy:      100.0,
-		UnitClass:      proto.Class_ClassMonk,
+		MaxComboPoints:        4,
+		MaxEnergy:             100.0,
+		UnitClass:             proto.Class_ClassMonk,
+		HasHasteRatingScaling: true,
 	})
 
 	monk.EnableAutoAttacks(monk, core.AutoAttackOptions{
@@ -257,8 +276,6 @@ func NewMonk(character *core.Character, options *proto.MonkOptions, talents stri
 		OffHand:        monk.WeaponFromOffHand(0),
 		AutoSwingMelee: true,
 	})
-
-	monk.AddStatDependency(stats.Agility, stats.PhysicalCritPercent, core.CritPerAgiMaxLevel[character.Class])
 
 	monk.HandType = monk.GetHandType()
 
@@ -273,6 +290,7 @@ func NewMonk(character *core.Character, options *proto.MonkOptions, talents stri
 	// to count towards Base stats
 	monk.registerWayOfTheMonk()
 	monk.registerSwiftReflexes()
+	monk.registerStances()
 
 	return monk
 }

@@ -17,18 +17,10 @@ func ReadAtlasLootData(dbHelper *DBHelper) *WowDatabase {
 
 	// Read these in reverse order, because some items are listed in multiple expansions
 	// and we want to overwrite with the earliest value.
-	readAtlasLootSourceData(db, proto.Expansion_ExpansionWotlk, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_Data/source-wrath.lua")
-	readAtlasLootSourceData(db, proto.Expansion_ExpansionTbc, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_Data/source-tbc.lua")
-	readAtlasLootSourceData(db, proto.Expansion_ExpansionVanilla, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_Data/source.lua")
-
-	readAtlasLootDungeonData(db, proto.Expansion_ExpansionVanilla, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_DungeonsAndRaids/data.lua")
-	readAtlasLootDungeonData(db, proto.Expansion_ExpansionTbc, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_DungeonsAndRaids/data-tbc.lua")
-	readAtlasLootDungeonData(db, proto.Expansion_ExpansionWotlk, "https://raw.githubusercontent.com/Hoizame/AtlasLootClassic/master/AtlasLootClassic_DungeonsAndRaids/data-wrath.lua")
-
-	// Cata addon
-	readAtlasLootSourceData(db, proto.Expansion_ExpansionCata, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_Cata/main/AtlasLootClassic_Data/source-cata.lua")
-	readAtlasLootDungeonData(db, proto.Expansion_ExpansionCata, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_Cata/main/AtlasLootClassic_DungeonsAndRaids/data-cata.lua")
-	readAtlasLootFactionData(db, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_Cata/main/AtlasLootClassic_Factions/data-cata.lua")
+	// MoP addon
+	readAtlasLootSourceData(db, proto.Expansion_ExpansionMop, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_MoP/main/AtlasLootClassic_Data/source-mop.lua")
+	readAtlasLootDungeonData(db, proto.Expansion_ExpansionMop, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_MoP/main/AtlasLootClassic_DungeonsAndRaids/data-mop.lua")
+	readAtlasLootFactionData(db, "https://raw.githubusercontent.com/snowflame0/AtlasLootClassic_MoP/main/AtlasLootClassic_Factions/data-mop.lua")
 
 	readZoneData(db, dbHelper)
 
@@ -88,14 +80,24 @@ func readAtlasLootDungeonData(db *WowDatabase, expansion proto.Expansion, srcUrl
 	// Convert newline to '@@@' so we can do regexes on the whole file as 1 line.
 	srcTxt = strings.ReplaceAll(srcTxt, "\n", "@@@")
 
-	dungeonPattern := regexp.MustCompile(`data\["([^"]+)"] = {.*?\sMapID = (\d+),.*?ContentType = ([^"]+),.*?items = {(.*?)@@@}@@@`)
-	npcNameAndIDPattern := regexp.MustCompile(`^[^@]*?AL\["(.*?)"\]\)?,(.*?(@@@\s*npcID = {?(\d+),))?`)
+	dungeonPattern := regexp.MustCompile(`data\["([^"]+)"] = {.*?\sMapID = (\d+),.*?ContentType\s*=\s*([A-Z_]+),.*?items\s*=\s*{(.*?)@@@}@@@`)
+	npcNameAndIDPattern := regexp.MustCompile(`^[^@]*?(AL(?:IL)?\["(.*?)"\])\)?,(.*?(@@@\s*npcID = {?(\d+),))?`)
 	diffItemsPattern := regexp.MustCompile(`\[([A-Z0-9]+_DIFF)\] = (({.*?@@@\s*},?@@@)|(.*?@@@\s*\),?@@@))`)
 	itemsPattern := regexp.MustCompile(`@@@\s+{(.*?)},`)
 	itemParamPattern := regexp.MustCompile(`AL\["(.*?)"\]`)
 	for _, dungeonMatch := range dungeonPattern.FindAllStringSubmatch(srcTxt, -1) {
 		fmt.Printf("Zone: %s\n", dungeonMatch[1])
 		zoneID, _ := strconv.Atoi(dungeonMatch[2])
+
+		// @NOTE: Temporary fix. AtlasLoot has SoO and ToT reversed for some reason.
+		// SoO is 6738, ToT is 6622.
+		switch zoneID {
+		case 6738:
+			zoneID = 6622
+		case 6622:
+			zoneID = 6738
+		}
+
 		db.MergeZone(&proto.UIZone{
 			Id:        int32(zoneID),
 			Expansion: expansion,
@@ -107,9 +109,13 @@ func readAtlasLootDungeonData(db *WowDatabase, expansion proto.Expansion, srcUrl
 			npcSplit = strings.ReplaceAll(npcSplit, "AtlasLoot:GetRetByFaction(", "")
 			npcMatch := npcNameAndIDPattern.FindStringSubmatch(npcSplit)
 			if npcMatch == nil {
+				// Headless Horseman is currently commented out in the source, so just skip it.
+				if strings.HasPrefix(npcSplit, "AL[\"Headless Horseman\"]") {
+					continue
+				}
 				panic("No npc match: " + npcSplit)
 			}
-			npcName := npcMatch[1]
+			npcName := npcMatch[2]
 			npcID := 0
 			if len(npcMatch) > 3 {
 				npcID, _ = strconv.Atoi(npcMatch[4])
@@ -130,7 +136,7 @@ func readAtlasLootDungeonData(db *WowDatabase, expansion proto.Expansion, srcUrl
 
 			for _, difficultyMatch := range diffItemsPattern.FindAllStringSubmatch(npcSplit, -1) {
 				diffString := difficultyMatch[1]
-				if expansion == proto.Expansion_ExpansionCata && contentType == "RAID_CONTENT" {
+				if expansion == proto.Expansion_ExpansionMop && contentType == "RAID_CONTENT" {
 					diffString = AtlasLootDungeonToRaidDifficulty[diffString]
 				}
 				difficulty, ok := AtlasLootDifficulties[diffString]
@@ -144,9 +150,8 @@ func readAtlasLootDungeonData(db *WowDatabase, expansion proto.Expansion, srcUrl
 				for _, itemMatch := range itemsPattern.FindAllStringSubmatch(difficultyMatch[0], -1) {
 					itemParams := core.MapSlice(strings.Split(itemMatch[1], ","), strings.TrimSpace)
 					location, _ := strconv.Atoi(itemParams[0]) // Location within AtlasLoot's menu.
-
-					idStr := itemParams[1]
-					if idStr[0] == 'n' || idStr[0] == '"' { // nil or "xxx"
+					isNilItem := itemParams[1][0] == 'n' || itemParams[1][0] == '"'
+					if isNilItem {
 						if len(itemParams) > 3 {
 							if paramMatch := itemParamPattern.FindStringSubmatch(itemParams[3]); paramMatch != nil {
 								curCategory = paramMatch[1]
@@ -159,30 +164,38 @@ func readAtlasLootDungeonData(db *WowDatabase, expansion proto.Expansion, srcUrl
 								curLocation = location
 							}
 						}
-					} else { // item ID
-						itemID, _ := strconv.Atoi(idStr)
-						fmt.Printf("Item: %d\n", itemID)
-						dropSource := &proto.DropSource{
-							Difficulty: difficulty,
-							ZoneId:     int32(zoneID),
-						}
-						if npcID == 0 {
-							dropSource.OtherName = npcName
-						} else {
-							dropSource.NpcId = int32(npcID)
-						}
+					} else {
+						idStrings := itemParams[1:]
 
-						if curCategory != "" && location == curLocation+1 {
-							curLocation = location
-							dropSource.Category = curCategory
-						}
+						// Items can have multiple IDs
+						// Default, Upgraded (Thunderforged/Warforged)
+						for _, idStr := range idStrings {
+							// item ID
+							itemID, _ := strconv.Atoi(idStr)
+							fmt.Printf("Item: %d\n", itemID)
 
-						item := &proto.UIItem{Id: int32(itemID), Sources: []*proto.UIItemSource{{
-							Source: &proto.UIItemSource_Drop{
-								Drop: dropSource,
-							},
-						}}}
-						db.MergeItem(item)
+							dropSource := &proto.DropSource{
+								Difficulty: difficulty,
+								ZoneId:     int32(zoneID),
+							}
+							if npcID == 0 {
+								dropSource.OtherName = npcName
+							} else {
+								dropSource.NpcId = int32(npcID)
+							}
+
+							if curCategory != "" && location == curLocation+1 {
+								curLocation = location
+								dropSource.Category = curCategory
+							}
+
+							item := &proto.UIItem{Id: int32(itemID), Sources: []*proto.UIItemSource{{
+								Source: &proto.UIItemSource_Drop{
+									Drop: dropSource,
+								},
+							}}}
+							db.MergeItem(item)
+						}
 					}
 				}
 			}
@@ -380,22 +393,26 @@ var AtlasLootRepLevel = map[string]proto.RepLevel{
 	"Revered":  proto.RepLevel_RepLevelRevered,
 	"Honored":  proto.RepLevel_RepLevelHonored,
 	"Friendly": proto.RepLevel_RepLevelFriendly,
+	"Neutral":  proto.RepLevel_RepLevelNeutral,
 }
 var AtlasLootDifficulties = map[string]proto.DungeonDifficulty{
-	"NORMAL_DIFF":   proto.DungeonDifficulty_DifficultyNormal,
-	"HEROIC_DIFF":   proto.DungeonDifficulty_DifficultyHeroic,
-	"ALPHA_DIFF":    proto.DungeonDifficulty_DifficultyTitanRuneAlpha,
-	"BETA_DIFF":     proto.DungeonDifficulty_DifficultyTitanRuneBeta,
-	"RAID10_DIFF":   proto.DungeonDifficulty_DifficultyRaid10,
-	"RAID10H_DIFF":  proto.DungeonDifficulty_DifficultyRaid10H,
-	"RAID25RF_DIFF": proto.DungeonDifficulty_DifficultyRaid25RF,
-	"RAID25_DIFF":   proto.DungeonDifficulty_DifficultyRaid25,
-	"RAID25H_DIFF":  proto.DungeonDifficulty_DifficultyRaid25H,
+	"NORMAL_DIFF":    proto.DungeonDifficulty_DifficultyNormal,
+	"HEROIC_DIFF":    proto.DungeonDifficulty_DifficultyHeroic,
+	"CELESTIAL_DIFF": proto.DungeonDifficulty_DifficultyCelestial,
+	"RAID10_DIFF":    proto.DungeonDifficulty_DifficultyRaid10,
+	"RAID10H_DIFF":   proto.DungeonDifficulty_DifficultyRaid10H,
+	"RAID25RF_DIFF":  proto.DungeonDifficulty_DifficultyRaid25RF,
+	"RAID25_DIFF":    proto.DungeonDifficulty_DifficultyRaid25,
+	"RAID25H_DIFF":   proto.DungeonDifficulty_DifficultyRaid25H,
+	"FLEX_DIFF":      proto.DungeonDifficulty_DifficultyRaidFlex,
+	"VENDOR_DIFF":    proto.DungeonDifficulty_DifficultyVendor,
 }
 var AtlasLootDungeonToRaidDifficulty = map[string]string{
-	"RF_DIFF":     "RAID25RF_DIFF",
-	"NORMAL_DIFF": "RAID25_DIFF",
-	"HEROIC_DIFF": "RAID25H_DIFF",
+	"RF_DIFF":        "RAID25RF_DIFF",
+	"NORMAL_DIFF":    "RAID25_DIFF",
+	"HEROIC_DIFF":    "RAID25H_DIFF",
+	"FLEX_DIFF":      "FLEX_DIFF",
+	"CELESTIAL_DIFF": "CELESTIAL_DIFF",
 }
 
 const EndTimeEchoLootString = `{

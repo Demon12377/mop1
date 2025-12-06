@@ -8,6 +8,8 @@ import { SimUI } from '../../sim_ui';
 import { TypedEvent } from '../../typed_event';
 import { Component } from '../component';
 import { ContentBlock } from '../content_block';
+import i18n from '../../../i18n/config';
+import { trackEvent } from '../../../tracking/utils';
 
 interface GemSummaryData {
 	gem: Gem;
@@ -22,11 +24,13 @@ export class GemSummary extends Component {
 
 	constructor(parent: HTMLElement, simUI: SimUI, player: Player<any>) {
 		super(parent, 'summary-table-root');
+		this.rootElem.classList.add('hide');
+
 		this.simUI = simUI;
 		this.player = player;
 
 		this.container = new ContentBlock(this.rootElem, 'summary-table-container', {
-			header: { title: 'Gem Summary', extraCssClasses: ['summary-table--gems'] },
+			header: { title: i18n.t('gear_tab.gem_summary.title'), extraCssClasses: ['summary-table--gems'] },
 			extraCssClasses: ['summary-table--gems'],
 		});
 		player.gearChangeEmitter.on(() => this.updateTable());
@@ -88,10 +92,15 @@ export class GemSummary extends Component {
 				<button
 					className="btn btn-sm btn-link btn-reset summary-table-reset-button"
 					onclick={() => {
-						this.player.setGear(TypedEvent.nextEventID(), this.player.getGear().withoutGems());
+						trackEvent({
+							action: 'click',
+							category: 'gems',
+							label: 'reset',
+						});
+						this.player.setGear(TypedEvent.nextEventID(), this.player.getGear().withoutGems(this.player.canDualWield2H()));
 					}}>
 					<i className="fas fa-times me-1"></i>
-					Reset gems
+					{i18n.t('gear_tab.gem_summary.reset_gems')}
 				</button>
 			);
 

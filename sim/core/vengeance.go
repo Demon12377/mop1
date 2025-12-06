@@ -9,7 +9,7 @@ import (
 
 const VengeanceScaling = 0.018 // Might be reverted to 0.015 in a later patch
 
-func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura) {
+func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura) *Aura {
 	// First register the exposed Vengeance buff Aura, which we will model
 	// as discrete stacks with 1 AP granted per stack for ease of tracking
 	// in the timeline and APLs.
@@ -26,8 +26,9 @@ func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura)
 
 	// Then set up the proc trigger.
 	vengeanceTrigger := ProcTrigger{
-		Name:     "Vengeance Trigger",
-		Callback: CallbackOnSpellHitTaken,
+		Name:               "Vengeance Trigger",
+		Callback:           CallbackOnSpellHitTaken,
+		TriggerImmediately: true,
 
 		Handler: func(sim *Simulation, spell *Spell, result *SpellResult) {
 			// Check that the caster is an NPC.
@@ -36,7 +37,7 @@ func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura)
 			}
 
 			// Vengeance uses pre-outcome, pre-mitigation damage.
-			rawDamage := result.PreOutcomeDamage / result.ArmorMultiplier
+			rawDamage := result.PostArmorDamage / result.ArmorMultiplier
 
 			// The Weakened Blows debuff does not reduce Vengeance gains.
 			// TODO: The game similarly hardcodes a correction for Demoralizing Banner, add that in once we implement the debuff in the sim.
@@ -109,8 +110,10 @@ func (character *Character) RegisterVengeance(spellID int32, requiredAura *Aura)
 	// or attach it to the supplied parent Aura (Bear Form for Druids,
 	// Defensive Stance for Warriors).
 	if requiredAura == nil {
-		MakeProcTriggerAura(&character.Unit, vengeanceTrigger)
+		character.MakeProcTriggerAura(vengeanceTrigger)
 	} else {
 		requiredAura.AttachProcTrigger(vengeanceTrigger)
 	}
+
+	return BlockPrepull(buffAura.Aura)
 }

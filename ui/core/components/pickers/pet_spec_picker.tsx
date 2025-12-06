@@ -68,7 +68,6 @@ export class PetSpecPicker<SpecType extends HunterSpecs> extends Component {
 	private renderActive() {
 		const active = this.player.getClassOptions().petSpec;
 		const order = [PetSpec.Ferocity, PetSpec.Tenacity, PetSpec.Cunning];
-		console.log(this.container.children, [...this.container.children]);
 
 		[...this.container.children].forEach((el, idx) => {
 			const spec = order[idx];

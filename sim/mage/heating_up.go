@@ -9,14 +9,13 @@ import (
 // https://www.wowhead.com/mop-classic/spell=48107/heating-up#comments:id=1709419 For Information on heating up time specifics (.75s, .25s etc)
 
 func (mage *Mage) registerHeatingUp() {
-
-	mage.HeatingUp = mage.RegisterAura(core.Aura{
+	mage.HeatingUp = core.BlockPrepull(mage.RegisterAura(core.Aura{
 		Label:    "Heating Up",
 		ActionID: core.ActionID{SpellID: 48107},
 		Duration: time.Second * 10,
-	})
+	}))
 
-	mage.InstantPyroblastAura = mage.RegisterAura(core.Aura{
+	mage.InstantPyroblastAura = core.BlockPrepull(mage.RegisterAura(core.Aura{
 		Label:    "Pyroblast!",
 		ActionID: core.ActionID{SpellID: 48108},
 		Duration: time.Second * 15,
@@ -31,26 +30,18 @@ func (mage *Mage) registerHeatingUp() {
 	}).AttachSpellMod(core.SpellModConfig{
 		Kind:       core.SpellMod_DamageDone_Pct,
 		FloatValue: .25,
-		ClassMask:  MageSpellPyroblast | MageSpellPyroblastDot,
-	})
-
+		// Pyroblast Dot is handled in pyroblast.go because
+		// the Dot is applied after it lands and the aura
+		// has already been consumed.
+		ClassMask: MageSpellPyroblast,
+	}))
 }
 
 func (mage *Mage) HeatingUpSpellHandler(sim *core.Simulation, spell *core.Spell, result *core.SpellResult, callback func()) {
-	if spell.TravelTime() > time.Duration(FireSpellMaxTimeUntilResult) {
-		core.StartDelayedAction(sim, core.DelayedActionOptions{
-			DoAt: sim.CurrentTime + time.Duration(FireSpellMaxTimeUntilResult),
-			OnAction: func(s *core.Simulation) {
-				callback()
-				mage.HandleHeatingUp(sim, spell, result)
-			},
-		})
-	} else {
-		spell.WaitTravelTime(sim, func(sim *core.Simulation) {
-			callback()
-			mage.HandleHeatingUp(sim, spell, result)
-		})
-	}
+	spell.RegisterTravelTimeCallback(sim, min(spell.TravelTime(), FireSpellMaxTimeUntilResult), func(sim *core.Simulation) {
+		callback()
+		mage.HandleHeatingUp(sim, spell, result)
+	})
 }
 
 func (mage *Mage) HandleHeatingUp(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
@@ -62,11 +53,13 @@ func (mage *Mage) HandleHeatingUp(sim *core.Simulation, spell *core.Spell, resul
 			mage.HeatingUp.Activate(sim)
 		}
 	} else {
-		core.StartDelayedAction(sim, core.DelayedActionOptions{
-			DoAt: sim.CurrentTime + time.Duration(HeatingUpDeactivateBuffer),
-			OnAction: func(s *core.Simulation) {
-				mage.HeatingUp.Deactivate(sim)
-			},
-		})
+		pa := sim.GetConsumedPendingActionFromPool()
+		pa.NextActionAt = sim.CurrentTime + time.Duration(HeatingUpDeactivateBuffer)
+
+		pa.OnAction = func(sim *core.Simulation) {
+			mage.HeatingUp.Deactivate(sim)
+		}
+
+		sim.AddPendingAction(pa)
 	}
 }

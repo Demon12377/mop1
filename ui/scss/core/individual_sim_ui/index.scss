@@ -9,6 +9,7 @@
 @import '../components/boolean_picker';
 @import '../components/character_stats';
 @import '../components/detailed_results';
+@import '../components/dropdown_picker';
 @import '../components/encounter_picker';
 @import '../components/exporters';
 @import '../components/enum_picker';
@@ -28,15 +29,12 @@
 @import '../components/saved_data_manager';
 @import '../components/settings_menu';
 @import '../components/stat_weights_action';
+@import '../components/sticky_toolbar';
+@import '../components/tooltip_button';
 @import '../components/unit_picker';
 @import '../components/suggest_reforges_action';
 
-@import '../components/individual_sim_ui/gear_tab';
-@import '../components/individual_sim_ui/bulk_tab';
-@import '../components/individual_sim_ui/settings_tab';
-@import '../components/individual_sim_ui/rotation_tab';
-@import '../components/individual_sim_ui/talents_tab';
-@import '../components/individual_sim_ui/summary_table';
+@import '../components/individual_sim_ui';
 
 @import '../talents/hunter_pet';
 @import '../talents/glyphs_picker';

@@ -85,7 +85,6 @@ type Rogue struct {
 	HungerForBloodAura   *core.Aura
 	KillingSpreeAura     *core.Aura
 	SliceAndDiceAura     *core.Aura
-	RecuperateAura       *core.Aura
 	MasterOfSubtletyAura *core.Aura
 	ShadowstepAura       *core.Aura
 	ShadowDanceAura      *core.Aura
@@ -104,10 +103,9 @@ type Rogue struct {
 	SavageCombatDebuffAuras   core.AuraArray
 	WoundPoisonDebuffAuras    core.AuraArray
 
-	T12ToTLastBuff int
-	Has2PT15       bool
-	T16EnergyAura  *core.Aura
-	T16SpecMod     *core.SpellMod
+	Has2PT15      bool
+	T16EnergyAura *core.Aura
+	T16SpecMod    *core.SpellMod
 
 	ruthlessnessMetrics      *core.ResourceMetrics
 	relentlessStrikesMetrics *core.ResourceMetrics
@@ -124,22 +122,22 @@ func (rogue *Rogue) GetRogue() *Rogue {
 func (rogue *Rogue) AddRaidBuffs(_ *proto.RaidBuffs)   {}
 func (rogue *Rogue) AddPartyBuffs(_ *proto.PartyBuffs) {}
 
-func (rogue *Rogue) AddComboPointsOrAnticipation(sim *core.Simulation, numPoints int32, metric *core.ResourceMetrics) {
+func (rogue *Rogue) AddComboPointsOrAnticipation(sim *core.Simulation, numPoints int32, target *core.Unit, metric *core.ResourceMetrics) {
 	if rogue.Talents.Anticipation && rogue.ComboPoints()+numPoints > 5 {
 		realPoints := 5 - rogue.ComboPoints()
 		antiPoints := rogue.AnticipationAura.GetStacks() + numPoints - realPoints
 
-		rogue.AddComboPoints(sim, realPoints, metric)
+		rogue.AddComboPoints(sim, realPoints, target, metric)
 
 		rogue.AnticipationAura.Activate(sim)
 		rogue.AnticipationAura.Refresh(sim)
 		rogue.AnticipationAura.SetStacks(sim, antiPoints)
 		if antiPoints > 5 {
 			// run AddComboPoints again to report the overcapping into UI
-			rogue.AddComboPoints(sim, antiPoints-5, metric)
+			rogue.AddComboPoints(sim, antiPoints-5, target, metric)
 		}
 	} else {
-		rogue.AddComboPoints(sim, numPoints, metric)
+		rogue.AddComboPoints(sim, numPoints, target, metric)
 	}
 }
 
@@ -151,22 +149,24 @@ func (rogue *Rogue) ApplyFinisher(sim *core.Simulation, spell *core.Spell) {
 	if rogue.Spec == proto.Spec_SpecCombatRogue {
 		// Ruthlessness
 		if sim.Proc(0.2*float64(numPoints), "Ruthlessness") {
-			rogue.AddComboPoints(sim, 1, rogue.ruthlessnessMetrics)
+			rogue.AddComboPoints(sim, 1, rogue.CurrentComboTarget, rogue.ruthlessnessMetrics)
 		}
 
 		// Restless Blades
-		cdReduction := 2 * time.Second * time.Duration(numPoints)
-		if rogue.KillingSpree != nil {
-			ksNewTime := rogue.KillingSpree.CD.Timer.ReadyAt() - cdReduction
-			rogue.KillingSpree.CD.Timer.Set(ksNewTime)
-		}
-		if rogue.AdrenalineRush != nil {
-			arNewTime := rogue.AdrenalineRush.CD.Timer.ReadyAt() - cdReduction
-			rogue.AdrenalineRush.CD.Timer.Set(arNewTime)
-		}
-		if rogue.ShadowBlades != nil {
-			sbNewTime := rogue.ShadowBlades.CD.Timer.ReadyAt() - cdReduction
-			rogue.ShadowBlades.CD.Timer.Set(sbNewTime)
+		if !spell.Matches(RogueSpellSliceAndDice) {
+			cdReduction := 2 * time.Second * time.Duration(numPoints)
+			if rogue.KillingSpree != nil {
+				ksNewTime := rogue.KillingSpree.CD.Timer.ReadyAt() - cdReduction
+				rogue.KillingSpree.CD.Timer.Set(ksNewTime)
+			}
+			if rogue.AdrenalineRush != nil {
+				arNewTime := rogue.AdrenalineRush.CD.Timer.ReadyAt() - cdReduction
+				rogue.AdrenalineRush.CD.Timer.Set(arNewTime)
+			}
+			if rogue.ShadowBlades != nil {
+				sbNewTime := rogue.ShadowBlades.CD.Timer.ReadyAt() - cdReduction
+				rogue.ShadowBlades.CD.Timer.Set(sbNewTime)
+			}
 		}
 	}
 
@@ -211,8 +211,6 @@ func (rogue *Rogue) Initialize() {
 	rogue.registerCrimsonTempest()
 	rogue.registerPreparationCD()
 
-	rogue.T12ToTLastBuff = 3
-
 	rogue.ruthlessnessMetrics = rogue.NewComboPointMetrics(core.ActionID{SpellID: 14161})
 	rogue.relentlessStrikesMetrics = rogue.NewEnergyMetrics(core.ActionID{SpellID: 58423})
 }
@@ -230,8 +228,9 @@ func (rogue *Rogue) Reset(sim *core.Simulation) {
 	}
 
 	rogue.MultiplyEnergyRegenSpeed(sim, 1.0+rogue.AdditiveEnergyRegenBonus)
+}
 
-	rogue.T12ToTLastBuff = 3
+func (rogue *Rogue) OnEncounterStart(sim *core.Simulation) {
 }
 
 func (rogue *Rogue) CritMultiplier(applyLethality bool) float64 {
@@ -260,10 +259,10 @@ func NewRogue(character *core.Character, options *proto.RogueOptions, talents st
 	}
 
 	rogue.EnableEnergyBar(core.EnergyBarOptions{
-		MaxComboPoints:      5,
-		MaxEnergy:           maxEnergy,
-		StartingComboPoints: options.StartingComboPoints,
-		UnitClass:           proto.Class_ClassRogue,
+		MaxComboPoints:        5,
+		MaxEnergy:             maxEnergy,
+		UnitClass:             proto.Class_ClassRogue,
+		HasHasteRatingScaling: true,
 	})
 
 	rogue.EnableAutoAttacks(rogue, core.AutoAttackOptions{

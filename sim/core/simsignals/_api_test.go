@@ -23,9 +23,7 @@ func TestAbort(t *testing.T) {
 		Spec: &proto.Player_ArmsWarrior{
 			ArmsWarrior: &proto.ArmsWarrior{
 				Options: &proto.ArmsWarrior_Options{
-					ClassOptions: &proto.WarriorOptions{
-						StartingRage: 50,
-					},
+					ClassOptions: &proto.WarriorOptions{},
 				},
 			},
 		},
@@ -165,36 +163,6 @@ func TestAbort(t *testing.T) {
 		for msg := range progress {
 			if msg.FinalWeightResult != nil {
 				if msg.FinalWeightResult.Error == nil || msg.FinalWeightResult.Error.Type != proto.ErrorOutcomeType_ErrorOutcomeAborted {
-					t.Fatalf("Sim did not abort!")
-				}
-				return
-			}
-		}
-	})
-
-	t.Run("RunBulkSimAsync", func(t *testing.T) {
-		bsr := &proto.BulkSimRequest{
-			BaseSettings: rsr,
-			BulkSettings: &proto.BulkSettings{
-				Combinations:       true,
-				Items:              []*proto.ItemSpec{{Id: 77949}, {Id: 55068}},
-				IterationsPerCombo: 9999,
-				FastMode:           false,
-			},
-		}
-
-		reqId := "bulk"
-		progress := make(chan *proto.ProgressMetrics, 10)
-		core.RunBulkSimAsync(bsr, progress, reqId)
-
-		go func() {
-			time.Sleep(time.Second)
-			simsignals.AbortById(reqId)
-		}()
-
-		for msg := range progress {
-			if msg.FinalBulkResult != nil {
-				if msg.FinalBulkResult.Error == nil || msg.FinalBulkResult.Error.Type != proto.ErrorOutcomeType_ErrorOutcomeAborted {
 					t.Fatalf("Sim did not abort!")
 				}
 				return

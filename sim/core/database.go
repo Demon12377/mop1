@@ -126,26 +126,28 @@ func ItemEffectRandPropPointsToProto(ieRpp ItemEffectRandPropPoints) *proto.Item
 }
 
 type Consumable struct {
-	Id               int32
-	Type             proto.ConsumableType
-	Stats            stats.Stats
-	BuffsMainStat    bool
-	Name             string
-	BuffDuration     time.Duration
-	CooldownDuration time.Duration
-	EffectIds        []int32
+	Id                       int32
+	Type                     proto.ConsumableType
+	Stats                    stats.Stats
+	BuffsMainStat            bool
+	Name                     string
+	BuffDuration             time.Duration
+	CooldownDuration         time.Duration
+	CategoryCooldownDuration time.Duration
+	EffectIds                []int32
 }
 
 func ConsumableFromProto(consumable *proto.Consumable) Consumable {
 	return Consumable{
-		Id:               consumable.Id,
-		Type:             consumable.Type,
-		Stats:            stats.FromProtoArray(consumable.Stats),
-		BuffsMainStat:    consumable.BuffsMainStat,
-		Name:             consumable.Name,
-		BuffDuration:     time.Second * time.Duration(consumable.BuffDuration),
-		CooldownDuration: time.Second * time.Duration(consumable.CooldownDuration),
-		EffectIds:        consumable.EffectIds,
+		Id:                       consumable.Id,
+		Type:                     consumable.Type,
+		Stats:                    stats.FromProtoArray(consumable.Stats),
+		BuffsMainStat:            consumable.BuffsMainStat,
+		Name:                     consumable.Name,
+		BuffDuration:             time.Second * time.Duration(consumable.BuffDuration),
+		CooldownDuration:         time.Second * time.Duration(consumable.CooldownDuration),
+		CategoryCooldownDuration: time.Second * time.Duration(consumable.CategoryCooldownDuration),
+		EffectIds:                consumable.EffectIds,
 	}
 }
 
@@ -259,18 +261,20 @@ func EnchantFromProto(pData *proto.SimEnchant) Enchant {
 }
 
 type Gem struct {
-	ID    int32
-	Name  string
-	Stats stats.Stats
-	Color proto.GemColor
+	ID                      int32
+	Name                    string
+	Stats                   stats.Stats
+	Color                   proto.GemColor
+	DisabledInChallengeMode bool
 }
 
 func GemFromProto(pData *proto.SimGem) Gem {
 	return Gem{
-		ID:    pData.Id,
-		Name:  pData.Name,
-		Stats: stats.FromProtoArray(pData.Stats),
-		Color: pData.Color,
+		ID:                      pData.Id,
+		Name:                    pData.Name,
+		Stats:                   stats.FromProtoArray(pData.Stats),
+		Color:                   pData.Color,
+		DisabledInChallengeMode: pData.DisabledInChallengeMode,
 	}
 }
 
@@ -426,6 +430,12 @@ func (equipment *Equipment) containsItemInSlots(itemID int32, possibleSlots []pr
 	})
 }
 
+func (equipment *Equipment) containsGemInSlot(itemID int32, slot proto.ItemSlot) bool {
+	return slices.ContainsFunc(equipment[slot].Gems, func(gem Gem) bool {
+		return gem.ID == itemID
+	})
+}
+
 func GetEnchantByEffectID(effectID int32) *Enchant {
 	if enchant, ok := EnchantsByEffectID[effectID]; ok {
 		return &enchant
@@ -462,10 +472,8 @@ func ProtoToEquipmentSpec(es *proto.EquipmentSpec) EquipmentSpec {
 }
 
 func (item *Item) GetScalingState() proto.ItemLevelState {
-	if !item.ChallengeMode {
+	if !item.ChallengeMode || item.ScalingOptions[int32(item.UpgradeStep)].Ilvl <= MaxChallengeModeIlvl {
 		return item.UpgradeStep
-	} else if item.ScalingOptions[0].Ilvl <= MaxChallengeModeIlvl {
-		return proto.ItemLevelState_Base
 	} else {
 		return proto.ItemLevelState_ChallengeMode
 	}
@@ -706,8 +714,13 @@ func ItemEquipmentGemAndEnchantStats(item Item) stats.Stats {
 	equipStats = equipStats.Add(item.Enchant.Stats)
 
 	for _, gem := range item.Gems {
+		if gem.DisabledInChallengeMode && item.ChallengeMode {
+			continue
+		}
+
 		equipStats = equipStats.Add(gem.Stats)
 	}
+
 	// Check socket bonus
 	if len(item.GemSockets) > 0 && len(item.Gems) >= len(item.GemSockets) {
 		allMatch := true
@@ -790,7 +803,6 @@ func eligibleSlotsForItem(item *Item, isFuryWarrior bool) []proto.ItemSlot {
 	if item == nil {
 		return nil
 	}
-
 	if slots, ok := itemTypeToSlotsMap[item.Type]; ok {
 		return slots
 	}

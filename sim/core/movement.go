@@ -179,19 +179,27 @@ func (unit *Unit) GetMovementSpeed() float64 {
 	return 8. * unit.PseudoStats.MovementSpeedMultiplier
 }
 
-func (unit *Unit) NewMovementSpeedAura(label string, actionID ActionID, multiplier float64) *Aura {
+func (unit *Unit) NewPassiveMovementSpeedAura(label string, actionID ActionID, multiplier float64) *Aura {
 	aura := MakePermanent(unit.GetOrRegisterAura(Aura{
 		Label:    label,
 		ActionID: actionID,
 	}))
 
-	aura.NewMovementSpeedEffect(multiplier)
+	aura.NewPassiveMovementSpeedEffect(multiplier)
 
 	return aura
 }
 
-func (aura *Aura) NewMovementSpeedEffect(multiplier float64) *ExclusiveEffect {
-	return aura.NewExclusiveEffect("MovementSpeed", true, ExclusiveEffect{
+func (aura *Aura) NewPassiveMovementSpeedEffect(multiplier float64) *ExclusiveEffect {
+	return aura.newExclusiveMovementSpeedEffect("PassiveMovementSpeed", multiplier)
+}
+
+func (aura *Aura) NewActiveMovementSpeedEffect(multiplier float64) *ExclusiveEffect {
+	return aura.newExclusiveMovementSpeedEffect("ActiveMovementSpeed", multiplier)
+}
+
+func (aura *Aura) newExclusiveMovementSpeedEffect(categoryKey string, multiplier float64) *ExclusiveEffect {
+	return aura.NewExclusiveEffect(categoryKey, true, ExclusiveEffect{
 		Priority: multiplier,
 		OnGain: func(ee *ExclusiveEffect, sim *Simulation) {
 			ee.Aura.Unit.MultiplyMovementSpeed(sim, 1+multiplier)

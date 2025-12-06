@@ -24,11 +24,12 @@ func (dk *DeathKnight) registerPlagueStrike() {
 		ohSpell = dk.registerOffHandPlagueStrike()
 	}
 
+	isUnholy := dk.Spec == proto.Spec_SpecUnholyDeathKnight
 	dk.GetOrRegisterSpell(core.SpellConfig{
 		ActionID:       PlagueStrikeActionID.WithTag(1),
 		SpellSchool:    core.SpellSchoolPhysical,
 		ProcMask:       core.ProcMaskMeleeMHSpecial,
-		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL | core.SpellFlagEncounterOnly,
 		ClassSpellMask: DeathKnightSpellPlagueStrike,
 
 		MaxRange: core.MaxMeleeRange,
@@ -58,11 +59,15 @@ func (dk *DeathKnight) registerPlagueStrike() {
 			spell.SpendRefundableCost(sim, result)
 
 			if result.Landed() {
+				dk.BloodPlagueSpell.Cast(sim, target)
+
+				if isUnholy {
+					dk.FrostFeverSpell.Cast(sim, target)
+				}
+
 				if dk.ThreatOfThassarianAura.IsActive() {
 					ohSpell.Cast(sim, target)
 				}
-
-				dk.BloodPlagueSpell.Cast(sim, target)
 			}
 
 			spell.DealDamage(sim, result)

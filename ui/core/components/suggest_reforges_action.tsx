@@ -3,16 +3,18 @@ import tippy, { hideAll } from 'tippy.js';
 import { ref } from 'tsx-vanilla';
 import { Constraint, greaterEq, lessEq, Model, Options, Solution, solve } from 'yalps';
 
+import i18n from '../../i18n/config.js';
 import * as Mechanics from '../constants/mechanics.js';
 import { IndividualSimUI } from '../individual_sim_ui';
 import { Player } from '../player';
-import { Class, ItemSlot, PseudoStat, ReforgeStat, Spec, Stat } from '../proto/common';
-import { IndividualSimSettings, StatCapType } from '../proto/ui';
-import { ReforgeData } from '../proto_utils/equipped_item';
+import { Class, GemColor, ItemSlot, Profession, PseudoStat, Race, ReforgeStat, Spec, Stat, UnitStats } from '../proto/common';
+import { UIGem as Gem, IndividualSimSettings, ReforgeSettings, StatCapType } from '../proto/ui';
+import { isShaTouchedWeapon, isThroneOfThunderWeapon, ReforgeData } from '../proto_utils/equipped_item';
 import { Gear } from '../proto_utils/gear';
-import { shortSecondaryStatNames, slotNames, statCapTypeNames } from '../proto_utils/names';
-import { pseudoStatIsCapped, StatCap, Stats, UnitStat, UnitStatPresets } from '../proto_utils/stats';
-import { SpecTalents } from '../proto_utils/utils';
+import { gemMatchesSocket, gemMatchesStats } from '../proto_utils/gems';
+import { statCapTypeNames } from '../proto_utils/names';
+import { translateSlotName, translateStat } from '../../i18n/localization';
+import { pseudoStatIsCapped, StatCap, statIsCapped, Stats, UnitStat, UnitStatPresets } from '../proto_utils/stats';
 import { Sim } from '../sim';
 import { ActionGroupItem } from '../sim_ui';
 import { EventID, TypedEvent } from '../typed_event';
@@ -23,10 +25,17 @@ import { EnumPicker } from './pickers/enum_picker';
 import { NumberPicker, NumberPickerConfig } from './pickers/number_picker';
 import { renderSavedEPWeights } from './saved_data_managers/ep_weights';
 import Toast from './toast';
+import { trackEvent, trackPageView } from '../../tracking/utils';
 
 type YalpsCoefficients = Map<string, number>;
 type YalpsVariables = Map<string, YalpsCoefficients>;
 type YalpsConstraints = Map<string, Constraint>;
+
+type GemData = {
+	gem: Gem;
+	isJC: boolean;
+	coefficients: YalpsCoefficients;
+};
 
 const INCLUDED_STATS = [
 	Stat.StatHitRating,
@@ -70,10 +79,14 @@ export type ReforgeOptimizerOptions = {
 	updateSoftCaps?: (softCaps: StatCap[]) => StatCap[];
 	// Allows you to specifiy additional information for the soft cap tooltips
 	additionalSoftCapTooltipInformation?: StatTooltipContent;
+	// Sets the default stat to be the highest for relative stat cap calculations
+	// Defaults to Any
+	defaultRelativeStatCap?: Stat | null;
 };
 
 // Used to force a particular proc from trinkets like Matrix Restabilizer and Apparatus of Khaz'goroth.
-class RelativeStatCap {
+export class RelativeStatCap {
+	readonly player: Player<any>;
 	static relevantStats: Stat[] = [Stat.StatCritRating, Stat.StatHasteRating, Stat.StatMasteryRating];
 	readonly forcedHighestStat: UnitStat;
 	readonly constrainedStats: UnitStat[];
@@ -98,16 +111,15 @@ class RelativeStatCap {
 		[Stat.StatMasteryRating, new Map([])],
 	]);
 
-	static canEnable(player: Player<any>): boolean {
-		const variableStatTrinkets: number[] = [69150, 68994, 69113, 68972];
-		return player.getGear().hasTrinketFromOptions(variableStatTrinkets);
+	static hasRoRo(player: Player<any>): boolean {
+		return player.getGear().hasTrinketFromOptions([95802, 94532, 96546, 96174, 96918]);
 	}
 
-	constructor(forcedHighestStat: Stat, playerClass: Class) {
+	constructor(forcedHighestStat: Stat, player: Player<any>, playerClass: Class) {
 		if (!RelativeStatCap.relevantStats.includes(forcedHighestStat)) {
 			throw new Error('Forced highest stat must be either Crit, Haste, or Mastery!');
 		}
-
+		this.player = player;
 		this.forcedHighestStat = UnitStat.fromStat(forcedHighestStat);
 		this.constrainedStats = RelativeStatCap.relevantStats.filter(stat => stat !== forcedHighestStat).map(stat => UnitStat.fromStat(stat));
 		this.constraintKeys = this.constrainedStats.map(
@@ -130,9 +142,28 @@ class RelativeStatCap {
 				coefficients.set(coefficientKey, currentValue - amount);
 			}
 		}
+
+		if (stat != Stat.StatMasteryRating && this.forcedHighestStat.equalsStat(Stat.StatMasteryRating) && this.player.getSpec() == Spec.SpecFeralDruid) {
+			const coefficientKey = 'HasteMinusCrit';
+			const currentValue = coefficients.get(coefficientKey) || 0;
+
+			if (stat == Stat.StatHasteRating) {
+				coefficients.set(coefficientKey, currentValue + amount);
+			} else {
+				coefficients.set(coefficientKey, currentValue - amount);
+			}
+		}
 	}
 
 	updateConstraints(constraints: YalpsConstraints, gear: Gear, baseStats: Stats) {
+		baseStats = baseStats.addStat(Stat.StatMasteryRating, -this.player.getBaseMastery() * Mechanics.MASTERY_RATING_PER_MASTERY_POINT);
+		const raidBuffs = this.player.getRaid()?.getBuffs();
+		// @TODO: Validate on PTR
+		// Mastery raid buff does not count towards RoRo calculation
+		if (raidBuffs && (raidBuffs.roarOfCourage || raidBuffs.blessingOfMight || raidBuffs.spiritBeastBlessing || raidBuffs.graceOfAir)) {
+			baseStats = baseStats.addStat(Stat.StatMasteryRating, -Mechanics.RAID_BUFF_MASTERY_RATING);
+		}
+
 		for (const [idx, constrainedStat] of this.constrainedStats.entries()) {
 			const weightedStatsArray = new Stats().withUnitStat(this.forcedHighestStat, 1).withUnitStat(constrainedStat, -1);
 			let minReforgeContribution = 1 - baseStats.computeEP(weightedStatsArray);
@@ -153,6 +184,16 @@ class RelativeStatCap {
 
 			constraints.set(this.constraintKeys[idx], greaterEq(minReforgeContribution));
 		}
+
+		if (this.forcedHighestStat.equalsStat(Stat.StatMasteryRating) && this.player.getSpec() == Spec.SpecFeralDruid) {
+			const minReforgeContribution = baseStats.getStat(Stat.StatCritRating) - baseStats.getStat(Stat.StatHasteRating) + 1;
+			constraints.set('HasteMinusCrit', greaterEq(minReforgeContribution));
+		}
+	}
+
+	updateWeights(statWeights: Stats) {
+		const smallestConstrainedEP = Math.min(statWeights.getUnitStat(this.constrainedStats[0]), statWeights.getUnitStat(this.constrainedStats[1]));
+		return statWeights.withUnitStat(this.forcedHighestStat, Math.min(statWeights.getUnitStat(this.forcedHighestStat), smallestConstrainedEP - 0.01));
 	}
 }
 
@@ -162,24 +203,48 @@ export class ReforgeOptimizer {
 	protected readonly playerClass: Class;
 	protected readonly isExperimental: ReforgeOptimizerOptions['experimental'];
 	protected readonly isHybridCaster: boolean;
+	protected readonly isTankSpec: boolean;
 	protected readonly sim: Sim;
 	protected readonly defaults: IndividualSimUI<any>['individualConfig']['defaults'];
 	protected getEPDefaults: ReforgeOptimizerOptions['getEPDefaults'];
-	protected _statCaps: Stats;
+	protected _statCaps: Stats = new Stats();
+	protected breakpointLimits: Stats = new Stats();
 	protected updateGearStatsModifier: ReforgeOptimizerOptions['updateGearStatsModifier'];
 	protected _softCapsConfig: StatCap[];
+	private useCustomEPValues = false;
+	private useSoftCapBreakpoints = true;
+	protected softCapBreakpoints: StatCap[] = [];
 	protected updateSoftCaps: ReforgeOptimizerOptions['updateSoftCaps'];
 	protected enableBreakpointLimits: ReforgeOptimizerOptions['enableBreakpointLimits'];
 	protected statTooltips: StatTooltipContent = {};
 	protected additionalSoftCapTooltipInformation: StatTooltipContent = {};
 	protected statSelectionPresets: ReforgeOptimizerOptions['statSelectionPresets'];
-	readonly freezeItemSlotsChangeEmitter = new TypedEvent<void>();
+	protected includeGems = false;
+	protected includeEOTBPGemSocket = false;
 	protected freezeItemSlots = false;
-	protected frozenItemSlots = new Map<ItemSlot, boolean>();
+	protected frozenItemSlots = new Set<ItemSlot>();
+	protected includeTimeout = true;
+	protected undershootCaps = new Stats();
 	protected previousGear: Gear | null = null;
 	protected previousReforges = new Map<ItemSlot, ReforgeData>();
 	protected currentReforges = new Map<ItemSlot, ReforgeData>();
-	protected relativeStatCap: RelativeStatCap | null = null;
+	relativeStatCapStat: number = -1;
+	relativeStatCap: RelativeStatCap | null = null;
+
+	readonly includeGemsChangeEmitter = new TypedEvent<void>('IncludeGems');
+	readonly includeEOTBPGemSocketChangeEmitter = new TypedEvent<void>('IncludeEOTBPGemSocket');
+	readonly includeTimeoutChangeEmitter = new TypedEvent<void>('IncludeTimeout');
+	readonly statCapsChangeEmitter = new TypedEvent<void>('StatCaps');
+	readonly useCustomEPValuesChangeEmitter = new TypedEvent<void>('UseCustomEPValues');
+	readonly useSoftCapBreakpointsChangeEmitter = new TypedEvent<void>('UseSoftCapBreakpoints');
+	readonly softCapBreakpointsChangeEmitter = new TypedEvent<void>('SoftCapBreakpoints');
+	readonly breakpointLimitsChangeEmitter = new TypedEvent<void>('BreakpointLimits');
+	readonly freezeItemSlotsChangeEmitter = new TypedEvent<void>('FreezeItemSlots');
+	readonly undershootCapsChangeEmitter = new TypedEvent<void>('UndershootCaps');
+	readonly relativeStatCapStatChangeEmitter = new TypedEvent<void>('RelativeStatCapStat');
+
+	// Emits when any of the above emitters emit.
+	readonly changeEmitter: TypedEvent<void>;
 
 	constructor(simUI: IndividualSimUI<any>, options?: ReforgeOptimizerOptions) {
 		this.simUI = simUI;
@@ -187,6 +252,7 @@ export class ReforgeOptimizer {
 		this.playerClass = this.player.getClass();
 		this.isExperimental = options?.experimental;
 		this.isHybridCaster = [Spec.SpecBalanceDruid, Spec.SpecShadowPriest, Spec.SpecElementalShaman, Spec.SpecMistweaverMonk].includes(this.player.getSpec());
+		this.isTankSpec = this.player.getPlayerSpec().isTankSpec;
 		this.sim = simUI.sim;
 		this.defaults = simUI.individualConfig.defaults;
 		this.getEPDefaults = options?.getEPDefaults;
@@ -196,24 +262,30 @@ export class ReforgeOptimizer {
 		this.statTooltips = { ...STAT_TOOLTIPS, ...options?.statTooltips };
 		this.additionalSoftCapTooltipInformation = { ...options?.additionalSoftCapTooltipInformation };
 		this.statSelectionPresets = options?.statSelectionPresets;
-		this._statCaps = this.statCaps;
+		this._statCaps = this.defaults.statCaps || new Stats();
 		this.enableBreakpointLimits = !!options?.enableBreakpointLimits;
+		this.relativeStatCapStat = options?.defaultRelativeStatCap ?? -1;
 
 		const startReforgeOptimizationEntry: ActionGroupItem = {
-			label: 'Suggest Reforges',
+			label: i18n.t('sidebar.buttons.suggest_reforges.title'),
 			cssClass: 'suggest-reforges-action-button flex-grow-1',
 			onClick: async ({ currentTarget }) => {
+				trackEvent({
+					action: 'settings',
+					category: 'reforging',
+					label: 'suggest_start',
+				});
 				const button = currentTarget as HTMLButtonElement;
 				if (button) {
 					button.classList.add('loading');
 					button.disabled = true;
 				}
 
-				const wasCM = simUI.player.getChallengeModeEnabled()
+				const wasCM = simUI.player.getChallengeModeEnabled();
 				try {
 					performance.mark('reforge-optimization-start');
 					if (wasCM) {
-						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), false)
+						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), false);
 					}
 					await this.optimizeReforges();
 					this.onReforgeDone();
@@ -221,16 +293,22 @@ export class ReforgeOptimizer {
 					this.onReforgeError(error);
 				} finally {
 					if (wasCM) {
-						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), true)
+						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), true);
 					}
 					performance.mark('reforge-optimization-end');
-					if (isDevMode())
-						console.log(
-							'Reforge optimization took:',
-							`${performance
-								.measure('reforge-optimization-measure', 'reforge-optimization-start', 'reforge-optimization-end')
-								.duration.toFixed(2)}ms`,
-						);
+					const completionTimeInMs = performance.measure(
+						'reforge-optimization-measure',
+						'reforge-optimization-start',
+						'reforge-optimization-end',
+					).duration;
+					if (isDevMode()) console.log('Reforge optimization took:', `${completionTimeInMs.toFixed(2)}ms`);
+
+					trackEvent({
+						action: 'settings',
+						category: 'reforging',
+						label: 'suggest_duration',
+						value: Math.ceil(completionTimeInMs / 1000),
+					});
 					if (button) {
 						button.classList.remove('loading');
 						button.disabled = false;
@@ -252,12 +330,12 @@ export class ReforgeOptimizer {
 			group,
 			children: [startReforgeOptimizationButton, contextMenuButton],
 		} = simUI.addActionGroup([startReforgeOptimizationEntry, contextMenuEntry], {
-			cssClass: clsx('suggest-reforges-settings-group d-flex', this.isExperimental && !this.player.sim.getShowExperimental() && 'hide'),
+			cssClass: clsx('suggest-reforges-settings-group', this.isExperimental && !this.player.sim.getShowExperimental() && 'hide'),
 		});
 
 		this.bindToggleExperimental(group);
 
-		if (!!this.softCapsConfig?.length)
+		if (this.softCapsConfig?.length)
 			tippy(startReforgeOptimizationButton, {
 				theme: 'suggest-reforges-softcaps',
 				placement: 'bottom',
@@ -268,10 +346,37 @@ export class ReforgeOptimizer {
 
 		tippy(contextMenuButton, {
 			placement: 'bottom',
-			content: 'Change Reforge Optimizer settings',
+			content: i18n.t('sidebar.buttons.suggest_reforges.tooltip'),
 		});
 
 		this.buildContextMenu(contextMenuButton);
+
+		this.changeEmitter = TypedEvent.onAny(
+			[
+				this.includeGemsChangeEmitter,
+				this.includeEOTBPGemSocketChangeEmitter,
+				this.includeTimeoutChangeEmitter,
+				this.statCapsChangeEmitter,
+				this.useCustomEPValuesChangeEmitter,
+				this.useSoftCapBreakpointsChangeEmitter,
+				this.softCapBreakpointsChangeEmitter,
+				this.breakpointLimitsChangeEmitter,
+				this.freezeItemSlotsChangeEmitter,
+				this.undershootCapsChangeEmitter,
+				this.relativeStatCapStatChangeEmitter,
+			],
+			'ReforgeSettingsChange',
+		);
+
+		TypedEvent.onAny([this.useCustomEPValuesChangeEmitter, this.player.epWeightsChangeEmitter, this.statCapsChangeEmitter]).on(eventID => {
+			if (this.useCustomEPValues && (this.player.hasCustomEPWeights() || !this._statCaps.equals(this.defaults.statCaps || new Stats()))) {
+				this.setUseSoftCapBreakpoints(eventID, false);
+			}
+		});
+
+		this.player.gearChangeEmitter.on(eventID => {
+			this.setRelativeStatCap(eventID, this.relativeStatCapStat);
+		});
 	}
 
 	private bindToggleExperimental(element: Element) {
@@ -287,35 +392,33 @@ export class ReforgeOptimizer {
 	}
 
 	get softCapsConfigWithLimits() {
-		if (!this.enableBreakpointLimits) return this.softCapsConfig;
+		if (!this.enableBreakpointLimits || !this.useSoftCapBreakpoints) return this.softCapsConfig;
 
 		const softCaps = StatCap.cloneSoftCaps(this.softCapsConfig);
-		for (const [unitStat, limit] of this.player.getBreakpointLimits().asUnitStatArray()) {
+		for (const [unitStat, limit] of this.breakpointLimits.asUnitStatArray()) {
 			if (!limit) continue;
 			const config = softCaps.find(config => config.unitStat.equals(unitStat));
-			if (config) config.breakpoints = config.breakpoints.filter(breakpoint => breakpoint <= limit);
+			const breakpointLimitExists = config?.breakpoints.some(breakpoint => breakpoint == limit);
+			if (config && breakpointLimitExists) {
+				config.breakpoints = config.breakpoints.filter(breakpoint => breakpoint <= limit);
+				if (config.capType === StatCapType.TypeSoftCap) {
+					config.postCapEPs = config.postCapEPs.slice(0, config.breakpoints.length);
+				}
+			}
 		}
 		return softCaps;
 	}
 
-	get statCaps() {
-		return this.sim.getUseCustomEPValues() ? this.player.getStatCaps() : this.defaults.statCaps || new Stats();
-	}
-	setStatCap(unitStat: UnitStat, value: number) {
-		this._statCaps = this._statCaps.withUnitStat(unitStat, value);
-		if (this.sim.getUseCustomEPValues()) {
-			this.player.setStatCaps(TypedEvent.nextEventID(), this._statCaps);
-		}
-		return this.statCaps;
-	}
-	setDefaultStatCaps() {
-		this._statCaps = this.defaults.statCaps || new Stats();
-		this.player.setStatCaps(TypedEvent.nextEventID(), this._statCaps);
-		return this.statCaps;
-	}
-
 	get preCapEPs(): Stats {
-		let weights = this.sim.getUseCustomEPValues() ? this.player.getEpWeights() : this.getEPDefaults?.(this.player) || this.defaults.epWeights;
+		let weights = this.player.getEpWeights();
+
+		if (!this.useCustomEPValues) {
+			if (this.getEPDefaults) {
+				weights = this.getEPDefaults?.(this.player);
+			} else if (this.player.hasCustomEPWeights()) {
+				weights = this.defaults.epWeights;
+			}
+		}
 
 		// Replace Spirit EP for hybrid casters with a small value in order to break ties between Spirit and Hit Reforges
 		if (this.isHybridCaster) {
@@ -358,10 +461,54 @@ export class ReforgeOptimizer {
 		return validatedWeights;
 	}
 
+	static includesCappedStat(coefficients: YalpsCoefficients, reforgeCaps: Stats, reforgeSoftCaps: StatCap[]): boolean {
+		for (const coefficientKey of coefficients.keys()) {
+			if (coefficientKey.includes('PseudoStat')) {
+				const statKey = PseudoStat[coefficientKey as keyof typeof PseudoStat];
+
+				if (pseudoStatIsCapped(statKey, reforgeCaps, reforgeSoftCaps)) {
+					return true;
+				}
+			} else if (coefficientKey.includes('Stat')) {
+				const statKey = Stat[coefficientKey as keyof typeof Stat];
+
+				if (statIsCapped(statKey, reforgeCaps, reforgeSoftCaps)) {
+					return true;
+				}
+			} else if (coefficientKey.includes('Minus')) {
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	static getCappedStatKeys(coefficients: YalpsCoefficients, reforgeCaps: Stats, reforgeSoftCaps: StatCap[]): string[] {
+		const cappedStatKeys: string[] = [];
+
+		for (const coefficientKey of coefficients.keys()) {
+			if (coefficientKey.includes('PseudoStat')) {
+				const statKey = PseudoStat[coefficientKey as keyof typeof PseudoStat];
+
+				if (pseudoStatIsCapped(statKey, reforgeCaps, reforgeSoftCaps)) {
+					cappedStatKeys.push(coefficientKey);
+				}
+			} else if (coefficientKey.includes('Stat')) {
+				const statKey = Stat[coefficientKey as keyof typeof Stat];
+
+				if (statIsCapped(statKey, reforgeCaps, reforgeSoftCaps)) {
+					cappedStatKeys.push(coefficientKey);
+				}
+			}
+		}
+
+		return cappedStatKeys;
+	}
+
 	buildReforgeButtonTooltip() {
 		return (
 			<>
-				<p>The following breakpoints have been implemented for this spec:</p>
+				<p>{i18n.t('sidebar.buttons.suggest_reforges.breakpoints_implemented')}</p>
 				<table className="w-100">
 					<tbody>
 						{this.softCapsConfigWithLimits?.map(({ unitStat, breakpoints, capType, postCapEPs }, index) => (
@@ -387,7 +534,7 @@ export class ReforgeOptimizer {
 										<em>%</em>
 									</th>
 									<th colSpan={2} className="text-nowrap text-end">
-										<em>Post cap EP</em>
+										<em>{i18n.t('sidebar.buttons.suggest_reforges.post_cap_ep')}</em>
 									</th>
 								</tr>
 								{breakpoints.map((breakpoint, breakpointIndex) => (
@@ -418,11 +565,98 @@ export class ReforgeOptimizer {
 		);
 	}
 
+	setStatCaps(eventID: EventID, newStatCaps: Stats) {
+		this._statCaps = newStatCaps;
+		this.statCapsChangeEmitter.emit(eventID);
+	}
+
+	get statCaps() {
+		return this.useCustomEPValues ? this._statCaps : this.defaults.statCaps || new Stats();
+	}
+
+	setUseCustomEPValues(eventID: EventID, newUseCustomEPValues: boolean) {
+		if (newUseCustomEPValues !== this.useCustomEPValues) {
+			this.useCustomEPValues = newUseCustomEPValues;
+			this.useCustomEPValuesChangeEmitter.emit(eventID);
+		}
+	}
+
+	setUseSoftCapBreakpoints(eventID: EventID, newUseSoftCapBreakpoints: boolean) {
+		if (newUseSoftCapBreakpoints !== this.useSoftCapBreakpoints) {
+			this.useSoftCapBreakpoints = newUseSoftCapBreakpoints;
+			this.useSoftCapBreakpointsChangeEmitter.emit(eventID);
+		}
+	}
+
+	setBreakpointLimits(eventID: EventID, newLimits: Stats) {
+		this.breakpointLimits = newLimits;
+		this.breakpointLimitsChangeEmitter.emit(eventID);
+	}
+
+	setSoftCapBreakpoints(eventID: EventID, newSoftCapBreakpoints: StatCap[]) {
+		this.softCapBreakpoints = newSoftCapBreakpoints;
+		this.softCapBreakpointsChangeEmitter.emit(eventID);
+	}
+	setRelativeStatCap(eventID: EventID, newValue: number) {
+		this.relativeStatCapStat = newValue;
+		if ((this.relativeStatCapStat === -1) || !RelativeStatCap.hasRoRo(this.player)) {
+			this.relativeStatCap = null;
+		} else {
+			this.relativeStatCap = new RelativeStatCap(this.relativeStatCapStat, this.player, this.playerClass);
+		}
+
+		this.relativeStatCapStatChangeEmitter.emit(eventID);
+	}
+
+	setIncludeGems(eventID: EventID, newValue: boolean) {
+		if (this.includeGems !== newValue) {
+			this.includeGems = newValue;
+
+			if (newValue) {
+				this.setIncludeTimeout(eventID, true);
+			}
+
+			this.includeGemsChangeEmitter.emit(eventID);
+		}
+	}
+
+	setIncludeEOTBPGemSocket(eventID: EventID, newValue: boolean) {
+		if (this.includeEOTBPGemSocket !== newValue) {
+			this.includeEOTBPGemSocket = newValue;
+			this.includeEOTBPGemSocketChangeEmitter.emit(eventID);
+		}
+	}
+
 	setFreezeItemSlots(eventID: EventID, newValue: boolean) {
 		if (this.freezeItemSlots !== newValue) {
 			this.freezeItemSlots = newValue;
 			this.frozenItemSlots.clear();
 			this.freezeItemSlotsChangeEmitter.emit(eventID);
+		}
+	}
+
+	setFrozenItemSlot(eventID: EventID, slot: ItemSlot, frozen: boolean) {
+		if (this.getFrozenItemSlot(slot) !== frozen) {
+			this.frozenItemSlots[frozen ? 'add' : 'delete'](slot);
+			this.freezeItemSlotsChangeEmitter.emit(eventID);
+		}
+	}
+
+	// Sets all frozen item slots at once
+	setFrozenItemSlots(eventID: EventID, slots: ItemSlot[]) {
+		this.frozenItemSlots.clear();
+		slots.forEach(slot => this.frozenItemSlots.add(slot));
+		this.freezeItemSlotsChangeEmitter.emit(eventID);
+	}
+
+	getFrozenItemSlot(slot: ItemSlot): boolean {
+		return this.frozenItemSlots.has(slot);
+	}
+
+	setIncludeTimeout(eventID: EventID, newValue: boolean) {
+		if (this.includeTimeout !== newValue) {
+			this.includeTimeout = newValue;
+			this.includeTimeoutChangeEmitter.emit(eventID);
 		}
 	}
 
@@ -433,35 +667,53 @@ export class ReforgeOptimizer {
 			theme: 'reforge-optimiser-popover',
 			placement: 'right-start',
 			onShow: instance => {
+				trackPageView('Reforge Settings', 'reforge-settings');
+
 				const useCustomEPValuesInput = new BooleanPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
 					id: 'reforge-optimizer-enable-custom-ep-weights',
-					label: 'Use custom EP Weights',
+					label: i18n.t('sidebar.buttons.suggest_reforges.use_custom'),
 					inline: true,
-					changedEvent: () => this.sim.useCustomEPValuesChangeEmitter,
-					getValue: () => this.sim.getUseCustomEPValues(),
+					changedEvent: () => this.useCustomEPValuesChangeEmitter,
+					getValue: () => this.useCustomEPValues,
 					setValue: (eventID, _player, newValue) => {
-						this.sim.setUseCustomEPValues(eventID, newValue);
+						trackEvent({
+							action: 'settings',
+							category: 'reforging',
+							label: 'use_custom_ep',
+							value: newValue,
+						});
+						this.setUseCustomEPValues(eventID, newValue);
 					},
 				});
 				let useSoftCapBreakpointsInput: BooleanPicker<Player<any>> | null = null;
-				if (!!this.softCapsConfig?.length) {
+				if (this.softCapsConfig?.length) {
 					useSoftCapBreakpointsInput = new BooleanPicker(null, this.player, {
+						extraCssClasses: ['mb-2'],
 						id: 'reforge-optimizer-enable-soft-cap-breakpoints',
-						label: 'Use soft cap breakpoints',
+						label: i18n.t('sidebar.buttons.suggest_reforges.use_soft_cap_breakpoints'),
 						inline: true,
-						changedEvent: () => this.sim.useSoftCapBreakpointsChangeEmitter,
-						getValue: () => this.sim.getUseSoftCapBreakpoints(),
+						changedEvent: () => this.useSoftCapBreakpointsChangeEmitter,
+						getValue: () => this.useSoftCapBreakpoints,
 						setValue: (eventID, _player, newValue) => {
-							this.sim.setUseSoftCapBreakpoints(eventID, newValue);
+							trackEvent({
+								action: 'settings',
+								category: 'reforging',
+								label: 'softcap_breakpoints',
+								value: newValue,
+							});
+							this.setUseSoftCapBreakpoints(eventID, newValue);
 						},
 					});
 				}
 
 				const forcedProcInput = new EnumPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
 					id: 'reforge-optimizer-force-stat-proc',
-					label: 'Force Matrix/Apparatus proc',
+					label: i18n.t('sidebar.buttons.suggest_reforges.force_stat_proc'),
+					defaultValue: this.relativeStatCapStat,
 					values: [
-						{ name: 'Any', value: -1 },
+						{ name: i18n.t('sidebar.buttons.suggest_reforges.any'), value: -1 },
 						...[...RelativeStatCap.relevantStats].map(stat => {
 							return {
 								name: UnitStat.fromStat(stat).getShortName(this.playerClass),
@@ -469,42 +721,92 @@ export class ReforgeOptimizer {
 							};
 						}),
 					],
-					changedEvent: () => this.player.gearChangeEmitter,
+					changedEvent: () => TypedEvent.onAny([this.relativeStatCapStatChangeEmitter, this.player.gearChangeEmitter]),
 					getValue: () => {
-						if (!this.relativeStatCap) {
-							return -1;
-						} else {
-							return this.relativeStatCap!.forcedHighestStat.getStat();
-						}
+						return this.relativeStatCapStat;
 					},
 					setValue: (_eventID, _player, newValue) => {
-						if (newValue == -1) {
-							this.relativeStatCap = null;
-						} else {
-							this.relativeStatCap = new RelativeStatCap(newValue, this.playerClass);
-						}
+						this.setRelativeStatCap(TypedEvent.nextEventID(), newValue);
 					},
 					showWhen: () => {
-						const canEnable = RelativeStatCap.canEnable(this.player);
+						const canEnable = RelativeStatCap.hasRoRo(this.player);
 
-						if (!canEnable) {
+						if (!canEnable || this.relativeStatCapStat === -1) {
 							this.relativeStatCap = null;
+						} else if (!this.relativeStatCap && this.relativeStatCapStat) {
+							this.relativeStatCap = new RelativeStatCap(this.relativeStatCapStat, this.player, this.playerClass);
 						}
 
 						return canEnable;
 					},
 				});
 
+				const includeGemsInput = new BooleanPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
+					id: 'reforge-optimizer-include-gems',
+					label: i18n.t('sidebar.buttons.suggest_reforges.include_gems'),
+					labelTooltip: i18n.t('sidebar.buttons.suggest_reforges.optimize_gems_tooltip'),
+					inline: true,
+					changedEvent: () => this.includeGemsChangeEmitter,
+					getValue: () => this.includeGems,
+					setValue: (eventID, _player, newValue) => {
+						trackEvent({
+							action: 'settings',
+							category: 'reforging',
+							label: 'include_gems',
+							value: newValue,
+						});
+						TypedEvent.freezeAllAndDo(() => {
+							this.setIncludeGems(eventID, newValue);
+							this.setIncludeEOTBPGemSocket(eventID, this.player.sim.getPhase() >= 2);
+						});
+					},
+				});
+
+				const includeEOTBPGemSocket = new BooleanPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
+					id: 'reforge-optimizer-include-eotbp-socket',
+					label: i18n.t('sidebar.buttons.suggest_reforges.include_eotbp_socket'),
+					labelTooltip: i18n.t('sidebar.buttons.suggest_reforges.include_eotbp_socket_tooltip'),
+					inline: true,
+					changedEvent: () =>
+						TypedEvent.onAny([this.includeGemsChangeEmitter, this.includeEOTBPGemSocketChangeEmitter, this.player.gearChangeEmitter]),
+					getValue: () => this.includeEOTBPGemSocket,
+					showWhen: () => this.includeGems && this.player.hasEotBPItemEquipped(),
+					setValue: (eventID, _player, newValue) => {
+						this.setIncludeEOTBPGemSocket(eventID, newValue);
+					},
+				});
+
 				const freezeItemSlotsInput = new BooleanPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
 					id: 'reforge-optimizer-freeze-item-slots',
-					label: 'Freeze item slots',
-					labelTooltip:
-						'Flag one or more item slots to be "frozen", which will prevent the optimizer from changing the Reforge in that slot from its current setting. This can be useful for hybrid classes who use the same gear piece for multiple raid roles.',
+					label: i18n.t('sidebar.buttons.suggest_reforges.freeze_item_slots'),
+					labelTooltip: i18n.t('sidebar.buttons.suggest_reforges.freeze_item_slots_tooltip'),
 					inline: true,
 					changedEvent: () => this.freezeItemSlotsChangeEmitter,
 					getValue: () => this.freezeItemSlots,
 					setValue: (eventID, _player, newValue) => {
+						trackEvent({
+							action: 'settings',
+							category: 'reforging',
+							label: 'freeze_item_slots',
+							value: newValue,
+						});
 						this.setFreezeItemSlots(eventID, newValue);
+					},
+				});
+
+				const includeTimeoutInput = new BooleanPicker(null, this.player, {
+					extraCssClasses: ['mb-2'],
+					id: 'reforge-optimizer-include-timeout',
+					label: i18n.t('sidebar.buttons.suggest_reforges.limit_execution_time'),
+					labelTooltip: i18n.t('sidebar.buttons.suggest_reforges.limit_execution_time_tooltip'),
+					inline: true,
+					changedEvent: () => TypedEvent.onAny([this.includeTimeoutChangeEmitter, this.includeGemsChangeEmitter]),
+					getValue: () => this.includeTimeout,
+					setValue: (eventID, _player, newValue) => {
+						this.setIncludeTimeout(eventID, newValue);
 					},
 				});
 
@@ -512,10 +814,10 @@ export class ReforgeOptimizer {
 				instance.setContent(
 					<>
 						{useCustomEPValuesInput.rootElem}
-						<div ref={descriptionRef} className={clsx('mb-0', this.sim.getUseCustomEPValues() && 'hide')}>
-							<p>This will enable modification of the default EP weights and setting custom stat caps.</p>
-							<p>Ep weights can be modified in the Stat Weights editor.</p>
-							<p>If you want to hard cap a stat make sure to put the EP for that stat higher.</p>
+						<div ref={descriptionRef} className={clsx('mb-0', this.useCustomEPValues && 'hide')}>
+							<p>{i18n.t('sidebar.buttons.suggest_reforges.enable_modification')}</p>
+							<p>{i18n.t('sidebar.buttons.suggest_reforges.modify_in_editor')}</p>
+							<p>{i18n.t('sidebar.buttons.suggest_reforges.hard_cap_info')}</p>
 						</div>
 						{this.buildCapsList({
 							useCustomEPValuesInput: useCustomEPValuesInput,
@@ -524,6 +826,9 @@ export class ReforgeOptimizer {
 						{useSoftCapBreakpointsInput?.rootElem}
 						{forcedProcInput.rootElem}
 						{this.buildSoftCapBreakpointsLimiter({ useSoftCapBreakpointsInput })}
+						{includeGemsInput.rootElem}
+						{includeEOTBPGemSocket.rootElem}
+						{includeTimeoutInput.rootElem}
 						{freezeItemSlotsInput.rootElem}
 						{this.buildFrozenSlotsInputs()}
 						{this.buildEPWeightsToggle({ useCustomEPValuesInput: useCustomEPValuesInput })}
@@ -547,7 +852,7 @@ export class ReforgeOptimizer {
 
 		const tableRef = ref<HTMLTableElement>();
 		const content = (
-			<table ref={tableRef}>
+			<table className={clsx('mb-2', { 'd-none': !this.freezeItemSlots })} ref={tableRef}>
 				{slotsByRow.map(slots => {
 					const rowRef = ref<HTMLTableRowElement>();
 					const row = (
@@ -555,14 +860,13 @@ export class ReforgeOptimizer {
 							{slots.map(slot => {
 								const picker = new BooleanPicker(null, this.player, {
 									id: 'reforge-optimizer-freeze-' + ItemSlot[slot],
-									label: slotNames.get(slot),
+									label: translateSlotName(slot),
 									inline: true,
 									changedEvent: () => this.freezeItemSlotsChangeEmitter,
-									getValue: () => this.frozenItemSlots.get(slot) || false,
-									setValue: (_eventID, _player, newValue) => {
-										this.frozenItemSlots.set(slot, newValue);
+									getValue: () => this.getFrozenItemSlot(slot) || false,
+									setValue: (eventID, _player, newValue) => {
+										this.setFrozenItemSlot(eventID, slot, newValue);
 									},
-									showWhen: () => this.freezeItemSlots,
 								});
 								const column = <td>{picker.rootElem}</td>;
 								return column;
@@ -574,12 +878,16 @@ export class ReforgeOptimizer {
 			</table>
 		);
 
+		this.freezeItemSlotsChangeEmitter.on(() => {
+			tableRef.value?.classList[this.freezeItemSlots ? 'remove' : 'add']('d-none');
+		});
+
 		return content;
 	}
 
 	buildCapsList({ useCustomEPValuesInput, description }: { useCustomEPValuesInput: BooleanPicker<Player<any>>; description: HTMLElement }) {
 		const sharedInputConfig: Pick<NumberPickerConfig<Player<any>>, 'changedEvent'> = {
-			changedEvent: _ => TypedEvent.onAny([this.sim.useSoftCapBreakpointsChangeEmitter, this.player.statCapsChangeEmitter]),
+			changedEvent: _ => TypedEvent.onAny([this.useSoftCapBreakpointsChangeEmitter, this.statCapsChangeEmitter]),
 		};
 
 		const tableRef = ref<HTMLTableElement>();
@@ -587,25 +895,31 @@ export class ReforgeOptimizer {
 		const defaultStatCapsButtonRef = ref<HTMLButtonElement>();
 
 		const content = (
-			<table ref={tableRef} className={clsx('reforge-optimizer-stat-cap-table mb-2', !this.sim.getUseCustomEPValues() && 'hide')}>
+			<table ref={tableRef} className={clsx('reforge-optimizer-stat-cap-table mb-2', !this.useCustomEPValues && 'hide')}>
 				<thead>
 					<tr>
-						<th colSpan={3} className="pb-3">
+						<th colSpan={4} className="pb-3">
 							<div className="d-flex">
-								<h6 className="content-block-title mb-0 me-1">Edit stat caps</h6>
+								<h6 className="content-block-title mb-0 me-1">{i18n.t('sidebar.buttons.suggest_reforges.edit_stat_caps')}</h6>
 								<button ref={statCapTooltipRef} className="d-inline">
 									<i className="fa-regular fa-circle-question" />
 								</button>
-								<button ref={defaultStatCapsButtonRef} className="d-inline ms-auto" onclick={() => this.setDefaultStatCaps()}>
+								<button
+									ref={defaultStatCapsButtonRef}
+									className="d-inline ms-auto"
+									onclick={() => this.setStatCaps(TypedEvent.nextEventID(), this.defaults.statCaps || new Stats())}>
 									<i className="fas fa-arrow-rotate-left" />
 								</button>
 							</div>
 						</th>
 					</tr>
 					<tr>
-						<th>Stat</th>
-						<th colSpan={2} className="text-end">
+						<th>{i18n.t('sidebar.buttons.suggest_reforges.stat')}</th>
+						<th colSpan={3} className="text-end">
 							%
+						</th>
+						<th colSpan={1} className="text-start">
+							Max?
 						</th>
 					</tr>
 				</thead>
@@ -623,7 +937,10 @@ export class ReforgeOptimizer {
 								return this.toVisualUnitStatPercentage(this.statCaps.getUnitStat(unitStat), unitStat);
 							},
 							setValue: (_eventID, _player, newValue) => {
-								this.setStatCap(unitStat, this.toDefaultUnitStatValue(newValue, unitStat));
+								this.setStatCaps(
+									TypedEvent.nextEventID(),
+									this.statCaps.withUnitStat(unitStat, this.toDefaultUnitStatValue(newValue, unitStat)),
+								);
 							},
 						};
 
@@ -638,6 +955,18 @@ export class ReforgeOptimizer {
 							...sharedInputConfig,
 							...sharedStatInputConfig,
 						});
+
+						const undershootPicker = new BooleanPicker(null, this.player, {
+							id: `reforge-optimizer-${statName}-undershoot`,
+							label: '',
+							inline: false,
+							changedEvent: () => this.undershootCapsChangeEmitter,
+							getValue: () => this.undershootCaps.getUnitStat(unitStat) > 0,
+							setValue: (_eventID, _player, newValue) => {
+								this.undershootCaps = this.undershootCaps.withUnitStat(unitStat, newValue ? 1 : 0);
+							},
+						});
+
 						const statPresets = this.statSelectionPresets?.find(entry => entry.unitStat.equals(unitStat))?.presets;
 
 						const presets = !!statPresets
@@ -646,7 +975,7 @@ export class ReforgeOptimizer {
 									extraCssClasses: ['mb-0'],
 									label: '',
 									values: [
-										{ name: 'Select preset', value: 0 },
+										{ name: i18n.t('sidebar.buttons.suggest_reforges.select_preset'), value: 0 },
 										...[...statPresets.keys()].map(key => {
 											const percentValue = statPresets.get(key)!;
 
@@ -659,7 +988,7 @@ export class ReforgeOptimizer {
 									enableWhen: () => this.isAllowedToOverrideStatCaps || !this.softCapsConfig.some(config => config.unitStat.equals(unitStat)),
 									...sharedInputConfig,
 									...sharedStatInputConfig,
-							  })
+								})
 							: null;
 
 						const tooltipText = this.statTooltips[rootStat];
@@ -678,12 +1007,15 @@ export class ReforgeOptimizer {
 											)}
 										</div>
 									</td>
-									<td colSpan={2}>{percentagePicker.rootElem}</td>
+									<td colSpan={3}>{percentagePicker.rootElem}</td>
+									<td colSpan={1} className="text-end">
+										{undershootPicker.rootElem}
+									</td>
 								</tr>
 								{presets && (
 									<tr>
 										<td></td>
-										<td colSpan={2}>{presets.rootElem}</td>
+										<td colSpan={3}>{presets.rootElem}</td>
 									</tr>
 								)}
 							</>
@@ -692,7 +1024,7 @@ export class ReforgeOptimizer {
 						const tooltip = tooltipText
 							? tippy(statTooltipRef.value!, {
 									content: tooltipText,
-							  })
+								})
 							: null;
 
 						useCustomEPValuesInput.addOnDisposeCallback(() => tooltip?.destroy());
@@ -705,27 +1037,26 @@ export class ReforgeOptimizer {
 
 		if (statCapTooltipRef.value) {
 			const tooltip = tippy(statCapTooltipRef.value, {
-				content:
-					'Stat caps are the maximum amount of a stat that can be gained from Reforging. If a stat exceeds its cap, the optimizer will attempt to reduce it to the cap value.',
+				content: i18n.t('sidebar.buttons.suggest_reforges.stat_caps_tooltip'),
 			});
 			useCustomEPValuesInput.addOnDisposeCallback(() => tooltip.destroy());
 		}
 		if (defaultStatCapsButtonRef.value) {
 			const tooltip = tippy(defaultStatCapsButtonRef.value, {
-				content: 'Reset to stat cap defaults',
+				content: i18n.t('sidebar.buttons.suggest_reforges.reset_to_defaults'),
 			});
 			useCustomEPValuesInput.addOnDisposeCallback(() => tooltip.destroy());
 		}
 
-		const event = this.sim.useCustomEPValuesChangeEmitter.on(() => {
-			const isUsingCustomEPValues = this.sim.getUseCustomEPValues();
-			tableRef.value?.classList[isUsingCustomEPValues ? 'remove' : 'add']('hide');
-			description?.classList[!isUsingCustomEPValues ? 'remove' : 'add']('hide');
+		const event = this.useCustomEPValuesChangeEmitter.on(() => {
+			tableRef.value?.classList[this.useCustomEPValues ? 'remove' : 'add']('hide');
+			description?.classList[!this.useCustomEPValues ? 'remove' : 'add']('hide');
 		});
 
 		useCustomEPValuesInput.addOnDisposeCallback(() => {
 			content.remove();
 			event.dispose();
+			this.undershootCaps = new Stats();
 		});
 
 		return content;
@@ -733,10 +1064,10 @@ export class ReforgeOptimizer {
 
 	buildEPWeightsToggle({ useCustomEPValuesInput }: { useCustomEPValuesInput: BooleanPicker<Player<any>> }) {
 		const extraCssClasses = ['mt-3'];
-		if (!this.sim.getUseCustomEPValues()) extraCssClasses.push('hide');
+		if (!this.useCustomEPValues) extraCssClasses.push('hide');
 		const savedEpWeights = renderSavedEPWeights(null, this.simUI, { extraCssClasses, loadOnly: true });
-		const event = this.sim.useCustomEPValuesChangeEmitter.on(() => {
-			const isUsingCustomEPValues = this.sim.getUseCustomEPValues();
+		const event = this.useCustomEPValuesChangeEmitter.on(() => {
+			const isUsingCustomEPValues = this.useCustomEPValues;
 			savedEpWeights.rootElem?.classList[isUsingCustomEPValues ? 'remove' : 'add']('hide');
 		});
 
@@ -751,12 +1082,12 @@ export class ReforgeOptimizer {
 				{savedEpWeights.rootElem}
 				{this.simUI.epWeightsModal && (
 					<button
-						className="btn btn-outline-primary"
+						className="btn btn-outline-primary mt-2"
 						onclick={() => {
 							this.simUI.epWeightsModal?.open();
 							hideAll();
 						}}>
-						Edit weights
+						{i18n.t('sidebar.buttons.suggest_reforges.edit_weights')}
 					</button>
 				)}
 			</>
@@ -770,12 +1101,12 @@ export class ReforgeOptimizer {
 		const breakpointsLimitTooltipRef = ref<HTMLButtonElement>();
 
 		const content = (
-			<table ref={tableRef} className={clsx('reforge-optimizer-stat-cap-table mb-2', !this.sim.getUseSoftCapBreakpoints() && 'hide')}>
+			<table ref={tableRef} className={clsx('reforge-optimizer-stat-cap-table mb-2', !this.useSoftCapBreakpoints && 'hide')}>
 				<thead>
 					<tr>
 						<th colSpan={3} className="pb-3">
 							<div className="d-flex">
-								<h6 className="content-block-title mb-0 me-1">Breakpoint limit</h6>
+								<h6 className="content-block-title mb-0 me-1">{i18n.t('sidebar.buttons.suggest_reforges.breakpoint_limit')}</h6>
 								<button ref={breakpointsLimitTooltipRef} className="d-inline">
 									<i className="fa-regular fa-circle-question" />
 								</button>
@@ -785,7 +1116,10 @@ export class ReforgeOptimizer {
 				</thead>
 				<tbody>
 					{this.softCapsConfig
-						.filter(config => (config.capType === StatCapType.TypeThreshold ||config.capType === StatCapType.TypeSoftCap) && config.breakpoints.length > 1)
+						.filter(
+							config =>
+								(config.capType === StatCapType.TypeThreshold || config.capType === StatCapType.TypeSoftCap) && config.breakpoints.length > 1,
+						)
 						.map(({ breakpoints, unitStat }) => {
 							if (!unitStat.hasRootStat()) return;
 							const rootStat = unitStat.getRootStat();
@@ -793,26 +1127,32 @@ export class ReforgeOptimizer {
 
 							const listElementRef = ref<HTMLTableRowElement>();
 							const statName = unitStat.getShortName(this.player.getClass());
-							const picker = !!breakpoints
+							const picker = breakpoints
 								? new EnumPicker(null, this.player, {
 										id: `reforge-optimizer-${statName}-presets`,
 										extraCssClasses: ['mb-0'],
 										label: '',
 										values: [
-											{ name: 'No limit set', value: 0 },
+											{ name: i18n.t('sidebar.buttons.suggest_reforges.no_limit_set'), value: 0 },
 											...breakpoints.map(breakpoint => ({
 												name: `${this.breakpointValueToDisplayPercentage(breakpoint, unitStat)}%`,
 												value: breakpoint,
 											})),
 										].sort((a, b) => a.value - b.value),
-										changedEvent: _ => TypedEvent.onAny([this.sim.useSoftCapBreakpointsChangeEmitter]),
+										changedEvent: _ => TypedEvent.onAny([this.useSoftCapBreakpointsChangeEmitter]),
 										getValue: () => {
-											return this.player.getBreakpointLimits().getUnitStat(unitStat) || 0;
+											const breakpointLimits = this.breakpointLimits;
+											let limit = breakpointLimits.getUnitStat(unitStat);
+											if (!breakpoints.some(breakpoint => breakpoint == limit)) {
+												limit = 0;
+											}
+
+											return limit;
 										},
 										setValue: (eventID, _player, newValue) => {
-											this.player.setBreakpointLimits(eventID, this.player.getBreakpointLimits().withUnitStat(unitStat, newValue));
+											this.setBreakpointLimits(eventID, this.breakpointLimits.withUnitStat(unitStat, newValue));
 										},
-								  })
+									})
 								: null;
 
 							if (!picker?.rootElem) return null;
@@ -836,13 +1176,13 @@ export class ReforgeOptimizer {
 
 		if (breakpointsLimitTooltipRef.value) {
 			const tooltip = tippy(breakpointsLimitTooltipRef.value, {
-				content: 'Allows you to set a custom breakpoint limit.',
+				content: i18n.t('sidebar.buttons.suggest_reforges.breakpoint_limit_tooltip'),
 			});
 			useSoftCapBreakpointsInput.addOnDisposeCallback(() => tooltip.destroy());
 		}
 
-		const event = this.sim.useSoftCapBreakpointsChangeEmitter.on(() => {
-			const isUsingBreakpoints = this.sim.getUseSoftCapBreakpoints();
+		const event = this.useSoftCapBreakpointsChangeEmitter.on(() => {
+			const isUsingBreakpoints = this.useSoftCapBreakpoints;
 			tableRef.value?.classList[isUsingBreakpoints ? 'remove' : 'add']('hide');
 		});
 
@@ -855,7 +1195,7 @@ export class ReforgeOptimizer {
 	}
 
 	get isAllowedToOverrideStatCaps() {
-		return !(this.sim.getUseSoftCapBreakpoints() && this.softCapsConfig);
+		return !(this.useSoftCapBreakpoints && this.softCapsConfig);
 	}
 
 	get processedStatCaps() {
@@ -868,22 +1208,35 @@ export class ReforgeOptimizer {
 		return statCaps;
 	}
 
-	async optimizeReforges() {
+	async optimizeReforges(batchRun?: boolean) {
 		if (isDevMode()) console.log('Starting Reforge optimization...');
 
 		// First, clear all existing Reforges
 		if (isDevMode()) {
 			console.log('Clearing existing Reforges...');
 			console.log('The following slots will not be cleared:');
-			console.log(Array.from(this.frozenItemSlots.keys()).filter(key => this.frozenItemSlots.get(key)));
+			console.log(Array.from(this.frozenItemSlots.keys()).filter(key => this.getFrozenItemSlot(key)));
 		}
 		this.previousGear = this.player.getGear();
 		this.previousReforges = this.previousGear.getAllReforges();
-		const baseGear = this.previousGear.withoutReforges(this.player.canDualWield2H(), this.frozenItemSlots);
+		let baseGear = this.previousGear.withoutReforges(this.player.canDualWield2H(), this.frozenItemSlots);
+
+		if (this.includeGems) {
+			baseGear = baseGear.withoutGems(this.player.canDualWield2H(), this.frozenItemSlots, true);
+		}
+
 		const baseStats = await this.updateGear(baseGear);
 
 		// Compute effective stat caps for just the Reforge contribution
-		const reforgeCaps = baseStats.computeStatCapsDelta(this.processedStatCaps);
+		let reforgeCaps = baseStats.computeStatCapsDelta(this.processedStatCaps);
+
+		if (this.player.getSpec() == Spec.SpecGuardianDruid) {
+			reforgeCaps = reforgeCaps.withPseudoStat(
+				PseudoStat.PseudoStatMeleeHastePercent,
+				reforgeCaps.getPseudoStat(PseudoStat.PseudoStatMeleeHastePercent) / 1.5,
+			);
+		}
+
 		if (isDevMode()) {
 			console.log('Stat caps for Reforge contribution:');
 			console.log(reforgeCaps);
@@ -894,20 +1247,32 @@ export class ReforgeOptimizer {
 
 		// Perform any required processing on the pre-cap EPs to make them internally consistent with the
 		// configured hard caps and soft caps.
-		const validatedWeights = ReforgeOptimizer.checkWeights(this.preCapEPs, reforgeCaps, reforgeSoftCaps);
+		let validatedWeights = ReforgeOptimizer.checkWeights(this.preCapEPs, reforgeCaps, reforgeSoftCaps);
+
+		if (this.relativeStatCap) {
+			validatedWeights = this.relativeStatCap.updateWeights(validatedWeights);
+		}
 
 		// Set up YALPS model
-		const variables = this.buildYalpsVariables(baseGear, validatedWeights);
+		const variables = this.buildYalpsVariables(baseGear, validatedWeights, reforgeCaps, reforgeSoftCaps);
 		const constraints = this.buildYalpsConstraints(baseGear, baseStats);
 
 		// Solve in multiple passes to enforce caps
-		await this.solveModel(baseGear, validatedWeights, reforgeCaps, reforgeSoftCaps, variables, constraints, 75000);
+		await this.solveModel(
+			baseGear,
+			validatedWeights,
+			reforgeCaps,
+			reforgeSoftCaps,
+			variables,
+			constraints,
+			5000000,
+			(this.includeTimeout ? (this.relativeStatCap ? 120 : 30) : 3600) / (batchRun ? 4 : 1),
+		);
 		this.currentReforges = this.player.getGear().getAllReforges();
 	}
 
 	async updateGear(gear: Gear): Promise<Stats> {
-		this.player.setGear(TypedEvent.nextEventID(), gear);
-		await this.sim.updateCharacterStats(TypedEvent.nextEventID());
+		await this.player.setGearAsync(TypedEvent.nextEventID(), gear);
 		let baseStats = Stats.fromProto(this.player.getCurrentStats().finalStats);
 		baseStats = baseStats.addStat(Stat.StatMasteryRating, this.player.getBaseMastery() * Mechanics.MASTERY_RATING_PER_MASTERY_POINT);
 		if (this.updateGearStatsModifier) baseStats = this.updateGearStatsModifier(baseStats);
@@ -944,18 +1309,21 @@ export class ReforgeOptimizer {
 		return reforgeSoftCaps;
 	}
 
-	buildYalpsVariables(gear: Gear, preCapEPs: Stats): YalpsVariables {
+	buildYalpsVariables(gear: Gear, preCapEPs: Stats, reforgeCaps: Stats, reforgeSoftCaps: StatCap[]): YalpsVariables {
 		const variables = new Map<string, YalpsCoefficients>();
 		const epStats = this.simUI.individualConfig.epStats;
+		const gemsToInclude = this.buildGemOptions(preCapEPs, reforgeCaps, reforgeSoftCaps);
 
 		for (const slot of gear.getItemSlots()) {
 			const item = gear.getEquippedItem(slot);
 
-			if (!item || this.frozenItemSlots.get(slot)) {
+			if (!item || this.getFrozenItemSlot(slot)) {
 				continue;
 			}
 
-			for (const reforgeData of this.player.getAvailableReforgings(item.withDynamicStats())) {
+			const scaledItem = item.withDynamicStats();
+
+			for (const reforgeData of this.player.getAvailableReforgings(scaledItem)) {
 				if (!epStats.includes(reforgeData.toStat) && reforgeData.toStat != Stat.StatExpertiseRating) {
 					continue;
 				}
@@ -967,13 +1335,271 @@ export class ReforgeOptimizer {
 				this.applyReforgeStat(coefficients, reforgeData.toStat, reforgeData.toAmount, preCapEPs);
 				variables.set(variableKey, coefficients);
 			}
+
+			if (!this.includeGems) {
+				continue;
+			}
+			const uiItem = item.item;
+			const socketColors = item.curSocketColors(this.player.isBlacksmithing());
+			if (!this.includeEOTBPGemSocket && (isShaTouchedWeapon(uiItem) || isThroneOfThunderWeapon(uiItem))) {
+				socketColors.pop();
+			}
+
+			let socketBonusNormalization: number = socketColors.length || 1;
+
+			if (socketBonusNormalization > 1 && socketColors[0] === GemColor.GemColorMeta) {
+				socketBonusNormalization -= 1;
+			}
+
+			const distributedSocketBonus = new Stats(scaledItem.item.socketBonus).scale(1.0 / socketBonusNormalization).getBuffedStats();
+
+			// First determine whether the socket bonus should be obviously matched in order to save on brute force computation.
+			let forceSocketBonus: boolean = false;
+			const socketBonusAsCoeff = new Map<string, number>();
+
+			for (const [stat, value] of distributedSocketBonus.entries()) {
+				this.applyReforgeStat(socketBonusAsCoeff, stat, value, preCapEPs);
+			}
+
+			if (ReforgeOptimizer.includesCappedStat(socketBonusAsCoeff, reforgeCaps, reforgeSoftCaps) && socketBonusNormalization > 1) {
+				forceSocketBonus = true;
+			}
+
+			const dummyVariables = new Map<string, YalpsCoefficients>();
+			dummyVariables.set('matched', new Map<string, number>());
+			dummyVariables.set('unmatched', new Map<string, number>());
+
+			for (const socketColor of socketColors.values()) {
+				if (![GemColor.GemColorRed, GemColor.GemColorBlue, GemColor.GemColorYellow, GemColor.GemColorPrismatic].includes(socketColor)) {
+					break;
+				}
+
+				const matchedCoeffs = dummyVariables.get('matched')!;
+				const worstMatchedGemData = gemsToInclude.get(socketColor)!.at(-1)!;
+
+				for (const [key, value] of worstMatchedGemData.coefficients.entries()) {
+					matchedCoeffs.set(key, (matchedCoeffs.get(key) || 0) + value);
+				}
+
+				for (const [key, value] of socketBonusAsCoeff.entries()) {
+					matchedCoeffs.set(key, (matchedCoeffs.get(key) || 0) + value);
+				}
+
+				const unmatchedCoeffs = dummyVariables.get('unmatched')!;
+				const worstUnmatchedGemData = gemsToInclude.get(GemColor.GemColorPrismatic)!.at(-1)!;
+
+				for (const [key, value] of worstUnmatchedGemData.coefficients.entries()) {
+					unmatchedCoeffs.set(key, (unmatchedCoeffs.get(key) || 0) + value);
+				}
+			}
+
+			const scoredDummyVariables = this.updateReforgeScores(dummyVariables, preCapEPs);
+
+			if (
+				scoredDummyVariables.get('matched')!.get('score')! > scoredDummyVariables.get('unmatched')!.get('score')! &&
+				(socketBonusNormalization > 1 || !ReforgeOptimizer.includesCappedStat(scoredDummyVariables.get('matched')!, reforgeCaps, reforgeSoftCaps))
+			) {
+				forceSocketBonus = true;
+			}
+
+			socketColors.forEach((socketColor, socketIdx) => {
+				let gemColorKeys: GemColor[] = [];
+
+				if ([GemColor.GemColorPrismatic, GemColor.GemColorCogwheel, GemColor.GemColorShaTouched].includes(socketColor)) {
+					gemColorKeys.push(socketColor);
+				} else if ([GemColor.GemColorRed, GemColor.GemColorBlue, GemColor.GemColorYellow].includes(socketColor)) {
+					gemColorKeys.push(socketColor);
+
+					if (!forceSocketBonus) {
+						gemColorKeys.push(GemColor.GemColorPrismatic);
+					}
+				} else {
+					return;
+				}
+
+				const constraintKey = `${slot}_${socketIdx}`;
+
+				for (const gemColorKey of gemColorKeys) {
+					for (const gemData of gemsToInclude.get(gemColorKey)!) {
+						const variableKey = `${constraintKey}_${gemData.gem.id}`;
+						const coefficients = new Map<string, number>(gemData.coefficients);
+						coefficients.set(constraintKey, 1);
+
+						if (gemMatchesSocket(gemData.gem, socketColor)) {
+							for (const [stat, value] of distributedSocketBonus.entries()) {
+								this.applyReforgeStat(coefficients, stat, value, preCapEPs);
+							}
+						}
+						// Performance optimisation to force socket bonus matching for Jewelcrafting gems.
+						else if (gemData.isJC) {
+							continue;
+						}
+
+						if (gemColorKey == GemColor.GemColorCogwheel) {
+							coefficients.set(`${gemData.gem.id}`, 1);
+						}
+						if (gemColorKey == GemColor.GemColorShaTouched) {
+							coefficients.set('ShaTouchedGem', 1);
+						}
+						if (gemData.isJC) {
+							coefficients.set('JewelcraftingGem', 1);
+						}
+
+						variables.set(variableKey, coefficients);
+					}
+				}
+			});
 		}
 
 		return variables;
 	}
 
+	buildGemOptions(preCapEPs: Stats, reforgeCaps: Stats, reforgeSoftCaps: StatCap[]): Map<GemColor, GemData[]> {
+		const gemsToInclude = new Map<GemColor, GemData[]>();
+
+		if (!this.includeGems) {
+			return gemsToInclude;
+		}
+
+		const hasJC = this.player.hasProfession(Profession.Jewelcrafting);
+		const epStats = this.simUI.individualConfig.epStats;
+
+		for (const socketColor of [
+			GemColor.GemColorPrismatic,
+			GemColor.GemColorShaTouched,
+			GemColor.GemColorCogwheel,
+			GemColor.GemColorRed,
+			GemColor.GemColorBlue,
+			GemColor.GemColorYellow,
+		]) {
+			const allGemsOfColor = this.player.getGems(socketColor);
+			const filteredGemDataForColor = new Array<GemData>();
+			let weightsForSorting = preCapEPs;
+
+			if (this.relativeStatCap) {
+				weightsForSorting = weightsForSorting.withUnitStat(
+					this.relativeStatCap.forcedHighestStat,
+					weightsForSorting.getUnitStat(this.relativeStatCap.constrainedStats[0]),
+				);
+			}
+
+			for (const gem of allGemsOfColor) {
+				const isJC = gem.requiredProfession == Profession.Jewelcrafting;
+				if (
+					(isJC && !hasJC) ||
+					// Force non-tank specs to use exclusively primary stat JC gems to speed up calculations.
+					// May need to revisit this approximation at higher ilvls.
+					(isJC && !this.isTankSpec && !gemMatchesStats(gem, [Stat.StatStrength, Stat.StatAgility, Stat.StatIntellect])) ||
+					// Remove Hit gems for Hybrid casters as they can use Spirit as well and this speeds up calculations
+					(this.isHybridCaster && !!gem.stats[Stat.StatHitRating]) ||
+					gem.name.includes('Perfect') ||
+					!gemMatchesSocket(gem, socketColor)
+				) {
+					continue;
+				}
+
+				let allStatsValid = true;
+				const coefficients = new Map<string, number>();
+
+				for (const [statIdx, statValue] of gem.stats.entries()) {
+					if (statValue == 0) {
+						continue;
+					}
+
+					if (!epStats.includes(statIdx) && statIdx != Stat.StatExpertiseRating) {
+						allStatsValid = false;
+						break;
+					}
+
+					this.applyReforgeStat(coefficients, statIdx, statValue, weightsForSorting);
+				}
+
+				if (!allStatsValid) {
+					continue;
+				}
+
+				// Create single-entry map to re-use scoring code.
+				const gemVariableMap = new Map<string, YalpsCoefficients>([['temp', coefficients]]);
+				const scoredGemVariableMap = this.updateReforgeScores(gemVariableMap, weightsForSorting);
+				filteredGemDataForColor.push({
+					gem,
+					isJC,
+					coefficients: scoredGemVariableMap.get('temp')!,
+				});
+			}
+
+			// Sort from highest to lowest pre-cap EP.
+			filteredGemDataForColor.sort((a, b) => b.coefficients.get('score')! - a.coefficients.get('score')!);
+
+			// Go down the list and include all gems until we find the highest EP option with zero capped stats.
+			let maxGemOptionsForStat: number = this.isTankSpec ? 3 : 4;
+
+			if (socketColor == GemColor.GemColorYellow && !this.relativeStatCap) {
+				let foundCritOrHasteCap = false;
+
+				for (const parentStat of [Stat.StatCritRating, Stat.StatHasteRating]) {
+					for (const childStat of UnitStat.getChildren(parentStat)) {
+						if (pseudoStatIsCapped(childStat, reforgeCaps, reforgeSoftCaps)) {
+							foundCritOrHasteCap = true;
+						}
+					}
+				}
+
+				if (!foundCritOrHasteCap) {
+					maxGemOptionsForStat = 1;
+				}
+			}
+
+			const includedGemDataForColor = new Array<GemData>();
+			let foundUncappedJCGem = false;
+			let foundUncappedNormalGem = false;
+			let numUncappedNormalGems = 0;
+			const numGemOptionsForStat = new Map<string, number>();
+
+			for (const gemData of filteredGemDataForColor) {
+				const cappedStatKeys = ReforgeOptimizer.getCappedStatKeys(gemData.coefficients, reforgeCaps, reforgeSoftCaps);
+				let isRedundantGem: boolean = false;
+
+				for (const statKey of cappedStatKeys) {
+					const numExistingOptions = numGemOptionsForStat.get(statKey) || 0;
+
+					if (numExistingOptions == maxGemOptionsForStat) {
+						isRedundantGem = true;
+					} else if (!gemData.isJC) {
+						numGemOptionsForStat.set(statKey, numExistingOptions + 1);
+					}
+				}
+
+				if ((!gemData.isJC || !foundUncappedJCGem) && !isRedundantGem && (cappedStatKeys.length == 0 || !foundUncappedNormalGem)) {
+					includedGemDataForColor.push(gemData);
+				}
+
+				if (cappedStatKeys.length == 0 && socketColor != GemColor.GemColorCogwheel) {
+					if (gemData.isJC) {
+						foundUncappedJCGem = true;
+					} else {
+						foundUncappedNormalGem = true;
+						numUncappedNormalGems++;
+
+						if (!this.relativeStatCap || numUncappedNormalGems == 3) {
+							break;
+						}
+					}
+				}
+			}
+
+			gemsToInclude.set(socketColor, includedGemDataForColor);
+		}
+
+		return gemsToInclude;
+	}
+
 	// Apply stat dependencies before setting optimization coefficients
 	applyReforgeStat(coefficients: YalpsCoefficients, stat: Stat, amount: number, preCapEPs: Stats) {
+		if (stat == Stat.StatSpirit && this.player.getRace() == Race.RaceHuman) {
+			amount *= 1.03;
+		}
+
 		// Handle Spirit to Spell Hit conversion for hybrid casters separately from standard dependencies
 		if ((stat == Stat.StatSpirit && this.isHybridCaster) || stat == Stat.StatExpertiseRating) {
 			this.setPseudoStatCoefficient(coefficients, PseudoStat.PseudoStatSpellHitPercent, amount / Mechanics.SPELL_HIT_RATING_PER_HIT_PERCENT);
@@ -986,7 +1612,7 @@ export class ReforgeOptimizer {
 		// If the pre-cap EP for the root stat is non-zero, then apply
 		// the root stat directly and don't look for any children.
 		if (preCapEPs.getStat(stat) != 0) {
-			coefficients.set(Stat[stat], amount);
+			this.setStatCoefficient(coefficients, stat, amount);
 			return;
 		}
 
@@ -999,6 +1625,11 @@ export class ReforgeOptimizer {
 		}
 	}
 
+	setStatCoefficient(coefficients: YalpsCoefficients, stat: Stat, amount: number) {
+		const currentValue = coefficients.get(Stat[stat]) || 0;
+		coefficients.set(Stat[stat], currentValue + amount);
+	}
+
 	setPseudoStatCoefficient(coefficients: YalpsCoefficients, pseudoStat: PseudoStat, amount: number) {
 		const currentValue = coefficients.get(PseudoStat[pseudoStat]) || 0;
 		coefficients.set(PseudoStat[pseudoStat], currentValue + amount);
@@ -1006,17 +1637,34 @@ export class ReforgeOptimizer {
 
 	buildYalpsConstraints(gear: Gear, baseStats: Stats): YalpsConstraints {
 		const constraints = new Map<string, Constraint>();
+		const allCogwheelGems = this.includeGems ? this.player.getGems(GemColor.GemColorCogwheel) : [];
 
 		for (const slot of gear.getItemSlots()) {
 			constraints.set(ItemSlot[slot], lessEq(1));
+
+			if (this.includeGems) {
+				gear.getEquippedItem(slot)
+					?.curSocketColors(this.player.isBlacksmithing())
+					.forEach((_, socketIdx) => {
+						constraints.set(`${slot}_${socketIdx}`, lessEq(1));
+					});
+
+				// Enforce uniqueness of Sha-Touched gems.
+				constraints.set('ShaTouchedGem', lessEq(1));
+
+				// Enforce two Jewelcrafting gems.
+				constraints.set('JewelcraftingGem', lessEq(2));
+
+				// Enforce uniqueness of Cogwheel gems.
+				for (const cogwheelGem of allCogwheelGems) {
+					if (!cogwheelGem.unique) continue;
+					constraints.set(`${cogwheelGem.id}`, lessEq(1));
+				}
+			}
 		}
 
 		if (this.relativeStatCap) {
-			const statsWithoutBaseMastery = baseStats.addStat(
-				Stat.StatMasteryRating,
-				-this.player.getBaseMastery() * Mechanics.MASTERY_RATING_PER_MASTERY_POINT,
-			);
-			this.relativeStatCap.updateConstraints(constraints, gear, statsWithoutBaseMastery);
+			this.relativeStatCap.updateConstraints(constraints, gear, baseStats);
 		}
 
 		return constraints;
@@ -1030,6 +1678,7 @@ export class ReforgeOptimizer {
 		variables: YalpsVariables,
 		constraints: YalpsConstraints,
 		maxIterations: number,
+		maxSeconds: number,
 	): Promise<number> {
 		// Calculate EP scores for each Reforge option
 		if (isDevMode()) {
@@ -1052,23 +1701,40 @@ export class ReforgeOptimizer {
 			binaries: true,
 		};
 		const options: Options = {
-			timeout: Infinity,
+			timeout: maxSeconds * 1000,
 			maxIterations: maxIterations,
 			tolerance: 0.01,
 		};
+		const startTimeMs: number = Date.now();
 		const solution = solve(model, options);
+		const elapsedSeconds: number = (Date.now() - startTimeMs) / 1000;
 
 		if (isDevMode()) {
 			console.log('LP solution for this iteration:');
 			console.log(solution);
 		}
 
-		if (isNaN(solution.result)) {
-			if (maxIterations > 500000) {
-				throw solution;
+		if (isNaN(solution.result) || (solution.status == 'timedout' && maxIterations < 4000000 && elapsedSeconds < maxSeconds)) {
+			if (maxIterations > 4000000 || elapsedSeconds > maxSeconds) {
+				if (solution.status == 'infeasible') {
+					throw 'The specified stat caps are impossible to achieve. Consider changing any upper bound stat caps to lower bounds instead.';
+				} else if (solution.status == 'timedout' && this.includeTimeout) {
+					throw 'Solver timed out before finding a feasible solution. Consider un-checking "Limit execution time" in the Reforge settings.';
+				} else {
+					throw solution.status;
+				}
 			} else {
-				if (isDevMode()) console.log('No feasible solution was found, doubling max iterations...');
-				return await this.solveModel(gear, weights, reforgeCaps, reforgeSoftCaps, variables, constraints, maxIterations * 2);
+				if (isDevMode()) console.log('No optimal solution was found, doubling max iterations...');
+				return await this.solveModel(
+					gear,
+					weights,
+					reforgeCaps,
+					reforgeSoftCaps,
+					variables,
+					constraints,
+					maxIterations * 10,
+					maxSeconds - elapsedSeconds,
+				);
 			}
 		}
 
@@ -1093,7 +1759,16 @@ export class ReforgeOptimizer {
 		} else {
 			if (isDevMode()) console.log('One or more stat caps were exceeded, starting constrained iteration...');
 			await sleep(100);
-			return await this.solveModel(updatedGear, updatedWeights, reforgeCaps, reforgeSoftCaps, updatedVariables, updatedConstraints, maxIterations);
+			return await this.solveModel(
+				updatedGear,
+				updatedWeights,
+				reforgeCaps,
+				reforgeSoftCaps,
+				updatedVariables,
+				updatedConstraints,
+				maxIterations,
+				maxSeconds - elapsedSeconds,
+			);
 		}
 	}
 
@@ -1130,19 +1805,34 @@ export class ReforgeOptimizer {
 	async applyLPSolution(gear: Gear, solution: Solution): Promise<Gear> {
 		let updatedGear = gear.withoutReforges(this.player.canDualWield2H(), this.frozenItemSlots);
 
+		if (this.includeGems) {
+			updatedGear = updatedGear.withoutGems(this.player.canDualWield2H(), this.frozenItemSlots, true);
+		}
+
 		for (const [variableKey, _coefficient] of solution.variables) {
 			const splitKey = variableKey.split('_');
 			const slot = parseInt(splitKey[0]) as ItemSlot;
-			const reforgeId = parseInt(splitKey[1]);
-			const equippedItem = gear.getEquippedItem(slot);
+			const equippedItem = updatedGear.getEquippedItem(slot);
 
 			if (equippedItem) {
+				if (splitKey.length > 2) {
+					const socketIdx = parseInt(splitKey[1]);
+					const gemId = parseInt(splitKey[2]);
+					updatedGear = updatedGear.withGem(slot, socketIdx, this.sim.db.lookupGem(gemId));
+					continue;
+				}
+
+				const reforgeId = parseInt(splitKey[1]);
 				updatedGear = updatedGear.withEquippedItem(
 					slot,
 					equippedItem.withReforge(this.sim.db.getReforgeById(reforgeId)!),
 					this.player.canDualWield2H(),
 				);
 			}
+		}
+
+		if (this.includeGems) {
+			updatedGear = this.minimizeRegems(updatedGear);
 		}
 
 		await this.updateGear(updatedGear);
@@ -1187,12 +1877,16 @@ export class ReforgeOptimizer {
 			const statName = unitStat.getKey();
 
 			if (cap !== 0 && value > cap && !constraints.has(statName)) {
-				updatedConstraints.set(statName, greaterEq(cap));
 				anyCapsExceeded = true;
 				if (isDevMode()) console.log('Cap exceeded for: %s', statName);
 
-				// Set EP to 0 for hard capped stats
-				updatedWeights = updatedWeights.withUnitStat(unitStat, 0);
+				// Set EP to 0 for hard capped stats unless they are treated as upper bounds.
+				if (this.undershootCaps.getUnitStat(unitStat)) {
+					updatedConstraints.set(statName, lessEq(cap));
+				} else {
+					updatedConstraints.set(statName, greaterEq(cap));
+					updatedWeights = updatedWeights.withUnitStat(unitStat, 0);
+				}
 			}
 		}
 
@@ -1232,6 +1926,72 @@ export class ReforgeOptimizer {
 		}
 
 		return [anyCapsExceeded, updatedConstraints, updatedWeights];
+	}
+
+	minimizeRegems(newGear: Gear): Gear {
+		const originalGear = this.previousGear;
+
+		if (!originalGear) {
+			return newGear;
+		}
+
+		const isBlacksmithing = this.player.isBlacksmithing();
+		const finalizedSocketKeys: string[] = [];
+
+		for (const slot of newGear.getItemSlots()) {
+			const newItem = newGear.getEquippedItem(slot);
+			const originalItem = originalGear.getEquippedItem(slot);
+
+			if (!newItem || !originalItem) {
+				continue;
+			}
+
+			const newGems = newItem.curGems(isBlacksmithing);
+			const originalGems = originalItem.curGems(isBlacksmithing);
+
+			for (const [socketIdx, socketColor] of newItem.curSocketColors(isBlacksmithing).entries()) {
+				const socketKey = `${slot}_${socketIdx}`;
+
+				if (finalizedSocketKeys.includes(socketKey)) {
+					continue;
+				}
+
+				finalizedSocketKeys.push(socketKey);
+
+				if (!newGems[socketIdx] || !originalGems[socketIdx] || newGems[socketIdx]!.id === originalGems[socketIdx]!.id) {
+					continue;
+				}
+
+				if (gemMatchesSocket(newGems[socketIdx]!, socketColor) && !gemMatchesSocket(originalGems[socketIdx]!, socketColor)) {
+					continue;
+				}
+
+				for (const [matchedSlot, matchedSocketIdx] of newGear.findGem(originalGems[socketIdx]!, isBlacksmithing)) {
+					if (this.frozenItemSlots.has(matchedSlot)) {
+						continue;
+					}
+
+					const matchedSocketKey = `${matchedSlot}_${matchedSocketIdx}`;
+
+					if (finalizedSocketKeys.includes(matchedSocketKey)) {
+						continue;
+					}
+
+					const matchedSocketColor = newGear.getEquippedItem(matchedSlot)!.curSocketColors(isBlacksmithing)[matchedSocketIdx];
+
+					if (gemMatchesSocket(originalGems[socketIdx]!, matchedSocketColor) && !gemMatchesSocket(newGems[socketIdx]!, matchedSocketColor)) {
+						continue;
+					}
+
+					finalizedSocketKeys.push(matchedSocketKey);
+					newGear = newGear.withGem(slot, socketIdx, originalGems[socketIdx]);
+					newGear = newGear.withGem(matchedSlot, matchedSocketIdx, newGems[socketIdx]);
+					break;
+				}
+			}
+		}
+
+		return newGear;
 	}
 
 	private get baseMastery() {
@@ -1283,21 +2043,25 @@ export class ReforgeOptimizer {
 		const copyButtonContainerRef = ref<HTMLDivElement>();
 		const changedReforgeMessage = (
 			<>
-				<p className="mb-0">The following items were reforged:</p>
+				<p className="mb-0">{i18n.t('gear_tab.reforge_success.title')}</p>
 				<ul>
 					{[...changedSlots].map(([slot, reforge]) => {
 						if (reforge) {
-							const slotName = slotNames.get(slot);
+							const slotName = translateSlotName(slot);
 							const { fromStat, toStat } = reforge;
-							const fromText = shortSecondaryStatNames.get(fromStat);
-							const toText = shortSecondaryStatNames.get(toStat);
+							const fromText = translateStat(fromStat);
+							const toText = translateStat(toStat);
 							return (
 								<li>
 									{slotName}: {fromText} → {toText}
 								</li>
 							);
 						} else {
-							return <li>{slotNames.get(slot)}: Removed reforge</li>;
+							return (
+								<li>
+									{translateSlotName(slot)}: {i18n.t('gear_tab.reforge_success.removed_reforge')}
+								</li>
+							);
 						}
 					})}
 				</ul>
@@ -1311,13 +2075,18 @@ export class ReforgeOptimizer {
 				new CopyButton(copyButtonContainerRef.value!, {
 					extraCssClasses: ['btn-outline-primary'],
 					getContent: () => JSON.stringify(settingsExport),
-					text: 'Copy to Reforge Lite',
+					text: i18n.t('gear_tab.reforge_success.copy_to_reforge_lite'),
 				});
 		}
 
+		trackEvent({
+			action: 'settings',
+			category: 'reforging',
+			label: 'suggest_success',
+		});
 		new Toast({
 			variant: 'success',
-			body: hasReforgeChanges ? changedReforgeMessage : <>No reforge changes were made!</>,
+			body: hasReforgeChanges ? changedReforgeMessage : <>{i18n.t('gear_tab.reforge_success.no_changes')}</>,
 			delay: hasReforgeChanges ? 5000 : 3000,
 		});
 	}
@@ -1326,9 +2095,69 @@ export class ReforgeOptimizer {
 		if (isDevMode()) console.log(error);
 
 		if (this.previousGear) this.updateGear(this.previousGear);
+		trackEvent({
+			action: 'settings',
+			category: 'reforging',
+			label: 'suggest_error',
+			value: error,
+		});
 		new Toast({
 			variant: 'error',
-			body: 'Reforge optimization failed. Please try again, or report the issue if it persists.',
+			body: (
+				<>
+					{i18n.t('sidebar.buttons.suggest_reforges.reforge_optimization_failed')}
+					<p></p>
+					<p>
+						<b>Reason for failure:</b> <i>{error}</i>
+					</p>
+				</>
+			),
+			delay: 10000,
+		});
+	}
+
+	fromProto(eventID: EventID, proto: ReforgeSettings) {
+		TypedEvent.freezeAllAndDo(() => {
+			this.setUseCustomEPValues(eventID, proto.useCustomEpValues);
+			this.setStatCaps(eventID, Stats.fromProto(proto.statCaps));
+			this.setUseSoftCapBreakpoints(eventID, proto.useSoftCapBreakpoints);
+			this.setIncludeTimeout(eventID, proto.includeTimeout);
+			this.setIncludeGems(eventID, proto.includeGems);
+			this.setIncludeEOTBPGemSocket(eventID, proto.includeEotbGemSocket);
+			this.setFreezeItemSlots(eventID, proto.freezeItemSlots);
+			this.setFrozenItemSlots(eventID, proto.frozenItemSlots);
+			this.setBreakpointLimits(eventID, Stats.fromProto(proto.breakpointLimits));
+			if (proto.relativeStatCapStat) {
+				this.setRelativeStatCap(eventID, UnitStat.fromProto(proto.relativeStatCapStat).getStat());
+			}
+		});
+	}
+	toProto(): ReforgeSettings {
+		return ReforgeSettings.create({
+			useCustomEpValues: this.useCustomEPValues,
+			useSoftCapBreakpoints: this.useSoftCapBreakpoints,
+			includeTimeout: this.includeTimeout,
+			includeGems: this.includeGems,
+			includeEotbGemSocket: this.includeEOTBPGemSocket,
+			freezeItemSlots: this.freezeItemSlots,
+			frozenItemSlots: [...this.frozenItemSlots],
+			breakpointLimits: this.breakpointLimits.toProto(),
+			relativeStatCapStat: this.relativeStatCap?.forcedHighestStat.toProto(),
+			statCaps: this.statCaps.toProto(),
+		});
+	}
+	applyDefaults(eventID: EventID) {
+		TypedEvent.freezeAllAndDo(() => {
+			this.setUseCustomEPValues(eventID, false);
+			this.setUseSoftCapBreakpoints(eventID, !!this.simUI.individualConfig.defaults.softCapBreakpoints?.length);
+			this.setIncludeTimeout(eventID, true);
+			this.setIncludeGems(eventID, false);
+			this.setIncludeEOTBPGemSocket(eventID, false);
+			this.setFreezeItemSlots(eventID, false);
+			this.setStatCaps(eventID, this.simUI.individualConfig.defaults.statCaps || new Stats());
+			this.setBreakpointLimits(eventID, this.simUI.individualConfig.defaults.breakpointLimits || new Stats());
+			this.setSoftCapBreakpoints(eventID, this.simUI.individualConfig.defaults.softCapBreakpoints || []);
+			this.setRelativeStatCap(eventID, this.relativeStatCapStat);
 		});
 	}
 }

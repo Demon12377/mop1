@@ -6,9 +6,6 @@ import (
 	"github.com/wowsims/mop/sim/core"
 )
 
-const RipBaseNumTicks int32 = 8
-const RipMaxNumTicks int32 = RipBaseNumTicks + 3
-
 func (druid *Druid) registerRipSpell() {
 	// Raw parameters from DB
 	const coefficient = 0.10300000012
@@ -16,14 +13,15 @@ func (druid *Druid) registerRipSpell() {
 	const attackPowerCoeff = 0.0484
 
 	// Scaled parameters for spell code
-	baseDamage := coefficient * druid.ClassSpellScaling // 112.7582
+	baseDamage := coefficient * druid.ClassSpellScaling              // 112.7582
 	comboPointCoeff := resourceCoefficient * druid.ClassSpellScaling // 319.664
 
 	druid.Rip = druid.RegisterSpell(Cat, core.SpellConfig{
-		ActionID:    core.ActionID{SpellID: 1079},
-		SpellSchool: core.SpellSchoolPhysical,
-		ProcMask:    core.ProcMaskMeleeMHSpecial,
-		Flags:       core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ActionID:       core.ActionID{SpellID: 1079},
+		SpellSchool:    core.SpellSchoolPhysical,
+		ProcMask:       core.ProcMaskMeleeMHSpecial,
+		Flags:          core.SpellFlagMeleeMetrics | core.SpellFlagAPL,
+		ClassSpellMask: DruidSpellRip,
 
 		EnergyCost: core.EnergyCostOptions{
 			Cost:   30,
@@ -51,7 +49,7 @@ func (druid *Druid) registerRipSpell() {
 			Aura: druid.applyRendAndTear(core.Aura{
 				Label: "Rip",
 			}),
-			NumberOfTicks: RipBaseNumTicks,
+			NumberOfTicks: druid.RipBaseNumTicks,
 			TickLength:    time.Second * 2,
 
 			OnSnapshot: func(sim *core.Simulation, target *core.Unit, dot *core.Dot, isRollover bool) {
@@ -61,7 +59,7 @@ func (druid *Druid) registerRipSpell() {
 
 				cp := float64(druid.ComboPoints())
 				ap := dot.Spell.MeleeAttackPower()
-				dot.SnapshotPhysical(target, baseDamage + comboPointCoeff*cp + attackPowerCoeff*cp*ap)
+				dot.SnapshotPhysical(target, baseDamage+comboPointCoeff*cp+attackPowerCoeff*cp*ap)
 
 				// Store snapshot power parameters for later use.
 				druid.UpdateBleedPower(druid.Rip, sim, target, true, true)
@@ -75,7 +73,7 @@ func (druid *Druid) registerRipSpell() {
 			result := spell.CalcOutcome(sim, target, spell.OutcomeMeleeSpecialHitNoHitCounter)
 			if result.Landed() {
 				dot := spell.Dot(target)
-				dot.BaseTickCount = RipBaseNumTicks
+				dot.BaseTickCount = druid.RipBaseNumTicks
 				dot.Apply(sim)
 				druid.SpendComboPoints(sim, spell.ComboPointMetrics())
 			} else {
@@ -84,16 +82,21 @@ func (druid *Druid) registerRipSpell() {
 			spell.DealOutcome(sim, result)
 		},
 
-		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, _ bool) *core.SpellResult {
-			cp := 5.0 // Hard-code this so that snapshotting calculations can be performed at any CP value.
-			ap := spell.MeleeAttackPower()
-			baseTickDamage := baseDamage + comboPointCoeff*cp + attackPowerCoeff*cp*ap
-			result := spell.CalcPeriodicDamage(sim, target, baseTickDamage, spell.OutcomeExpectedMagicAlwaysHit)
-			attackTable := spell.Unit.AttackTables[target.UnitIndex]
-			critChance := spell.PhysicalCritChance(attackTable)
-			critMod := critChance * (spell.CritMultiplier - 1)
-			result.Damage *= 1 + critMod
-			return result
+		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
+			if useSnapshot {
+				dot := spell.Dot(target)
+				return dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
+			} else {
+				cp := 5.0 // Hard-code this so that snapshotting calculations can be performed at any CP value.
+				ap := spell.MeleeAttackPower()
+				baseTickDamage := baseDamage + comboPointCoeff*cp + attackPowerCoeff*cp*ap
+				result := spell.CalcPeriodicDamage(sim, target, baseTickDamage, spell.OutcomeExpectedMagicAlwaysHit)
+				attackTable := spell.Unit.AttackTables[target.UnitIndex]
+				critChance := spell.PhysicalCritChance(attackTable)
+				critMod := critChance * (spell.CritMultiplier - 1)
+				result.Damage *= 1 + critMod
+				return result
+			}
 		},
 	})
 
@@ -107,7 +110,7 @@ func (druid *Druid) CurrentRipCost() float64 {
 func (druid *Druid) ApplyBloodletting(target *core.Unit) {
 	ripDot := druid.Rip.Dot(target)
 
-	if ripDot.IsActive() && (ripDot.BaseTickCount < RipMaxNumTicks) {
+	if ripDot.IsActive() && (ripDot.BaseTickCount < druid.RipMaxNumTicks) {
 		ripDot.BaseTickCount += 1
 		ripDot.UpdateExpires(ripDot.ExpiresAt() + ripDot.BaseTickLength)
 	}

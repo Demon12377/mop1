@@ -7,8 +7,8 @@ import (
 	"github.com/wowsims/mop/sim/warlock"
 )
 
-const drainSoulScale = 0.257 * 1.5 // 2025.06.13 Changes to Beta - Drain Soul Damage increased by 50%
-const drainSoulCoeff = 0.257 * 1.5
+const drainSoulScale = 0.257
+const drainSoulCoeff = 0.257
 
 func (affliction *AfflictionWarlock) registerDrainSoul() {
 	affliction.RegisterSpell(core.SpellConfig{
@@ -52,8 +52,7 @@ func (affliction *AfflictionWarlock) registerDrainSoul() {
 					return
 				}
 
-				// 2025.06.13 Changes to Beta - Drain Soul DoT damage increased to 100%
-				affliction.ProcMaleficEffect(target, 1, sim)
+				affliction.ProcMaleficEffect(target, affliction.DrainSoulMaleficEffectMultiplier, sim)
 			},
 		},
 
@@ -63,6 +62,19 @@ func (affliction *AfflictionWarlock) registerDrainSoul() {
 				spell.Dot(target).Apply(sim)
 			}
 			spell.DealOutcome(sim, result)
+		},
+
+		ExpectedTickDamage: func(sim *core.Simulation, target *core.Unit, spell *core.Spell, useSnapshot bool) *core.SpellResult {
+			dot := spell.Dot(target)
+			if useSnapshot {
+				result := dot.CalcSnapshotDamage(sim, target, dot.OutcomeExpectedSnapshotCrit)
+				result.Damage /= dot.TickPeriod().Seconds()
+				return result
+			} else {
+				result := spell.CalcPeriodicDamage(sim, target, affliction.CalcScalingSpellDmg(drainSoulScale), spell.OutcomeExpectedMagicCrit)
+				result.Damage /= dot.CalcTickPeriod().Round(time.Millisecond).Seconds()
+				return result
+			}
 		},
 	})
 

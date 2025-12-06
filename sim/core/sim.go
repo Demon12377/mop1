@@ -26,8 +26,9 @@ type Simulation struct {
 
 	Options *proto.SimOptions
 
-	rand  Rand
-	rseed int64
+	rand        Rand
+	rseed       int64
+	currentSeed int64
 
 	// Used for testing only, see RandomFloat().
 	isTest    bool
@@ -63,6 +64,8 @@ type Simulation struct {
 
 	minTaskTime time.Duration
 	tasks       []Task
+
+	isInPrepull bool
 }
 
 func (sim *Simulation) rescheduleTracker(trackerTime time.Duration) {
@@ -199,8 +202,9 @@ func newSimWithEnv(env *Environment, simOptions *proto.SimOptions, signals simsi
 		Environment: env,
 		Options:     simOptions,
 
-		rand:  NewSplitMix(uint64(rseed)),
-		rseed: rseed,
+		rand:        NewSplitMix(uint64(rseed)),
+		rseed:       rseed,
+		currentSeed: rseed,
 
 		isTest:    simOptions.IsTest || simOptions.UseLabeledRands,
 		testRands: make(map[string]Rand),
@@ -243,6 +247,7 @@ func (sim *Simulation) labelRand(label string) Rand {
 
 func (sim *Simulation) reseedRands(i int64) {
 	rseed := sim.Options.RandomSeed + i
+	sim.currentSeed = rseed
 	sim.rand.Seed(rseed)
 
 	if sim.isTest {
@@ -373,8 +378,10 @@ func (sim *Simulation) run() *proto.RaidSimResult {
 
 // RunOnce is the main event loop. It will run the simulation for number of seconds.
 func (sim *Simulation) runOnce() {
+	sim.isInPrepull = true
 	sim.reset()
 	sim.PrePull()
+	sim.isInPrepull = false
 	sim.runPendingActions()
 	sim.Cleanup()
 }
@@ -447,8 +454,14 @@ func (sim *Simulation) PrePull() {
 
 	sim.AddPendingAction(&PendingAction{
 		NextActionAt: 0,
-		Priority:     ActionPriorityPrePull,
+		Priority:     ActionPriorityPrePull + ActionPriority(len(sim.prepullActions)+1),
 		OnAction: func(sim *Simulation) {
+			for _, unit := range sim.Environment.AllUnits {
+				if unit.enabled {
+					unit.onEncounterStart(sim)
+				}
+			}
+
 			for _, unit := range sim.Environment.AllUnits {
 				if unit.enabled {
 					unit.startPull(sim)
@@ -473,6 +486,8 @@ func (sim *Simulation) Cleanup() {
 		if pa.CleanUp != nil {
 			pa.CleanUp(sim)
 		}
+
+		pa.dispose(sim)
 	}
 
 	sim.Raid.doneIteration(sim)
@@ -481,7 +496,7 @@ func (sim *Simulation) Cleanup() {
 	for _, unit := range sim.Raid.AllUnits {
 		unit.Metrics.doneIteration(unit, sim)
 	}
-	for _, target := range sim.Encounter.TargetUnits {
+	for _, target := range sim.Encounter.AllTargetUnits {
 		target.Metrics.doneIteration(target, sim)
 	}
 }
@@ -515,30 +530,29 @@ func (sim *Simulation) Step() bool {
 	}
 
 	sim.pendingActions = sim.pendingActions[:last]
+	pa.consumed = true
+
 	if pa.cancelled {
+		pa.dispose(sim)
 		return false
 	}
 
 	if pa.NextActionAt > sim.endOfCombatDuration || sim.Encounter.DamageTaken > sim.endOfCombatDamage {
+		pa.dispose(sim)
 		return true
 	}
-
-	pa.consumed = true
 
 	if pa.NextActionAt > sim.CurrentTime {
 		sim.advance(pa.NextActionAt)
 	}
 
 	if pa.cancelled {
+		pa.dispose(sim)
 		return false
 	}
 
 	pa.OnAction(sim)
-
-	if pa.canPool {
-		sim.pendingActionPool.Put(pa)
-	}
-
+	pa.dispose(sim)
 	return false
 }
 
@@ -647,6 +661,11 @@ func (sim *Simulation) AddPendingAction(pa *PendingAction) {
 	sim.pendingActions = append(sim.pendingActions, pa)
 }
 
+// Use this for any "fire and forget" delayed actions where your code does not
+// require persistent access to the returned *PendingAction pointer. This helper
+// avoids unnecessary re-allocations of the PendingAction struct for improved
+// code performance, but offers no guarantees on the long-term state of the
+// underlying struct, which will be re-used once consumed.
 func (sim *Simulation) GetConsumedPendingActionFromPool() *PendingAction {
 	pa := sim.pendingActionPool.Get().(*PendingAction)
 	pa.NextActionAt = 0

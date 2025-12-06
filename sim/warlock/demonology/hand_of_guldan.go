@@ -30,9 +30,10 @@ func (demonology *DemonologyWarlock) registerHandOfGuldan() {
 				Label:     "Shadowflame",
 				MaxStacks: 2,
 			},
-			NumberOfTicks:    6,
-			TickLength:       time.Second,
-			BonusCoefficient: shadowFlameCoeff,
+			NumberOfTicks:       6,
+			TickLength:          time.Second,
+			AffectedByCastSpeed: true,
+			BonusCoefficient:    shadowFlameCoeff,
 			OnSnapshot: func(sim *core.Simulation, target *core.Unit, dot *core.Dot, isRollover bool) {
 				dot.Snapshot(target, 0)
 				stacks := math.Min(float64(dot.Aura.GetStacks())+1, 2)
@@ -40,7 +41,7 @@ func (demonology *DemonologyWarlock) registerHandOfGuldan() {
 			},
 			OnTick: func(sim *core.Simulation, target *core.Unit, dot *core.Dot) {
 				dot.CalcAndDealPeriodicSnapshotDamage(sim, target, dot.OutcomeSnapshotCrit)
-				demonology.DemonicFury.Gain(sim, 2, dot.Spell.ActionID)
+				demonology.GainDemonicFury(sim, 2, dot.Spell.ActionID)
 			},
 		},
 
@@ -76,7 +77,7 @@ func (demonology *DemonologyWarlock) registerHandOfGuldan() {
 			return !demonology.IsInMeta()
 		},
 
-		ApplyEffects: func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+		ApplyEffects: func(sim *core.Simulation, _ *core.Unit, spell *core.Spell) {
 			// keep stacks in sync as they're shared
 			demonology.ChaosWave.ConsumeCharge(sim)
 			demonology.HandOfGuldanImpactTime = sim.CurrentTime + time.Millisecond*1300
@@ -85,18 +86,19 @@ func (demonology *DemonologyWarlock) registerHandOfGuldan() {
 			pa.Priority = core.ActionPriorityAuto
 
 			pa.OnAction = func(sim *core.Simulation) {
-				for _, enemy := range sim.Encounter.TargetUnits {
-					result := spell.CalcAndDealDamage(
-						sim,
-						enemy,
-						demonology.CalcScalingSpellDmg(hogScale),
-						spell.OutcomeMagicHitAndCrit,
-					)
+				results := spell.CalcAoeDamage(
+					sim,
+					demonology.CalcScalingSpellDmg(hogScale),
+					spell.OutcomeMagicHitAndCrit,
+				)
 
+				for _, result := range results {
 					if result.Landed() {
-						shadowFlame.Cast(sim, enemy)
+						shadowFlame.Cast(sim, result.Target)
 					}
 				}
+
+				spell.DealBatchedAoeDamage(sim)
 			}
 
 			sim.AddPendingAction(pa)

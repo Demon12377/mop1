@@ -4,17 +4,20 @@ import (
 	"github.com/wowsims/mop/sim/core"
 	"github.com/wowsims/mop/sim/core/proto"
 	"github.com/wowsims/mop/sim/core/stats"
-	"github.com/wowsims/mop/sim/encounters/bwd"
-	"github.com/wowsims/mop/sim/encounters/dragonsoul"
-	"github.com/wowsims/mop/sim/encounters/firelands"
+	"github.com/wowsims/mop/sim/encounters/hof"
+	"github.com/wowsims/mop/sim/encounters/msv"
+	"github.com/wowsims/mop/sim/encounters/toes"
+	"github.com/wowsims/mop/sim/encounters/tot"
 )
 
 func init() {
 	AddDefaultPresetEncounter()
 	addMovementAI()
-	bwd.Register()
-	firelands.Register()
-	dragonsoul.Register()
+	addDynamicAddsAI()
+	msv.Register()
+	hof.Register()
+	toes.Register()
+	tot.Register()
 }
 
 func AddSingleTargetBossEncounter(presetTarget *core.PresetTarget) {

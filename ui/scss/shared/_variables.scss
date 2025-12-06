@@ -1,3 +1,4 @@
+/* stylelint-disable scss/dollar-variable-first-in-block */
 @use 'sass:map';
 
 // Define and overwrite Bootstrap Variables
@@ -9,7 +10,7 @@
 //////////////////////////
 
 // Custom theme color mapping
-$expansion: #23C88C;
+$expansion: #23c88c;
 $brand: #e0a335;
 $success: #1eff00;
 
@@ -60,6 +61,7 @@ $multi-spell-school-colors: (
 	shadowfrost: linear-gradient(90deg, map-get($spell-school-colors, shadow), map-get($spell-school-colors, frost)),
 	plague: linear-gradient(90deg, map-get($spell-school-colors, shadow), map-get($spell-school-colors, nature)),
 	firestorm: linear-gradient(90deg, map-get($spell-school-colors, fire), map-get($spell-school-colors, nature)),
+	elemental: linear-gradient(90deg, map-get($spell-school-colors, frost), map-get($spell-school-colors, nature), map-get($spell-school-colors, fire)),
 );
 
 $theme-colors: map-merge($theme-colors, $spell-school-colors);
@@ -101,6 +103,7 @@ $custom-breakpoints: (
 
 // Borders
 $border-color: $gray-600;
+
 :root {
 	--border-default: 1px solid var(--bs-border-color);
 }
@@ -251,6 +254,11 @@ $body-color: $white;
 $font-size-root: 16px;
 $grid-gutter-width: 0.75rem;
 
+$custom-font-sizes: (
+	body: 0.875rem,
+);
+$font-sizes: map-merge($font-sizes, $custom-font-sizes);
+
 // This option doesn't seem to be working for some reason. Carets hidden manually instead
 // $enable-caret: false;
 $enable-negative-margins: true;
@@ -259,6 +267,7 @@ $enable-rounded: false;
 $link-color: #a5b1d6;
 $link-decoration: none;
 $link-hover-color: $white;
+
 :root {
 	--link-transition: color 0.15s ease-in-out;
 }

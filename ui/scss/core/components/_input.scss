@@ -8,6 +8,14 @@
 		filter: opacity(0.5);
 	}
 
+	&.input-inline,
+	&.icon-picker {
+		label {
+			overflow: unset !important;
+			text-overflow: unset !important;
+		}
+	}
+
 	&:not(.input-inline):not(.icon-picker) {
 		@include media-breakpoint-down(md) {
 			flex-direction: column !important;

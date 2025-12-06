@@ -33,16 +33,17 @@ const (
 
 type BloodDeathKnight struct {
 	*death_knight.DeathKnight
+
+	Bloodworms []*BloodwormPet
+
+	RuneTapSpell *core.Spell
 }
 
 func NewBloodDeathKnight(character *core.Character, options *proto.Player) *BloodDeathKnight {
-	dkOptions := options.GetBloodDeathKnight()
-
 	bdk := &BloodDeathKnight{
 		DeathKnight: death_knight.NewDeathKnight(character, death_knight.DeathKnightInputs{
-			IsDps:              false,
-			StartingRunicPower: dkOptions.Options.ClassOptions.StartingRunicPower,
-			Spec:               proto.Spec_SpecBloodDeathKnight,
+			Spec:  proto.Spec_SpecBloodDeathKnight,
+			IsDps: false,
 		}, options.TalentsString, 50034),
 	}
 
@@ -50,9 +51,9 @@ func NewBloodDeathKnight(character *core.Character, options *proto.Player) *Bloo
 
 	bdk.RuneWeapon = bdk.NewRuneWeapon()
 
-	bdk.Bloodworm = make([]*death_knight.BloodwormPet, 5)
+	bdk.Bloodworms = make([]*BloodwormPet, 5)
 	for i := range 5 {
-		bdk.Bloodworm[i] = bdk.NewBloodwormPet(i)
+		bdk.Bloodworms[i] = bdk.NewBloodwormPet(i)
 	}
 
 	return bdk
@@ -83,7 +84,6 @@ func (bdk *BloodDeathKnight) Initialize() {
 	bdk.registerScarletFever()
 	bdk.registerScentOfBlood()
 	bdk.registerVampiricBlood()
-	bdk.registerVeteranOfTheThirdWar()
 	bdk.registerWillOfTheNecropolis()
 
 	bdk.RuneWeapon.AddCopySpell(HeartStrikeActionID, bdk.registerDrwHeartStrike())
@@ -91,11 +91,41 @@ func (bdk *BloodDeathKnight) Initialize() {
 }
 
 func (bdk *BloodDeathKnight) ApplyTalents() {
+	bdk.registerVeteranOfTheThirdWar()
+
 	bdk.DeathKnight.ApplyTalents()
 	bdk.ApplyArmorSpecializationEffect(stats.Stamina, proto.ArmorType_ArmorTypePlate, 86537)
 
 	// Vengeance
-	bdk.RegisterVengeance(93099, nil)
+	vengeanceAura := bdk.RegisterVengeance(93099, nil)
+	vengeanceAura.ApplyOnStacksChange(func(_ *core.Aura, sim *core.Simulation, oldVengeance int32, newVengeance int32) {
+		vengeanceDiff := oldVengeance - newVengeance
+		if vengeanceDiff == 0 {
+			return
+		}
+
+		invertedAPChange := bdk.ApplyStatDependencies(stats.Stats{stats.AttackPower: float64(vengeanceDiff)})
+		bdk.Env.TriggerDelayedPetInheritance(sim, bdk.GetAllActiveGhoulPets(), func(sim *core.Simulation, pet *core.Pet) {
+			pet.AddOwnerStats(sim, invertedAPChange)
+		})
+	})
+
+	for _, ghoul := range bdk.ArmyGhoul {
+		oldOnPetEnable := ghoul.OnPetEnable
+		ghoul.OnPetEnable = func(sim *core.Simulation) {
+			if oldOnPetEnable != nil {
+				oldOnPetEnable(sim)
+			}
+
+			vengeanceStacks := vengeanceAura.GetStacks()
+			if vengeanceStacks == 0 {
+				return
+			}
+
+			invertedAPChange := bdk.ApplyStatDependencies(stats.Stats{stats.AttackPower: -float64(vengeanceStacks)})
+			ghoul.AddOwnerStats(sim, invertedAPChange)
+		}
+	}
 }
 
 func (bdk *BloodDeathKnight) Reset(sim *core.Simulation) {

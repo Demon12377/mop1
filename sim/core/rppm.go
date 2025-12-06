@@ -34,7 +34,7 @@ type rppmHasteMod struct{}
 
 func (r rppmHasteMod) GetCoefficient(proc *RPPMProc) float64 {
 	// as of 5.2 this should no longer include non 'True haste mods' so only i.E. Lust
-	return max(proc.character.TotalRealHasteMultiplier(), proc.character.TotalSpellHasteMultiplier())
+	return proc.character.TotalRealHasteMultiplier()
 }
 
 func (r rppmHasteMod) IsStatic() bool {
@@ -115,6 +115,7 @@ type RPPMProc struct {
 	lastCheck   time.Duration
 	ilvl        int32
 	mods        []rppmMod
+	isFirstProc bool
 }
 
 // Attach a crit mod to the RPPM config
@@ -175,9 +176,10 @@ func NewRPPMProc(character *Character, config RPPMConfig) DynamicProc {
 		ppm:         config.PPM,
 		coefficient: TernaryFloat64(config.Coefficient > 0, config.Coefficient, 1),
 		ilvl:        config.Ilvl,
-		lastProc:    -time.Second * 120,
-		lastCheck:   -time.Second * 10,
+		lastProc:    -RppmLastProcResetValue,
+		lastCheck:   -RppmLastCheckCap,
 		mods:        []rppmMod{},
+		isFirstProc: true,
 	}
 
 	if config.Mods != nil {
@@ -207,8 +209,8 @@ func (proc *RPPMProc) getProcChance(sim *Simulation) float64 {
 		baseCoeff *= mod.GetCoefficient(proc)
 	}
 
-	lastCheck := math.Min(10.0, (sim.CurrentTime - proc.lastCheck).Seconds())
-	lastProc := math.Min(1000.0, (sim.CurrentTime - proc.lastProc).Seconds())
+	lastCheck := min(RppmLastCheckCap, sim.CurrentTime-proc.lastCheck).Seconds()
+	lastProc := min(RppmLastProcCap, sim.CurrentTime-proc.lastProc).Seconds()
 
 	// TODO: Adjust implementation if needed
 	// Temporary implementation, targeting the 'intended' MOP proc behavior
@@ -222,9 +224,13 @@ func (proc *RPPMProc) getProcChance(sim *Simulation) float64 {
 
 func (proc *RPPMProc) Proc(sim *Simulation, label string) bool {
 	result := sim.Proc(proc.getProcChance(sim), label)
-	proc.lastCheck = sim.CurrentTime
 	if result {
+		proc.isFirstProc = false
 		proc.lastProc = sim.CurrentTime
+	}
+
+	if !proc.isFirstProc {
+		proc.lastCheck = sim.CurrentTime
 	}
 
 	return result
@@ -235,8 +241,9 @@ func (proc *RPPMProc) Chance(sim *Simulation) float64 {
 }
 
 func (proc *RPPMProc) Reset() {
-	proc.lastCheck = time.Second * -10
-	proc.lastProc = time.Second * -120
+	proc.lastCheck = -RppmLastCheckCap
+	proc.lastProc = -RppmLastProcResetValue
+	proc.isFirstProc = true
 }
 
 func RppmModFromProto(config *proto.RppmMod) (rppmMod, error) {
