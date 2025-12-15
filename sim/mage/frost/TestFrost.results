@@ -54,8 +54,8 @@ dps_results: {
 dps_results: {
  key: "TestFrost-AllItems-BlackBloodofY'Shaarj-105648"
  value: {
-  dps: 175001.83221
-  tps: 127578.10729
+  dps: 175922.50483
+  tps: 128279.16303
  }
 }
 dps_results: {

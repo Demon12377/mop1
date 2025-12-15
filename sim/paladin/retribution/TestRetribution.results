@@ -113,8 +113,8 @@ dps_results: {
 dps_results: {
  key: "TestRetribution-AllItems-BlackBloodofY'Shaarj-105648"
  value: {
-  dps: 240220.03834
-  tps: 229042.59623
+  dps: 240227.27081
+  tps: 229049.8287
   hps: 22.62185
  }
 }
@@ -2137,8 +2137,8 @@ dps_results: {
 dps_results: {
  key: "TestRetribution-AllItems-Skeer'sBloodsoakedTalisman-105632"
  value: {
-  dps: 256213.98655
-  tps: 243370.05813
+  dps: 256210.12127
+  tps: 243366.19284
   hps: 23.53367
  }
 }

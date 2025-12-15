@@ -748,23 +748,26 @@ func init() {
 		shared.ItemVersionHeroicWarforged: 105632,
 		shared.ItemVersionFlexible:        104885,
 	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Skeer's Bloodsoaked Talisman"
+
 		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
 			character := agent.GetCharacter()
 
-			statBuffAura := core.MakeStackingAura(character, core.StackingStatAura{
-				Aura: core.Aura{
-					Label:     fmt.Sprintf("Cruelty (%s)", versionLabel),
-					ActionID:  core.ActionID{SpellID: 146285},
-					Duration:  time.Second * 10,
-					MaxStacks: 20,
-				},
-				BonusPerStack: stats.Stats{
-					stats.CritRating: core.GetItemEffectScaling(itemID, 0.29699999094, state),
-				},
+			statValue := core.GetItemEffectScaling(itemID, 0.29699999094, state)
+			statBuffAura, aura := character.NewTemporaryStatBuffWithStacks(core.TemporaryStatBuffWithStacksConfig{
+				AuraLabel:            fmt.Sprintf("Item - Proc Critical Strike (%s)", versionLabel),
+				ActionID:             core.ActionID{SpellID: 146286},
+				StackingAuraLabel:    fmt.Sprintf("Cruelty (%s)", versionLabel),
+				StackingAuraActionID: core.ActionID{SpellID: 146285},
+				Duration:             time.Second * 10,
+				MaxStacks:            20,
+				TimePerStack:         time.Millisecond * 500,
+				BonusPerStack:        stats.Stats{stats.CritRating: statValue},
+				TickImmediately:      true,
 			})
 
 			statBuffTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
-				Name:               fmt.Sprintf("Skeer's Bloodsoaked Talisman (%s) - Stat Trigger", versionLabel),
+				Name:               fmt.Sprintf("%s (%s) - Stat Trigger", label, versionLabel),
 				Callback:           core.CallbackOnSpellHitDealt,
 				Outcome:            core.OutcomeLanded,
 				ICD:                time.Second * 10,
@@ -775,18 +778,7 @@ func init() {
 				}),
 
 				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
-					statBuffAura.Activate(sim)
-					statBuffAura.SetStacks(sim, 1)
-					core.StartPeriodicAction(sim, core.PeriodicActionOptions{
-						Period:   time.Millisecond * 500,
-						NumTicks: 19,
-						OnAction: func(sim *core.Simulation) {
-							// Aura might not be active because of stuff like mage alter time being cast right before this aura being activated
-							if statBuffAura.IsActive() {
-								statBuffAura.AddStack(sim)
-							}
-						},
-					})
+					aura.Activate(sim)
 				},
 			})
 
@@ -810,23 +802,26 @@ func init() {
 		shared.ItemVersionHeroicWarforged: 105648,
 		shared.ItemVersionFlexible:        104901,
 	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Black Blood of Y'Shaarj"
+
 		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
 			character := agent.GetCharacter()
 
-			statBuffAura := core.MakeStackingAura(character, core.StackingStatAura{
-				Aura: core.Aura{
-					Label:     fmt.Sprintf("Wrath of the Darkspear (%s)", versionLabel),
-					ActionID:  core.ActionID{SpellID: 146184},
-					Duration:  time.Second * 10,
-					MaxStacks: 10,
-				},
-				BonusPerStack: stats.Stats{
-					stats.Intellect: core.GetItemEffectScaling(itemID, 0.59399998188, state),
-				},
+			statValue := core.GetItemEffectScaling(itemID, 0.59399998188, state)
+			statBuffAura, aura := character.NewTemporaryStatBuffWithStacks(core.TemporaryStatBuffWithStacksConfig{
+				AuraLabel:            fmt.Sprintf("Item - Proc Intellect (%s)", versionLabel),
+				ActionID:             core.ActionID{SpellID: 146183},
+				StackingAuraLabel:    fmt.Sprintf("Wrath of the Darkspear (%s)", versionLabel),
+				StackingAuraActionID: core.ActionID{SpellID: 146184},
+				Duration:             time.Second * 10,
+				MaxStacks:            10,
+				TimePerStack:         time.Second * 1,
+				BonusPerStack:        stats.Stats{stats.Intellect: statValue},
+				TickImmediately:      true,
 			})
 
 			statBuffTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
-				Name:     fmt.Sprintf("Black Blood of Y'Shaarj (%s) - Stat Trigger", versionLabel),
+				Name:     fmt.Sprintf("%s (%s) - Stat Trigger", label, versionLabel),
 				Callback: core.CallbackOnSpellHitDealt,
 				Outcome:  core.OutcomeLanded,
 				ICD:      time.Second * 10,
@@ -836,18 +831,7 @@ func init() {
 				}),
 
 				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
-					statBuffAura.Activate(sim)
-					statBuffAura.SetStacks(sim, 1)
-					core.StartPeriodicAction(sim, core.PeriodicActionOptions{
-						Period:   time.Second,
-						NumTicks: 9,
-						OnAction: func(sim *core.Simulation) {
-							// Aura might not be active because of stuff like mage alter time being cast right before this aura being activated
-							if statBuffAura.IsActive() {
-								statBuffAura.AddStack(sim)
-							}
-						},
-					})
+					aura.Activate(sim)
 				},
 			})
 

@@ -89,8 +89,8 @@ dps_results: {
 dps_results: {
  key: "TestFire-AllItems-BlackBloodofY'Shaarj-105648"
  value: {
-  dps: 166868.00527
-  tps: 162440.99304
+  dps: 168331.6727
+  tps: 163805.79586
  }
 }
 dps_results: {
