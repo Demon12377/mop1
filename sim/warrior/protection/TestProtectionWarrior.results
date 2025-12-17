@@ -119,6 +119,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestProtectionWarrior-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 247438.73032
+  tps: 1.43486077629e+06
+  dtps: 43590.85107
+ }
+}
+dps_results: {
  key: "TestProtectionWarrior-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 251763.68129
@@ -2152,6 +2160,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestProtectionWarrior-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 270842.17793
+  tps: 1.57922404352e+06
+  dtps: 42240.79187
+ }
+}
+dps_results: {
  key: "TestProtectionWarrior-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 256368.86871
@@ -2413,6 +2429,14 @@ dps_results: {
   dps: 246594.24886
   tps: 1.43611311834e+06
   dtps: 43653.42889
+ }
+}
+dps_results: {
+ key: "TestProtectionWarrior-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 249645.1261
+  tps: 1.4525908374e+06
+  dtps: 42860.86286
  }
 }
 dps_results: {

@@ -119,6 +119,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostMasterfrost-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 228917.03745
+  tps: 207976.856
+  hps: 2145.17424
+ }
+}
+dps_results: {
  key: "TestFrostMasterfrost-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 226776.82327
@@ -2215,6 +2223,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostMasterfrost-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 247756.60242
+  tps: 223833.38762
+  hps: 2177.11634
+ }
+}
+dps_results: {
  key: "TestFrostMasterfrost-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 234395.68173
@@ -2468,6 +2484,14 @@ dps_results: {
   dps: 232038.22261
   tps: 211708.4379
   hps: 2091.59065
+ }
+}
+dps_results: {
+ key: "TestFrostMasterfrost-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 231552.69408
+  tps: 210320.13082
+  hps: 2135.13309
  }
 }
 dps_results: {

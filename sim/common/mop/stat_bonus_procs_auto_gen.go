@@ -87,20 +87,6 @@ func RegisterAllProcs() {
 	//	{ItemID: 105615, ItemName: "Dysmorphic Samophlange of Discontinuity (Heroic Warforged)"},
 	// })
 
-	// TODO: Manual implementation required
-	//       This can be ignored if the effect has already been implemented.
-	//       With next db run the item will be removed if implemented.
-	//
-	// Teleport yourself to the Timeless Isle.
-	// shared.NewProcStatBonusEffect(shared.ProcStatBonusEffect{
-	//	Name:               "Time-Lost Artifact",
-	//	ItemID:             103678,
-	//	Callback:           core.CallbackOnSpellHitDealt,
-	//	ProcMask:           core.ProcMaskMeleeMHAuto | core.ProcMaskMeleeOHAuto | core.ProcMaskMeleeMHSpecial | core.ProcMaskMeleeOHSpecial | core.ProcMaskRangedAuto | core.ProcMaskRangedSpecial | core.ProcMaskMeleeProc | core.ProcMaskRangedProc,
-	//	Outcome:            core.OutcomeLanded,
-	//	RequireDamageDealt: true
-	// })
-
 	// Your melee attacks have a chance to grant Blessing of the Celestials, increasing your Strength by 3027
 	// for 15s. ( 20% chance, 55 sec cooldown)
 	shared.NewProcStatBonusEffect(shared.ProcStatBonusEffect{

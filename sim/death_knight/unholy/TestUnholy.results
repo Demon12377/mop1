@@ -119,6 +119,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestUnholy-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 225569.27328
+  tps: 159065.62352
+  hps: 2649.79081
+ }
+}
+dps_results: {
  key: "TestUnholy-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 221540.51734
@@ -2215,6 +2223,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestUnholy-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 248908.76057
+  tps: 173745.22812
+  hps: 2652.32906
+ }
+}
+dps_results: {
  key: "TestUnholy-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 229509.21372
@@ -2468,6 +2484,14 @@ dps_results: {
   dps: 225311.8343
   tps: 159690.7748
   hps: 2537.49634
+ }
+}
+dps_results: {
+ key: "TestUnholy-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 226975.86006
+  tps: 160037.06291
+  hps: 2619.39935
  }
 }
 dps_results: {
