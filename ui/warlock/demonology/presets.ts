@@ -11,6 +11,7 @@ import { Stats, UnitStat } from '../../core/proto_utils/stats';
 import { defaultRaidBuffMajorDamageCooldowns } from '../../core/proto_utils/utils';
 import { WARLOCK_BREAKPOINTS } from '../presets';
 import DefaultAPL from './apls/default.apl.json';
+import UvlsAPL from './apls/uvls.apl.json';
 import P2Gear from './gear_sets/p2.gear.json';
 import P3Gear from './gear_sets/p3.gear.json';
 import PreraidGear from './gear_sets/preraid.gear.json';
@@ -23,7 +24,8 @@ export const PRERAID_PRESET = PresetUtils.makePresetGear('Pre-raid', PreraidGear
 export const P2_PRESET = PresetUtils.makePresetGear('P2 - BIS', P2Gear);
 export const P3_PRESET = PresetUtils.makePresetGear('P3 - BIS', P3Gear);
 
-export const APL_Default = PresetUtils.makePresetAPLRotation('Incinerate', DefaultAPL);
+export const APL_Default = PresetUtils.makePresetAPLRotation('Default', DefaultAPL);
+export const APL_UVLS = PresetUtils.makePresetAPLRotation('UVLS', UvlsAPL);
 
 // Preset options for EP weights
 export const DEFAULT_EP_PRESET = PresetUtils.makePresetEpWeights(
@@ -32,7 +34,7 @@ export const DEFAULT_EP_PRESET = PresetUtils.makePresetEpWeights(
 		[Stat.StatIntellect]: 1.24,
 		[Stat.StatSpellPower]: 1.0,
 		[Stat.StatHitRating]: 0.93,
-		[Stat.StatCritRating]: 0.60,
+		[Stat.StatCritRating]: 0.6,
 		[Stat.StatHasteRating]: 0.66,
 		[Stat.StatMasteryRating]: 0.63,
 	}),
@@ -40,8 +42,8 @@ export const DEFAULT_EP_PRESET = PresetUtils.makePresetEpWeights(
 
 // Default talents. Uses the wowhead calculator format, make the talents on
 // https://wotlk.wowhead.com/talent-calc and copy the numbers in the url.
-export const DemonologyTalentsDefaultP1 = {
-	name: 'Default P1',
+export const DemonologyTalentsDefault = {
+	name: 'Default',
 	data: SavedTalents.create({
 		talentsString: '231221',
 		glyphs: Glyphs.create({
@@ -94,9 +96,15 @@ export const OtherDefaults = {
 	channelClipDelay: 150,
 };
 
-export const PRESET_BUILD_P1 = PresetUtils.makePresetBuild('Default', {
-	talents: DemonologyTalentsDefaultP1,
+export const PRESET_BUILD_P2 = PresetUtils.makePresetBuild('T14', {
+	gear: P2_PRESET,
+	talents: DemonologyTalentsDefault,
 	rotation: APL_Default,
+});
+export const PRESET_BUILD_P3 = PresetUtils.makePresetBuild('T15', {
+	gear: P3_PRESET,
+	talents: DemonologyTalentsDefault,
+	rotation: APL_UVLS,
 });
 
 export const DEMONOLOGY_BREAKPOINTS = {

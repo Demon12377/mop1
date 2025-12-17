@@ -54,7 +54,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDemonologyWarlock, {
 
 	defaults: {
 		// Default equipped gear.
-		gear: Presets.P2_PRESET.gear,
+		gear: Presets.P3_PRESET.gear,
 
 		// Default EP weights for sorting gear in the gear picker.
 		epWeights: Presets.DEFAULT_EP_PRESET.epWeights,
@@ -76,7 +76,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDemonologyWarlock, {
 		consumables: Presets.DefaultConsumables,
 
 		// Default talents.
-		talents: Presets.DemonologyTalentsDefaultP1.data,
+		talents: Presets.DemonologyTalentsDefault.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 
@@ -112,25 +112,32 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDemonologyWarlock, {
 	presets: {
 		epWeights: [Presets.DEFAULT_EP_PRESET],
 		// Preset talents that the user can quickly select.
-		talents: [Presets.DemonologyTalentsDefaultP1],
+		talents: [Presets.DemonologyTalentsDefault],
 		// Preset rotations that the user can quickly select.
-		rotations: [Presets.APL_Default],
+		rotations: [Presets.APL_Default, Presets.APL_UVLS],
 
 		// Preset gear configurations that the user can quickly select.
 		gear: [Presets.PRERAID_PRESET, Presets.P2_PRESET, Presets.P3_PRESET],
 		itemSwaps: [],
 
-		builds: [Presets.PRESET_BUILD_P1],
+		builds: [Presets.PRESET_BUILD_P2, Presets.PRESET_BUILD_P3],
 	},
 
-	autoRotation: (_player: Player<Spec.SpecDemonologyWarlock>): APLRotation => {
+	autoRotation: (player: Player<Spec.SpecDemonologyWarlock>): APLRotation => {
+		const hasUVLS = player
+			.getGear()
+			.getTrinkets()
+			.some(trinket => trinket?._item.name === 'Unerring Vision of Lei Shen');
+
+		if (hasUVLS) return Presets.APL_UVLS.rotation.rotation!;
+
 		return Presets.APL_Default.rotation.rotation!;
 	},
 
 	raidSimPresets: [
 		{
 			spec: Spec.SpecDemonologyWarlock,
-			talents: Presets.DemonologyTalentsDefaultP1.data,
+			talents: Presets.DemonologyTalentsDefault.data,
 			specOptions: Presets.DefaultOptions,
 			consumables: Presets.DefaultConsumables,
 			defaultFactionRaces: {

@@ -58,7 +58,7 @@ func TestDemonology(t *testing.T) {
 			Consumables:      fullConsumesSpec,
 			SpecOptions:      core.SpecOptionsCombo{Label: "Demonology Warlock", SpecOptions: defaultDemonologyWarlock},
 			OtherSpecOptions: []core.SpecOptionsCombo{},
-			Rotation:         core.GetAplRotation("../../../ui/warlock/demonology/apls", "default"),
+			Rotation:         core.GetAplRotation("../../../ui/warlock/demonology/apls", "uvls"),
 			ItemFilter:       itemFilter,
 			StartingDistance: 25,
 		},
