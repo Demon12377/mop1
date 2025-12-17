@@ -1738,7 +1738,7 @@ export class ReforgeOptimizer {
 		}
 		const elapsedSeconds: number = (Date.now() - startTimeMs) / 1000;
 
-		if (isNaN(solution.result) || (solution.result == Infinity)) {
+		if (isNaN(solution.result) || solution.result == Infinity) {
 			if (solution.status == 'infeasible') {
 				throw 'The specified stat caps are impossible to achieve. Consider changing any upper bound stat caps to lower bounds instead.';
 			} else if (solution.status == 'timedout' && this.includeTimeout) {
@@ -1748,8 +1748,8 @@ export class ReforgeOptimizer {
 			}
 		}
 
-		// Build updated gear from solution (without UI update)
-		const updatedGear = this.buildGearFromSolution(gear, solution);
+		// Apply the current solution
+		const updatedGear = await this.applyLPSolution(gear, solution);
 
 		// Check if any unconstrained stats exceeded their specified cap.
 		// If so, add these stats to the constraint list and re-run the solver.
@@ -1764,10 +1764,9 @@ export class ReforgeOptimizer {
 		);
 
 		if (!anyCapsExceeded) {
-			await this.updateGear(updatedGear);
 			return solution.result;
 		} else {
-			if (isDevMode()) console.log('One or more stat caps were exceeded, starting constrained iteration...');
+			await sleep(100);
 			return await this.solveModel(
 				updatedGear,
 				updatedWeights,
@@ -1810,7 +1809,7 @@ export class ReforgeOptimizer {
 		return updatedVariables;
 	}
 
-	buildGearFromSolution(gear: Gear, solution: LPSolution): Gear {
+	async applyLPSolution(gear: Gear, solution: LPSolution): Promise<Gear> {
 		let updatedGear = gear.withoutReforges(this.player.canDualWield2H(), this.frozenItemSlots);
 
 		if (this.includeGems) {
@@ -1843,11 +1842,6 @@ export class ReforgeOptimizer {
 			updatedGear = this.minimizeRegems(updatedGear);
 		}
 
-		return updatedGear;
-	}
-
-	async applyLPSolution(gear: Gear, solution: LPSolution): Promise<Gear> {
-		const updatedGear = this.buildGearFromSolution(gear, solution);
 		await this.updateGear(updatedGear);
 		return updatedGear;
 	}
@@ -1901,18 +1895,27 @@ export class ReforgeOptimizer {
 		}
 
 		// If hard caps are all taken care of, then deal with any remaining soft cap breakpoints
-		while (!anyCapsExceeded && reforgeSoftCaps.length > 0) {
-			const nextSoftCap = reforgeSoftCaps[0];
+		// Check ALL soft caps in each iteration, not just one at a time
+		let softCapIndex = 0;
+		while (softCapIndex < reforgeSoftCaps.length) {
+			const nextSoftCap = reforgeSoftCaps[softCapIndex];
 			const unitStat = nextSoftCap.unitStat;
 			const statName = unitStat.getKey();
 			const currentValue = reforgeStatContribution.getUnitStat(unitStat);
 
 			let idx = 0;
+			let breakpointExceeded = false;
 			for (const breakpoint of nextSoftCap.breakpoints) {
 				if (currentValue > breakpoint) {
-					updatedConstraints.set(statName, greaterEq(breakpoint));
+					// Only update the constraint if it's higher than any existing constraint
+					// This ensures soft cap breakpoints are "locked in" across iterations
+					const existingConstraint = updatedConstraints.get(statName);
+					if (!existingConstraint || breakpoint > (existingConstraint.min ?? 0)) {
+						updatedConstraints.set(statName, greaterEq(breakpoint));
+					}
 					updatedWeights = updatedWeights.withUnitStat(unitStat, nextSoftCap.postCapEPs[idx]);
 					anyCapsExceeded = true;
+					breakpointExceeded = true;
 					if (isDevMode()) console.log('Breakpoint exceeded for: %s', statName);
 					break;
 				}
@@ -1922,16 +1925,17 @@ export class ReforgeOptimizer {
 
 			// For true soft cap stats (evaluated in ascending order), remove any breakpoint that was
 			// exceeded from the configuration. If no breakpoints were exceeded or there are none
-			// remaining, then remove the entry completely from reforgeSoftCaps. In contrast, for threshold
-			// stats (evaluated in descending order), always remove the entry completely after the first
-			// pass.
-			if (nextSoftCap.capType == StatCapType.TypeSoftCap) {
+			// remaining, then remove the entry completely from reforgeSoftCaps. For threshold
+			// stats, remove the entry only if a breakpoint was exceeded (locked in).
+			if (nextSoftCap.capType == StatCapType.TypeSoftCap && breakpointExceeded) {
 				nextSoftCap.breakpoints = nextSoftCap.breakpoints.slice(idx + 1);
 				nextSoftCap.postCapEPs = nextSoftCap.postCapEPs.slice(idx + 1);
 			}
 
-			if (nextSoftCap.capType == StatCapType.TypeThreshold || nextSoftCap.breakpoints.length == 0) {
-				reforgeSoftCaps.shift();
+			if ((nextSoftCap.capType == StatCapType.TypeThreshold && breakpointExceeded) || nextSoftCap.breakpoints.length == 0) {
+				reforgeSoftCaps.splice(softCapIndex, 1);
+			} else {
+				softCapIndex++;
 			}
 		}
 
