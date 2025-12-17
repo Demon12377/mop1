@@ -1636,18 +1636,15 @@ export class ReforgeOptimizer {
 		// associated coefficient if applicable.
 		this.relativeStatCap?.updateCoefficients(coefficients, stat, amount);
 
-		// If the pre-cap EP for the root stat is non-zero, then apply
-		// the root stat directly and don't look for any children.
-		if (preCapEPs.getStat(stat) != 0) {
-			this.setStatCoefficient(coefficients, stat, amount);
-			return;
-		}
+		// Always store the root stat coefficient for tracking
+		this.setStatCoefficient(coefficients, stat, amount);
 
-		// Loop over all dependent PseudoStats
+		// Also store derived PseudoStat coefficients (converted to percent)
+		// This is needed for soft cap checking which may be defined on PseudoStats
 		for (const childStat of UnitStat.getChildren(stat)) {
-			// Only add a dependency if the child has an EP value associated with it
-			if (preCapEPs.getPseudoStat(childStat) != 0) {
-				this.setPseudoStatCoefficient(coefficients, childStat, UnitStat.fromPseudoStat(childStat).convertRatingToPercent(amount)!);
+			const percentValue = UnitStat.fromPseudoStat(childStat).convertRatingToPercent(amount);
+			if (percentValue !== null) {
+				this.setPseudoStatCoefficient(coefficients, childStat, percentValue);
 			}
 		}
 	}
@@ -1730,7 +1727,7 @@ export class ReforgeOptimizer {
 		const workerPool = getReforgeWorkerPool();
 		const solution: LPSolution = await workerPool.solve(model, {
 			timeout: maxSeconds * 1000,
-			tolerance: 0.005,
+			tolerance: 0.01,
 		});
 		if (isDevMode()) {
 			console.log('LP solution for this iteration:');
@@ -1791,6 +1788,19 @@ export class ReforgeOptimizer {
 			let score = 0;
 			const updatedCoefficients = new Map<string, number>();
 
+			// First pass: identify which root stats have non-zero EP weights
+			// These will take priority over their child PseudoStats
+			const rootStatsWithEP = new Set<Stat>();
+			for (const [coefficientKey, _value] of coefficients.entries()) {
+				if (coefficientKey.includes('Stat') && !coefficientKey.includes('PseudoStat')) {
+					const statKey = (Stat as any)[coefficientKey] as Stat;
+					if (weights.getStat(statKey) !== 0) {
+						rootStatsWithEP.add(statKey);
+					}
+				}
+			}
+
+			// Second pass: calculate score
 			for (const [coefficientKey, value] of coefficients.entries()) {
 				updatedCoefficients.set(coefficientKey, value);
 
@@ -1799,8 +1809,13 @@ export class ReforgeOptimizer {
 				// already been updated to post-cap values for any stats that were
 				// constrained to be capped in a previous iteration.
 				if (coefficientKey.includes('PseudoStat')) {
-					const statKey = (PseudoStat as any)[coefficientKey] as PseudoStat;
-					score += weights.getPseudoStat(statKey) * value;
+					const pseudoStatKey = (PseudoStat as any)[coefficientKey] as PseudoStat;
+					// Skip if the parent stat has a non-zero EP (it takes priority)
+					const rootStat = UnitStat.getRootStat(pseudoStatKey);
+					if (rootStat !== null && rootStatsWithEP.has(rootStat)) {
+						continue;
+					}
+					score += weights.getPseudoStat(pseudoStatKey) * value;
 				} else if (coefficientKey.includes('Stat')) {
 					const statKey = (Stat as any)[coefficientKey] as Stat;
 					score += weights.getStat(statKey) * value;
@@ -1864,11 +1879,12 @@ export class ReforgeOptimizer {
 		constraints: YalpsConstraints,
 		currentWeights: Stats,
 	): [boolean, YalpsConstraints, Stats] {
-		// First add up the total stat changes from the solution
+		// Add up the total stat changes from the solution
 		let reforgeStatContribution = new Stats();
 
 		for (const [variableKey, _coefficient] of solution.variables) {
-			for (const [coefficientKey, value] of variables.get(variableKey)!.entries()) {
+			const varCoeffs = variables.get(variableKey)!;
+			for (const [coefficientKey, value] of varCoeffs.entries()) {
 				if (coefficientKey.includes('PseudoStat')) {
 					const statKey = (PseudoStat as any)[coefficientKey] as PseudoStat;
 					reforgeStatContribution = reforgeStatContribution.addPseudoStat(statKey, value);
@@ -1878,11 +1894,8 @@ export class ReforgeOptimizer {
 				}
 			}
 		}
-		if (isDevMode()) {
-			console.log('Total stat contribution from Reforging:');
-			console.log(reforgeStatContribution);
-		}
-		// Then check whether any unconstrained stats exceed their cap
+
+		// Check whether any unconstrained stats exceed their cap
 		let anyCapsExceeded = false;
 		const updatedConstraints = new Map<string, Constraint>(constraints);
 		let updatedWeights = currentWeights;
@@ -1893,7 +1906,6 @@ export class ReforgeOptimizer {
 
 			if (cap !== 0 && value > cap && !constraints.has(statName)) {
 				anyCapsExceeded = true;
-				if (isDevMode()) console.log('Cap exceeded for: %s', statName);
 				// Set EP to 0 for hard capped stats unless they are treated as upper bounds.
 				if (this.undershootCaps.getUnitStat(unitStat)) {
 					updatedConstraints.set(statName, lessEq(cap));
@@ -1905,37 +1917,48 @@ export class ReforgeOptimizer {
 		}
 
 		// If hard caps are all taken care of, then deal with any remaining soft cap breakpoints
-		while (!anyCapsExceeded && reforgeSoftCaps.length > 0) {
-			const nextSoftCap = reforgeSoftCaps[0];
-			const unitStat = nextSoftCap.unitStat;
+		for (let scIdx = 0; scIdx < reforgeSoftCaps.length && !anyCapsExceeded; scIdx++) {
+			const softCap = reforgeSoftCaps[scIdx];
+			const unitStat = softCap.unitStat;
 			const statName = unitStat.getKey();
 			const currentValue = reforgeStatContribution.getUnitStat(unitStat);
 
 			let idx = 0;
-			for (const breakpoint of nextSoftCap.breakpoints) {
+			for (const breakpoint of softCap.breakpoints) {
 				if (currentValue > breakpoint) {
-					updatedConstraints.set(statName, greaterEq(breakpoint));
-					updatedWeights = updatedWeights.withUnitStat(unitStat, nextSoftCap.postCapEPs[idx]);
+					// For threshold-type caps, lock in the achieved threshold
+					if (softCap.capType == StatCapType.TypeThreshold) {
+						updatedConstraints.set(statName, greaterEq(breakpoint));
+					}
+
+					// Apply the post-cap EP
+					if (unitStat.isPseudoStat()) {
+						const rootStat = UnitStat.getRootStat(unitStat.getPseudoStat());
+						if (rootStat !== null) {
+							const ratingPerPercent = unitStat.convertPercentToRating(1);
+							if (ratingPerPercent !== null) {
+								const epPerRating = softCap.postCapEPs[idx] / ratingPerPercent;
+								updatedWeights = updatedWeights.withStat(rootStat, epPerRating);
+							}
+						}
+					} else {
+						updatedWeights = updatedWeights.withUnitStat(unitStat, softCap.postCapEPs[idx]);
+					}
 					anyCapsExceeded = true;
-					if (isDevMode()) console.log('Breakpoint exceeded for: %s', statName);
+
+					// For soft caps, remove exceeded breakpoints. For thresholds, remove the entry completely.
+					if (softCap.capType == StatCapType.TypeSoftCap) {
+						softCap.breakpoints = softCap.breakpoints.slice(idx + 1);
+						softCap.postCapEPs = softCap.postCapEPs.slice(idx + 1);
+						if (softCap.breakpoints.length == 0) {
+							reforgeSoftCaps.splice(scIdx, 1);
+						}
+					} else if (softCap.capType == StatCapType.TypeThreshold) {
+						reforgeSoftCaps.splice(scIdx, 1);
+					}
 					break;
 				}
-
 				idx++;
-			}
-
-			// For true soft cap stats (evaluated in ascending order), remove any breakpoint that was
-			// exceeded from the configuration. If no breakpoints were exceeded or there are none
-			// remaining, then remove the entry completely from reforgeSoftCaps. In contrast, for threshold
-			// stats (evaluated in descending order), always remove the entry completely after the first
-			// pass.
-			if (nextSoftCap.capType == StatCapType.TypeSoftCap) {
-				nextSoftCap.breakpoints = nextSoftCap.breakpoints.slice(idx + 1);
-				nextSoftCap.postCapEPs = nextSoftCap.postCapEPs.slice(idx + 1);
-			}
-
-			if (nextSoftCap.capType == StatCapType.TypeThreshold || nextSoftCap.breakpoints.length == 0) {
-				reforgeSoftCaps.shift();
 			}
 		}
 
