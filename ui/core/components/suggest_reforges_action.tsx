@@ -1890,7 +1890,10 @@ export class ReforgeOptimizer {
 				}
 			}
 		}
-
+		if (isDevMode()) {
+			console.log('Total stat contribution from Reforging:');
+			console.log(reforgeStatContribution);
+		}
 		// Check whether any unconstrained stats exceed their cap
 		let anyCapsExceeded = false;
 		const updatedConstraints = new Map<string, Constraint>(constraints);
