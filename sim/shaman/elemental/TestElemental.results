@@ -101,6 +101,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestElemental-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 159172.8561
+  tps: 115161.03805
+ }
+}
+dps_results: {
  key: "TestElemental-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 142036.49263
@@ -1886,6 +1893,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestElemental-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 134839.24277
+  tps: 97980.50427
+ }
+}
+dps_results: {
  key: "TestElemental-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 136392.00967
@@ -2114,6 +2128,13 @@ dps_results: {
  value: {
   dps: 139182.73644
   tps: 98350.39698
+ }
+}
+dps_results: {
+ key: "TestElemental-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 137288.12062
+  tps: 98273.11907
  }
 }
 dps_results: {

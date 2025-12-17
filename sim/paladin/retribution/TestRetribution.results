@@ -111,6 +111,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestRetribution-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 240227.27081
+  tps: 229049.8287
+  hps: 22.62185
+ }
+}
+dps_results: {
  key: "TestRetribution-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 235569.92307
@@ -2127,6 +2135,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestRetribution-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 257467.50533
+  tps: 244521.40802
+  hps: 24.11175
+ }
+}
+dps_results: {
  key: "TestRetribution-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 242799.13805
@@ -2377,8 +2393,16 @@ dps_results: {
 dps_results: {
  key: "TestRetribution-AllItems-TickingEbonDetonator-105612"
  value: {
-  dps: 240901.89505
-  tps: 229852.56182
+  dps: 240898.69088
+  tps: 229849.35766
+  hps: 22.01849
+ }
+}
+dps_results: {
+ key: "TestRetribution-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 243478.25804
+  tps: 231899.98186
   hps: 22.01849
  }
 }

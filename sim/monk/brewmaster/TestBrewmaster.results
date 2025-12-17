@@ -139,6 +139,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBrewmaster-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 261852.44155
+  tps: 1.13975502684e+06
+  dtps: 17321.45044
+  hps: 29439.73837
+ }
+}
+dps_results: {
  key: "TestBrewmaster-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 263975.98276
@@ -2425,6 +2434,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBrewmaster-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 278186.45638
+  tps: 1.18616627845e+06
+  dtps: 17047.87142
+  hps: 31567.78002
+ }
+}
+dps_results: {
  key: "TestBrewmaster-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 266468.28667
@@ -2701,6 +2719,15 @@ dps_results: {
   tps: 1.2080022053e+06
   dtps: 13651.61794
   hps: 31015.91987
+ }
+}
+dps_results: {
+ key: "TestBrewmaster-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 259766.19646
+  tps: 1.12394275097e+06
+  dtps: 17033.59714
+  hps: 29157.76744
  }
 }
 dps_results: {

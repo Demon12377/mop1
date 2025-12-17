@@ -119,6 +119,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostTwoHand-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 229277.18917
+  tps: 204292.90913
+  hps: 3531.36458
+ }
+}
+dps_results: {
  key: "TestFrostTwoHand-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 225290.27343
@@ -2223,6 +2231,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostTwoHand-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 241785.30478
+  tps: 214371.77039
+  hps: 3544.92186
+ }
+}
+dps_results: {
  key: "TestFrostTwoHand-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 231293.63076
@@ -2476,6 +2492,14 @@ dps_results: {
   dps: 227497.48092
   tps: 203741.78007
   hps: 3435.03742
+ }
+}
+dps_results: {
+ key: "TestFrostTwoHand-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 230233.74598
+  tps: 205043.33057
+  hps: 3487.34743
  }
 }
 dps_results: {

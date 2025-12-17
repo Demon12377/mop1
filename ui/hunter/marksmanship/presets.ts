@@ -8,6 +8,7 @@ import P2Build from './builds/p2.build.json';
 import P3Build from './builds/p3.build.json';
 import P2Gear from './gear_sets/p2.gear.json';
 import P3Gear from './gear_sets/p3.gear.json';
+import P5Gear from './gear_sets/p5.gear.json';
 import PreRaidGear from './gear_sets/preraid.gear.json';
 import AoeApl from './apls/aoe.apl.json';
 import Apl from './apls/mm.apl.json';
@@ -15,6 +16,7 @@ import Apl from './apls/mm.apl.json';
 export const PRERAID_PRESET_GEAR = PresetUtils.makePresetGear('Pre-raid', PreRaidGear);
 export const P2_PRESET_GEAR = PresetUtils.makePresetGear('P2', P2Gear);
 export const P3_PRESET_GEAR = PresetUtils.makePresetGear('P3', P3Gear);
+export const P5_PRESET_GEAR = PresetUtils.makePresetGear('P5 (WiP)', P5Gear);
 export const ROTATION_PRESET_MM = PresetUtils.makePresetAPLRotation('Single Target', Apl);
 export const ROTATION_PRESET_AOE = PresetUtils.makePresetAPLRotation('AOE', AoeApl);
 export const DefaultTalents = {

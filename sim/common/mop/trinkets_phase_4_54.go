@@ -461,23 +461,26 @@ func init() {
 		shared.ItemVersionHeroicWarforged: 105612,
 		shared.ItemVersionFlexible:        104865,
 	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Ticking Ebon Detonator"
+
 		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
 			character := agent.GetCharacter()
 
-			statBuffAura := core.MakeStackingAura(character, core.StackingStatAura{
-				Aura: core.Aura{
-					Label:     fmt.Sprintf("Restless Agility (%s)", versionLabel),
-					ActionID:  core.ActionID{SpellID: 146310},
-					Duration:  time.Second * 10,
-					MaxStacks: 20,
-				},
-				BonusPerStack: stats.Stats{
-					stats.Agility: core.GetItemEffectScaling(itemID, 0.27030000091, state),
-				},
+			statValue := core.GetItemEffectScaling(itemID, 0.27030000091, state)
+			statBuffAura, aura := character.NewTemporaryStatBuffWithStacks(core.TemporaryStatBuffWithStacksConfig{
+				AuraLabel:            fmt.Sprintf("Item - Proc Agility (%s)", versionLabel),
+				ActionID:             core.ActionID{SpellID: 146311},
+				StackingAuraLabel:    fmt.Sprintf("Restless Agility (%s)", versionLabel),
+				StackingAuraActionID: core.ActionID{SpellID: 146310},
+				Duration:             time.Second * 10,
+				MaxStacks:            20,
+				TimePerStack:         time.Millisecond * 500,
+				BonusPerStack:        stats.Stats{stats.Agility: statValue},
+				DecrementStacks:      true,
 			})
 
 			statBuffTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
-				Name:     fmt.Sprintf("Ticking Ebon Detonator (%s) - Stat Trigger", versionLabel),
+				Name:     fmt.Sprintf("%s (%s) - Stat Trigger", label, versionLabel),
 				ICD:      time.Second * 10,
 				Outcome:  core.OutcomeLanded,
 				Callback: core.CallbackOnSpellHitDealt,
@@ -487,18 +490,7 @@ func init() {
 				}),
 
 				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
-					statBuffAura.Activate(sim)
-					statBuffAura.SetStacks(sim, statBuffAura.MaxStacks)
-					core.StartPeriodicAction(sim, core.PeriodicActionOptions{
-						Period:   time.Millisecond * 500,
-						NumTicks: 20,
-						OnAction: func(sim *core.Simulation) {
-							// Aura might not be active because of stuff like mage alter time being cast right before this aura being activated
-							if statBuffAura.IsActive() {
-								statBuffAura.RemoveStack(sim)
-							}
-						},
-					})
+					aura.Activate(sim)
 				},
 			})
 
@@ -700,5 +692,144 @@ func init() {
 		buffAuraLabel:    "Extravagant Visions",
 		buffAuraID:       148897,
 		buffedStat:       stats.Intellect,
+	})
+
+	// Time-Lost Artifact
+	// Your melee and ranged attacks have a chance to grant 3647 haste for 20 sec.
+	// (Proc chance: 20%, 50s cooldown)
+	core.NewItemEffect(103678, func(agent core.Agent, state proto.ItemLevelState) {
+		character := agent.GetCharacter()
+
+		aura := character.NewTemporaryStatsAura(
+			"Winds of Time",
+			core.ActionID{SpellID: 148447},
+			stats.Stats{stats.HasteRating: core.GetItemEffectScaling(103678, 1.56799995899, state)},
+			time.Second*20,
+		)
+
+		triggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
+			Name:       "Time-Lost Artifact Trigger",
+			Callback:   core.CallbackOnSpellHitDealt,
+			Outcome:    core.OutcomeLanded,
+			ProcMask:   core.ProcMaskMeleeOrMeleeProc | core.ProcMaskRangedOrRangedProc,
+			ICD:        time.Second * 50,
+			ProcChance: 0.2,
+
+			Handler: func(sim *core.Simulation, _ *core.Spell, _ *core.SpellResult) {
+				aura.Activate(sim)
+			},
+		})
+
+		aura.Icd = triggerAura.Icd
+
+		eligibleSlots := character.ItemSwap.EligibleSlotsForItem(103678)
+		character.AddStatProcBuff(103678, aura, false, eligibleSlots)
+		character.ItemSwap.RegisterProcWithSlots(103678, triggerAura, eligibleSlots)
+	})
+
+	// Skeer's Bloodsoaked Talisman
+	// Your melee attacks have a chance to trigger Cruelty for 10 sec.
+	// While Cruelty is active, you gain 1402 Critical Strike every 0.5 sec, stacking up to 20 times.
+	// (Approximately 0.92 procs per minute)
+	shared.ItemVersionMap{
+		shared.ItemVersionLFR:             105134,
+		shared.ItemVersionNormal:          102308,
+		shared.ItemVersionHeroic:          104636,
+		shared.ItemVersionWarforged:       105383,
+		shared.ItemVersionHeroicWarforged: 105632,
+		shared.ItemVersionFlexible:        104885,
+	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Skeer's Bloodsoaked Talisman"
+
+		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
+			character := agent.GetCharacter()
+
+			statValue := core.GetItemEffectScaling(itemID, 0.29699999094, state)
+			statBuffAura, aura := character.NewTemporaryStatBuffWithStacks(core.TemporaryStatBuffWithStacksConfig{
+				AuraLabel:            fmt.Sprintf("Item - Proc Critical Strike (%s)", versionLabel),
+				ActionID:             core.ActionID{SpellID: 146286},
+				StackingAuraLabel:    fmt.Sprintf("Cruelty (%s)", versionLabel),
+				StackingAuraActionID: core.ActionID{SpellID: 146285},
+				Duration:             time.Second * 10,
+				MaxStacks:            20,
+				TimePerStack:         time.Millisecond * 500,
+				BonusPerStack:        stats.Stats{stats.CritRating: statValue},
+				TickImmediately:      true,
+			})
+
+			statBuffTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
+				Name:     fmt.Sprintf("%s (%s) - Stat Trigger", label, versionLabel),
+				Callback: core.CallbackOnSpellHitDealt,
+				Outcome:  core.OutcomeLanded,
+				ICD:      time.Second * 10,
+
+				DPM: character.NewRPPMProcManager(itemID, false, false, core.ProcMaskMeleeOrMeleeProc, core.RPPMConfig{
+					PPM: 0.92000001669,
+				}),
+
+				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
+					aura.Activate(sim)
+				},
+			})
+
+			statBuffAura.Icd = statBuffTriggerAura.Icd
+
+			eligibleSlots := character.ItemSwap.EligibleSlotsForItem(itemID)
+			character.AddStatProcBuff(itemID, statBuffAura, false, eligibleSlots)
+			character.ItemSwap.RegisterProcWithSlots(itemID, statBuffTriggerAura, eligibleSlots)
+		})
+	})
+
+	// Black Blood of Y'Shaarj
+	// Your attacks have a chance to trigger Wrath of the Darkspear for 10 sec.
+	// While Wrath of the Darkspear is active, every 1 sec you gain 2805 Intellect, stacking up to 10 times.
+	// (Approximately 0.92 procs per minute)
+	shared.ItemVersionMap{
+		shared.ItemVersionLFR:             105150,
+		shared.ItemVersionNormal:          102310,
+		shared.ItemVersionHeroic:          104652,
+		shared.ItemVersionWarforged:       105399,
+		shared.ItemVersionHeroicWarforged: 105648,
+		shared.ItemVersionFlexible:        104901,
+	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Black Blood of Y'Shaarj"
+
+		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
+			character := agent.GetCharacter()
+
+			statValue := core.GetItemEffectScaling(itemID, 0.59399998188, state)
+			statBuffAura, aura := character.NewTemporaryStatBuffWithStacks(core.TemporaryStatBuffWithStacksConfig{
+				AuraLabel:            fmt.Sprintf("Item - Proc Intellect (%s)", versionLabel),
+				ActionID:             core.ActionID{SpellID: 146183},
+				StackingAuraLabel:    fmt.Sprintf("Wrath of the Darkspear (%s)", versionLabel),
+				StackingAuraActionID: core.ActionID{SpellID: 146184},
+				Duration:             time.Second * 10,
+				MaxStacks:            10,
+				TimePerStack:         time.Second * 1,
+				BonusPerStack:        stats.Stats{stats.Intellect: statValue},
+				TickImmediately:      true,
+			})
+
+			statBuffTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
+				Name:     fmt.Sprintf("%s (%s) - Stat Trigger", label, versionLabel),
+				Callback: core.CallbackOnSpellHitDealt,
+				Outcome:  core.OutcomeLanded,
+				ICD:      time.Second * 10,
+
+				DPM: character.NewRPPMProcManager(itemID, false, false, core.ProcMaskDirect|core.ProcMaskProc, core.RPPMConfig{
+					PPM: 0.92000001669,
+				}),
+
+				Handler: func(sim *core.Simulation, spell *core.Spell, _ *core.SpellResult) {
+					aura.Activate(sim)
+				},
+			})
+
+			statBuffAura.Icd = statBuffTriggerAura.Icd
+
+			eligibleSlots := character.ItemSwap.EligibleSlotsForItem(itemID)
+			character.AddStatProcBuff(itemID, statBuffAura, false, eligibleSlots)
+			character.ItemSwap.RegisterProcWithSlots(itemID, statBuffTriggerAura, eligibleSlots)
+		})
 	})
 }

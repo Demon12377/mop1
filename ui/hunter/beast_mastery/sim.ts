@@ -129,7 +129,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 		rotations: [Presets.ROTATION_PRESET_BM, Presets.ROTATION_PRESET_AOE],
 		// Preset gear configurations that the user can quickly select.
 		builds: [Presets.P2_PRESET, Presets.P3_PRESET],
-		gear: [Presets.PRERAID_PRESET_GEAR, Presets.P2_PRESET_GEAR, Presets.P3_PRESET_GEAR],
+		gear: [Presets.PRERAID_PRESET_GEAR, Presets.P2_PRESET_GEAR, Presets.P3_PRESET_GEAR, Presets.P5_PRESET_GEAR],
 	},
 
 	autoRotation: (_: Player<Spec.SpecBeastMasteryHunter>): APLRotation => {
@@ -154,11 +154,13 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecBeastMasteryHunter, {
 					1: Presets.PRERAID_PRESET_GEAR.gear,
 					2: Presets.P2_PRESET_GEAR.gear,
 					3: Presets.P3_PRESET_GEAR.gear,
+					5: Presets.P5_PRESET_GEAR.gear,
 				},
 				[Faction.Horde]: {
 					1: Presets.PRERAID_PRESET_GEAR.gear,
 					2: Presets.P2_PRESET_GEAR.gear,
 					3: Presets.P3_PRESET_GEAR.gear,
+					5: Presets.P5_PRESET_GEAR.gear,
 				},
 			},
 			otherDefaults: Presets.OtherDefaults,

@@ -326,6 +326,7 @@ type TemporaryStatBuffWithStacksConfig struct {
 	TimePerStack         time.Duration
 	Duration             time.Duration
 	TickImmediately      bool
+	DecrementStacks      bool // Set to true if the aura should start at MaxStacks and decrement by 1 each tick
 }
 
 func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatBuffWithStacksConfig) (*StatBuffAura, *Aura) {
@@ -346,6 +347,11 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 			Duration: config.Duration,
 			OnGain: func(aura *Aura, sim *Simulation) {
 				stackingAura.Activate(sim)
+
+				if config.DecrementStacks {
+					stackingAura.SetStacks(sim, config.MaxStacks)
+				}
+
 				StartPeriodicAction(sim, PeriodicActionOptions{
 					Period:          config.TimePerStack,
 					NumTicks:        int(config.MaxStacks),
@@ -353,7 +359,11 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 					OnAction: func(sim *Simulation) {
 						// Aura might not be active because of stuff like mage alter time being cast right before this aura being activated
 						if stackingAura.IsActive() {
-							stackingAura.AddStack(sim)
+							if config.DecrementStacks {
+								stackingAura.RemoveStack(sim)
+							} else {
+								stackingAura.AddStack(sim)
+							}
 						}
 					},
 				})
@@ -363,7 +373,6 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 	}
 
 	return stackingAura, nil
-
 }
 
 // Helper for the common case of making an aura that adds stats.

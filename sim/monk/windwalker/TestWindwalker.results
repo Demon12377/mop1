@@ -127,6 +127,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestWindwalker-AllItems-BlackBloodofY'Shaarj-105648"
+ value: {
+  dps: 226554.05222
+  tps: 215876.68084
+  hps: 7766.57354
+ }
+}
+dps_results: {
  key: "TestWindwalker-AllItems-BlossomofPureSnow-89081"
  value: {
   dps: 224247.79514
@@ -2167,6 +2175,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestWindwalker-AllItems-Skeer'sBloodsoakedTalisman-105632"
+ value: {
+  dps: 236979.8006
+  tps: 225220.96139
+  hps: 8666.14049
+ }
+}
+dps_results: {
  key: "TestWindwalker-AllItems-SkullrenderMedallion-93256"
  value: {
   dps: 226912.69727
@@ -2420,6 +2436,14 @@ dps_results: {
   dps: 260188.69605
   tps: 248381.65748
   hps: 8710.60979
+ }
+}
+dps_results: {
+ key: "TestWindwalker-AllItems-Time-LostArtifact-103678"
+ value: {
+  dps: 244596.13611
+  tps: 234459.0561
+  hps: 7958.13287
  }
 }
 dps_results: {

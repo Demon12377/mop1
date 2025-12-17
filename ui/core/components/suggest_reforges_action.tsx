@@ -1727,7 +1727,7 @@ export class ReforgeOptimizer {
 		const workerPool = getReforgeWorkerPool();
 		const solution: LPSolution = await workerPool.solve(model, {
 			timeout: maxSeconds * 1000,
-			tolerance: 0.01,
+			tolerance: 0.005, //unused currently
 		});
 		if (isDevMode()) {
 			console.log('LP solution for this iteration:');
@@ -1735,17 +1735,13 @@ export class ReforgeOptimizer {
 		}
 		const elapsedSeconds: number = (Date.now() - startTimeMs) / 1000;
 
-		if (isNaN(solution.result) || (solution.status == 'timedout' && elapsedSeconds < maxSeconds)) {
-			if (elapsedSeconds > maxSeconds) {
-				if (solution.status == 'infeasible') {
-					throw 'The specified stat caps are impossible to achieve. Consider changing any upper bound stat caps to lower bounds instead.';
-				} else if (solution.status == 'timedout' && this.includeTimeout) {
-					throw 'Solver timed out before finding a feasible solution. Consider un-checking "Limit execution time" in the Reforge settings.';
-				} else {
-					throw solution.status;
-				}
+		if (isNaN(solution.result) || solution.result == Infinity) {
+			if (solution.status == 'infeasible') {
+				throw 'The specified stat caps are impossible to achieve. Consider changing any upper bound stat caps to lower bounds instead.';
+			} else if (solution.status == 'timedout' && this.includeTimeout) {
+				throw 'Solver timed out before finding a feasible solution. Consider un-checking "Limit execution time" in the Reforge settings.';
 			} else {
-				return await this.solveModel(gear, weights, reforgeCaps, reforgeSoftCaps, variables, constraints, maxSeconds - elapsedSeconds);
+				throw solution.status;
 			}
 		}
 
