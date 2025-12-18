@@ -1718,7 +1718,6 @@ export class ReforgeOptimizer {
 			console.log(constraints);
 		}
 
-		// Set up and solve YALPS model
 		const model: LPModel = {
 			direction: 'maximize',
 			objective: 'score',
