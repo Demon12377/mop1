@@ -55,6 +55,17 @@ export const DemonologyTalentsDefault = {
 	}),
 };
 
+export const DemonologyTalentsUVLS = {
+	name: 'UVLS',
+	data: SavedTalents.create({
+		...DemonologyTalentsDefault.data,
+		glyphs: Glyphs.create({
+			...DemonologyTalentsDefault.data.glyphs,
+			major2: MajorGlyph.GlyphOfEternalResolve,
+		}),
+	}),
+};
+
 export const DefaultOptions = WarlockOptions.create({
 	classOptions: {
 		summon: Summon.Felguard,
@@ -107,7 +118,7 @@ export const PRESET_BUILD_P2 = PresetUtils.makePresetBuild('T14', {
 });
 export const PRESET_BUILD_P3 = PresetUtils.makePresetBuild('T15', {
 	gear: P3_PRESET,
-	talents: DemonologyTalentsDefault,
+	talents: DemonologyTalentsUVLS,
 	rotation: APL_UVLS,
 	settings: {
 		name: 'T15',

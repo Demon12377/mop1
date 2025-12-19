@@ -64,7 +64,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDemonologyWarlock, {
 		consumables: Presets.DefaultConsumables,
 
 		// Default talents.
-		talents: Presets.DemonologyTalentsDefault.data,
+		talents: Presets.DemonologyTalentsUVLS.data,
 		// Default spec-specific settings.
 		specOptions: Presets.DefaultOptions,
 
@@ -100,7 +100,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecDemonologyWarlock, {
 	presets: {
 		epWeights: [Presets.DEFAULT_EP_PRESET],
 		// Preset talents that the user can quickly select.
-		talents: [Presets.DemonologyTalentsDefault],
+		talents: [Presets.DemonologyTalentsDefault, Presets.DemonologyTalentsUVLS],
 		// Preset rotations that the user can quickly select.
 		rotations: [Presets.APL_Default, Presets.APL_UVLS],
 

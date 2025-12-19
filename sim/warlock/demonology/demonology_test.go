@@ -52,7 +52,7 @@ func TestDemonology(t *testing.T) {
 			Talents:    "231221",
 			Glyphs: &proto.Glyphs{
 				Major1: int32(proto.WarlockMajorGlyph_GlyphOfSoulstone),
-				Major2: int32(proto.WarlockMajorGlyph_GlyphOfSiphonLife),
+				Major2: int32(proto.WarlockMajorGlyph_GlyphOfEternalResolve),
 				Major3: int32(proto.WarlockMajorGlyph_GlyphOfImpSwarm),
 			},
 			Consumables:      fullConsumesSpec,
