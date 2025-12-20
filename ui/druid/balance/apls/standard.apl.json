@@ -19,8 +19,8 @@
 	{"action":{"groupReference":{"groupName":"UVLS DoTs"}}},
 	{"action":{"groupReference":{"groupName":"Force of Nature"}}},
 	{"action":{"groupReference":{"groupName":"Astral Insight"}}},
-	{"action":{"groupReference":{"groupName":"Starfall"}}},
 	{"action":{"groupReference":{"groupName":"Starsurge"}}},
+	{"action":{"groupReference":{"groupName":"Starfall"}}},
 	{"action":{"groupReference":{"groupName":"DoTs"}}},
 	{"action":{"groupReference":{"groupName":"Dream of Cenarius"}}},
 	{"action":{"groupReference":{"groupName":"Filler"}}}
