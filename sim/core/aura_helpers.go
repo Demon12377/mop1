@@ -342,7 +342,7 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 
 	if config.TimePerStack > 0 {
 		var pa *PendingAction
-		i
+
 		startStackingAction := func(sim *Simulation, tickImmediately bool, numTicks int) {
 			pa = StartPeriodicAction(sim, PeriodicActionOptions{
 				Period:          config.TimePerStack,
