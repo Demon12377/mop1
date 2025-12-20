@@ -3918,22 +3918,6 @@
                     "tooltip"
                   ]
                 },
-                "cancel_cast": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string"
-                    },
-                    "tooltip": {
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "label",
-                    "tooltip"
-                  ]
-                },
                 "cast_at_player": {
                   "type": "object",
                   "properties": {
@@ -4580,7 +4564,6 @@
               "additionalProperties": false,
               "required": [
                 "cast",
-                "cancel_cast",
                 "cast_at_player",
                 "multi_dot",
                 "strict_multi_dot",
@@ -5553,22 +5536,6 @@
                     "tooltip"
                   ]
                 },
-                "remaining_cast_time": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string"
-                    },
-                    "tooltip": {
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "label",
-                    "tooltip"
-                  ]
-                },
                 "spell_known": {
                   "type": "object",
                   "properties": {
@@ -5686,22 +5653,6 @@
                   ]
                 },
                 "cpm": {
-                  "type": "object",
-                  "properties": {
-                    "label": {
-                      "type": "string"
-                    },
-                    "tooltip": {
-                      "type": "string"
-                    }
-                  },
-                  "additionalProperties": false,
-                  "required": [
-                    "label",
-                    "tooltip"
-                  ]
-                },
-                "is_casting": {
                   "type": "object",
                   "properties": {
                     "label": {
@@ -6617,7 +6568,6 @@
                 "gcd_is_ready",
                 "gcd_time_to_ready",
                 "time_to_next_auto",
-                "remaining_cast_time",
                 "spell_known",
                 "current_cost",
                 "can_cast",
@@ -6626,7 +6576,6 @@
                 "cast_time",
                 "travel_time",
                 "cpm",
-                "is_casting",
                 "is_channeling",
                 "channeled_ticks",
                 "number_of_charges",
