@@ -18,7 +18,7 @@ type OnReset func(aura *Aura, sim *Simulation)
 type OnDoneIteration func(aura *Aura, sim *Simulation)
 type OnGain func(aura *Aura, sim *Simulation)
 type OnExpire func(aura *Aura, sim *Simulation)
-type OnRestore func(aura *Aura, sim *Simulation, stacks int32)
+type OnRestore func(aura *Aura, sim *Simulation, stacks int32, wasActive bool)
 type OnStacksChange func(aura *Aura, sim *Simulation, oldStacks int32, newStacks int32)
 type OnEncounterStart func(aura *Aura, sim *Simulation)
 
@@ -1140,6 +1140,7 @@ func (auraArrays LabeledAuraArrays) Append(auras AuraArray) LabeledAuraArrays {
 type AuraState struct {
 	RemainingDuration time.Duration
 	Stacks            int32
+	SnapshotTime      time.Duration // Time when the state was saved
 }
 
 func (aura *Aura) SaveState(sim *Simulation) AuraState {
@@ -1150,6 +1151,7 @@ func (aura *Aura) SaveState(sim *Simulation) AuraState {
 	return AuraState{
 		RemainingDuration: aura.expires - sim.CurrentTime,
 		Stacks:            aura.stacks,
+		SnapshotTime:      sim.CurrentTime,
 	}
 }
 
@@ -1157,6 +1159,12 @@ func (aura *Aura) RestoreState(state AuraState, sim *Simulation) {
 	// If the aura has an OnRestore callback, we need special handling to properly
 	// restart any periodic actions without causing issues like double-stacking.
 	if aura.OnRestore != nil {
+		// Calculate if the ORIGINAL snapshotted aura would have expired by now.
+		// This is crucial for bugged behavior: even if a new proc happened after the
+		// original expired, we still use bugged behavior based on the original snapshot.
+		timeSinceSnapshot := sim.CurrentTime - state.SnapshotTime
+		originalWouldHaveExpired := timeSinceSnapshot > state.RemainingDuration
+
 		// Deactivate first to cancel any existing periodic actions
 		if aura.active {
 			aura.Deactivate(sim)
@@ -1164,8 +1172,8 @@ func (aura *Aura) RestoreState(state AuraState, sim *Simulation) {
 		// Activate without triggering OnGain's immediate effects
 		aura.activate(sim, false)
 		// Then call the restore callback to restart periodic actions properly
-		// Pass the stacks so it can calculate remaining ticks
-		aura.OnRestore(aura, sim, state.Stacks)
+		// Pass the stacks so it can calculate remaining ticks, and whether original expired
+		aura.OnRestore(aura, sim, state.Stacks, !originalWouldHaveExpired)
 	} else {
 		if !aura.active {
 			aura.Activate(sim)

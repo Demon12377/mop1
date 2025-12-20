@@ -379,13 +379,38 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 					pa = nil
 				}
 			},
-			OnRestore: func(aura *Aura, sim *Simulation, stacks int32) {
+			OnRestore: func(aura *Aura, sim *Simulation, stacks int32, wasActive bool) {
+				// BUGGED BEHAVIOR (matches live game as of phase 3):
+				// If the aura expired during Alter Time (wasActive == false), the restore is broken.
+				// The stacks are restored for exactly 1 tick duration, then the buff is removed entirely.
+				if !wasActive {
+					// Schedule removal after one tick period
+					StartPeriodicAction(sim, PeriodicActionOptions{
+						Period:   config.TimePerStack,
+						NumTicks: 1,
+						OnAction: func(sim *Simulation) {
+							stackingAura.Deactivate(sim)
+							aura.Deactivate(sim)
+						},
+					})
+					return
+				}
+
+				// Normal behavior: restart the periodic action
 				// When restoring (e.g., via Alter Time), we need to restart the periodic action
 				// but without TickImmediately to avoid adding an extra stack.
 				// Note: We don't activate the stacking aura here because it will be restored
 				// separately by Alter Time's restoration loop with the correct duration.
 
-				remainingTicks := int(config.MaxStacks - stacks)
+				var remainingTicks int
+				if config.DecrementStacks {
+					// For decrementing buffs: we have N stacks, need N more ticks to reach 0
+					remainingTicks = int(stacks)
+				} else {
+					// For incrementing buffs: we have N stacks, need (MaxStacks - N) ticks to reach max
+					remainingTicks = int(config.MaxStacks - stacks)
+				}
+
 				if remainingTicks > 0 {
 					startStackingAction(sim, false, remainingTicks)
 				}
