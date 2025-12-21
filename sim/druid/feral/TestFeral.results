@@ -3169,25 +3169,25 @@ dps_results: {
 dps_results: {
  key: "TestFeral-Settings-Troll-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-LongMultiTarget"
  value: {
-  dps: 427379.44874
-  tps: 743551.25462
-  hps: 3643.31017
+  dps: 430357.9714
+  tps: 756138.05392
+  hps: 3631.97987
  }
 }
 dps_results: {
  key: "TestFeral-Settings-Troll-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-LongSingleTarget"
  value: {
-  dps: 165225.25949
-  tps: 265980.3131
-  hps: 3550.85894
+  dps: 164099.29867
+  tps: 265170.435
+  hps: 3557.11458
  }
 }
 dps_results: {
  key: "TestFeral-Settings-Troll-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-ShortSingleTarget"
  value: {
-  dps: 195656.79349
-  tps: 231908.17695
-  hps: 4821.79754
+  dps: 195091.19095
+  tps: 232303.42623
+  hps: 4820.74186
  }
 }
 dps_results: {
@@ -3361,9 +3361,9 @@ dps_results: {
 dps_results: {
  key: "TestFeral-Settings-Troll-p3-WC-SotF-HotW-ExternalBleed-default-NoBuffs-24.0yards-LongMultiTarget"
  value: {
-  dps: 386584.78158
-  tps: 566396.61204
-  hps: 3266.69302
+  dps: 388352.49531
+  tps: 570951.06569
+  hps: 3263.68445
  }
 }
 dps_results: {
@@ -4033,25 +4033,25 @@ dps_results: {
 dps_results: {
  key: "TestFeral-Settings-Worgen-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-LongMultiTarget"
  value: {
-  dps: 427169.28895
-  tps: 738944.73014
-  hps: 3640.80613
+  dps: 425882.61896
+  tps: 741034.79029
+  hps: 3629.58688
  }
 }
 dps_results: {
  key: "TestFeral-Settings-Worgen-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-LongSingleTarget"
  value: {
-  dps: 164731.49722
-  tps: 270564.28384
-  hps: 3581.23348
+  dps: 163891.21854
+  tps: 267158.2956
+  hps: 3571.80063
  }
 }
 dps_results: {
  key: "TestFeral-Settings-Worgen-p3-DB-Incarn-NV-ExternalBleed-default-NoBuffs-24.0yards-ShortSingleTarget"
  value: {
-  dps: 194168.84797
-  tps: 216045.23166
-  hps: 4937.15091
+  dps: 194174.596
+  tps: 226225.20126
+  hps: 4909.16399
  }
 }
 dps_results: {
@@ -4225,9 +4225,9 @@ dps_results: {
 dps_results: {
  key: "TestFeral-Settings-Worgen-p3-WC-SotF-HotW-ExternalBleed-default-NoBuffs-24.0yards-LongMultiTarget"
  value: {
-  dps: 400808.62784
-  tps: 597602.90713
-  hps: 3234.67851
+  dps: 401506.18657
+  tps: 597872.45152
+  hps: 3239.38325
  }
 }
 dps_results: {
