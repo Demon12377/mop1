@@ -429,40 +429,26 @@ func DisableThreatDoneByCaster(index int, attackTable *AttackTable) {
 }
 
 func GetCachedExpectedInitialDamage(sim *Simulation, spell *Spell, target *Unit) (bool, *ExpectedDamageCalculatorCache) {
-	attackTable := spell.Unit.AttackTables[target.Index]
-	damageCache := attackTable.expectedInitialDamageCache[spell]
-	if damageCache == nil {
-		damageCache = &ExpectedDamageCalculatorCache{}
-		attackTable.expectedInitialDamageCache[spell] = damageCache
-	}
-
-	if (damageCache.timestamp - sim.CurrentTime).Abs() <= spell.Unit.ReactionTime {
-		return true, damageCache
-	}
-
-	return false, damageCache
+	return getCachedExpectedDamageInternal(sim, spell, spell.Unit.AttackTables[target.Index].expectedInitialDamageCache)
 }
 
 func GetCachedExpectedTickDamage(sim *Simulation, spell *Spell, target *Unit, useSnapshot bool) (bool, *ExpectedDamageCalculatorCache) {
-	attackTable := spell.Unit.AttackTables[target.Index]
-	var damageCache *ExpectedDamageCalculatorCache
 	if useSnapshot {
-		damageCache = attackTable.expectedTickSnapshotDamageCache[spell]
-		if damageCache == nil {
-			damageCache = &ExpectedDamageCalculatorCache{}
-			attackTable.expectedTickSnapshotDamageCache[spell] = damageCache
-		}
-	} else {
-		damageCache = attackTable.expectedTickDamageCache[spell]
-		if damageCache == nil {
-			damageCache = &ExpectedDamageCalculatorCache{}
-			attackTable.expectedTickDamageCache[spell] = damageCache
-		}
+		return getCachedExpectedDamageInternal(sim, spell, spell.Unit.AttackTables[target.Index].expectedTickSnapshotDamageCache)
 	}
 
-	if (damageCache.timestamp - sim.CurrentTime).Abs() <= spell.Unit.ReactionTime {
-		return true, damageCache
+	return getCachedExpectedDamageInternal(sim, spell, spell.Unit.AttackTables[target.Index].expectedTickDamageCache)
+}
+
+func getCachedExpectedDamageInternal(sim *Simulation, spell *Spell, store map[*Spell]*ExpectedDamageCalculatorCache) (bool, *ExpectedDamageCalculatorCache) {
+	if store[spell] == nil {
+		emptyCache := ExpectedDamageCalculatorCache{}
+		store[spell] = &emptyCache
 	}
 
-	return false, damageCache
+	if (store[spell].timestamp - sim.CurrentTime).Abs() <= spell.Unit.ReactionTime {
+		return true, store[spell]
+	}
+
+	return false, store[spell]
 }
