@@ -324,6 +324,10 @@ func (target *Target) GetMetricsProto() *proto.UnitMetrics {
 
 type DynamicDamageDoneByCaster func(sim *Simulation, spell *Spell, attackTable *AttackTable) float64
 type DynamicThreatDoneByCaster DynamicDamageDoneByCaster
+type ExpectedDamageCalculatorCache struct {
+	timestamp time.Duration
+	value     float64
+}
 
 // Holds cached values for outcome/damage calculations, for a specific attacker+defender pair.
 // These are updated dynamically when attacker or defender stats change.
@@ -358,6 +362,11 @@ type AttackTable struct {
 	DamageDoneByCasterExtraMultiplier []DynamicDamageDoneByCaster
 
 	ThreatDoneByCasterExtraMultiplier []DynamicThreatDoneByCaster
+
+	// Store Expected Initial/DoT Tick values to speed up DoT damage calculations
+	expectedInitialDamageCache      map[*Spell]*ExpectedDamageCalculatorCache
+	expectedTickDamageCache         map[*Spell]*ExpectedDamageCalculatorCache
+	expectedTickSnapshotDamageCache map[*Spell]*ExpectedDamageCalculatorCache
 }
 
 func NewAttackTable(attacker *Unit, defender *Unit) *AttackTable {
@@ -369,6 +378,10 @@ func NewAttackTable(attacker *Unit, defender *Unit) *AttackTable {
 		DamageTakenMultiplier:       1,
 		RangedDamageTakenMultiplier: 1,
 		HealingDealtMultiplier:      1,
+
+		expectedInitialDamageCache:      make(map[*Spell]*ExpectedDamageCalculatorCache),
+		expectedTickDamageCache:         make(map[*Spell]*ExpectedDamageCalculatorCache),
+		expectedTickSnapshotDamageCache: make(map[*Spell]*ExpectedDamageCalculatorCache),
 	}
 
 	if defender.Type == EnemyUnit {
@@ -413,4 +426,43 @@ func EnableThreatDoneByCaster(index int, maxIndex int, attackTable *AttackTable,
 
 func DisableThreatDoneByCaster(index int, attackTable *AttackTable) {
 	attackTable.ThreatDoneByCasterExtraMultiplier[index] = nil
+}
+
+func GetCachedExpectedInitialDamage(sim *Simulation, spell *Spell, target *Unit) (bool, *ExpectedDamageCalculatorCache) {
+	attackTable := spell.Unit.AttackTables[target.Index]
+	damageCache := attackTable.expectedInitialDamageCache[spell]
+	if damageCache == nil {
+		damageCache = &ExpectedDamageCalculatorCache{}
+		attackTable.expectedInitialDamageCache[spell] = damageCache
+	}
+
+	if (damageCache.timestamp - sim.CurrentTime).Abs() <= spell.Unit.ReactionTime {
+		return true, damageCache
+	}
+
+	return false, damageCache
+}
+
+func GetCachedExpectedTickDamage(sim *Simulation, spell *Spell, target *Unit, useSnapshot bool) (bool, *ExpectedDamageCalculatorCache) {
+	attackTable := spell.Unit.AttackTables[target.Index]
+	var damageCache *ExpectedDamageCalculatorCache
+	if useSnapshot {
+		damageCache = attackTable.expectedTickSnapshotDamageCache[spell]
+		if damageCache == nil {
+			damageCache = &ExpectedDamageCalculatorCache{}
+			attackTable.expectedTickSnapshotDamageCache[spell] = damageCache
+		}
+	} else {
+		damageCache = attackTable.expectedTickDamageCache[spell]
+		if damageCache == nil {
+			damageCache = &ExpectedDamageCalculatorCache{}
+			attackTable.expectedTickDamageCache[spell] = damageCache
+		}
+	}
+
+	if (damageCache.timestamp - sim.CurrentTime).Abs() <= spell.Unit.ReactionTime {
+		return true, damageCache
+	}
+
+	return false, damageCache
 }
