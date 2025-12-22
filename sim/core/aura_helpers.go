@@ -379,7 +379,7 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 					pa = nil
 				}
 			},
-			OnRestore: func(aura *Aura, sim *Simulation, stacks int32, wasActive bool) {
+			OnRestore: func(aura *Aura, sim *Simulation, state AuraState, wasActive bool) {
 				// BUGGED BEHAVIOR (matches live game as of phase 3):
 				// If the aura expired during Alter Time (wasActive == false), the restore is broken.
 				// The stacks are restored for exactly 1 tick duration, then the buff is removed entirely.
@@ -405,10 +405,10 @@ func (character *Character) NewTemporaryStatBuffWithStacks(config TemporaryStatB
 				var remainingTicks int
 				if config.DecrementStacks {
 					// For decrementing buffs: we have N stacks, need N more ticks to reach 0
-					remainingTicks = int(stacks)
+					remainingTicks = int(state.Stacks)
 				} else {
 					// For incrementing buffs: we have N stacks, need (MaxStacks - N) ticks to reach max
-					remainingTicks = int(config.MaxStacks - stacks)
+					remainingTicks = int(config.MaxStacks - state.Stacks)
 				}
 
 				if remainingTicks > 0 {
