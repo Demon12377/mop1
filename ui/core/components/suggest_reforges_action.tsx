@@ -315,6 +315,12 @@ export class ReforgeOptimizer {
 					category: 'reforging',
 					label: 'suggest_cancel',
 				});
+
+				new Toast({
+					variant: 'warning',
+					body: i18n.t('sidebar.buttons.suggest_reforges.reforge_optimization_cancelled'),
+					delay: 3000,
+				});
 			},
 		});
 
@@ -2129,6 +2135,8 @@ export class ReforgeOptimizer {
 	}
 
 	onReforgeFinally() {
+		this.progressTrackerModal.hide();
+
 		if (this.wasCM) {
 			this.simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), true);
 		}
@@ -2143,13 +2151,6 @@ export class ReforgeOptimizer {
 			value: Math.ceil(completionTimeInMs / 1000),
 		});
 
-		new Toast({
-			variant: 'warning',
-			body: i18n.t('sidebar.buttons.suggest_reforges.reforge_optimization_cancelled'),
-			delay: 3000,
-		});
-
-		this.progressTrackerModal.hide();
 	}
 
 	fromProto(eventID: EventID, proto: ReforgeSettings) {
