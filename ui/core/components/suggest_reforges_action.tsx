@@ -2150,7 +2150,6 @@ export class ReforgeOptimizer {
 			label: 'suggest_duration',
 			value: Math.ceil(completionTimeInMs / 1000),
 		});
-
 	}
 
 	fromProto(eventID: EventID, proto: ReforgeSettings) {
