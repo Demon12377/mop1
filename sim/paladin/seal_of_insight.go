@@ -63,7 +63,7 @@ func (paladin *Paladin) registerSealOfInsight() {
 		},
 	})
 
-	buildPhase := core.Ternary(paladin.Seal == proto.PaladinSeal_Insight, core.CharacterBuildPhaseTalents, core.CharacterBuildPhaseNone)
+	buildPhase := core.Ternary(paladin.Seal == proto.PaladinSeal_Insight, core.CharacterBuildPhaseBase, core.CharacterBuildPhaseNone)
 	dpm := paladin.NewLegacyPPMManager(15, core.ProcMaskMeleeMH)
 	paladin.SealOfInsightAura = paladin.RegisterAura(core.Aura{
 		Label:      "Seal of Insight" + paladin.Label,
