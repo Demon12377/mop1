@@ -180,6 +180,9 @@ func NewPaladin(character *core.Character, talentsStr string, options *proto.Pal
 	// Register Seal of Insight here to make the build phase stats show properly under Base...
 	paladin.registerSealOfInsight()
 
+	// Register Divine Purpose here to make sure it's registered before T16 DPS 4pc
+	paladin.registerDivinePurpose()
+
 	return paladin
 }
 
