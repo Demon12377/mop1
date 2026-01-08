@@ -2,6 +2,7 @@ package core
 
 import (
 	"fmt"
+	"math"
 	"time"
 
 	"github.com/wowsims/mop/sim/core/proto"
@@ -388,4 +389,48 @@ func (action *APLActionMoveDuration) IsReady(sim *Simulation) bool {
 
 func (action *APLActionMoveDuration) String() string {
 	return "MoveDuration()"
+}
+
+/***
+ * Damage amplifier actions
+ **/
+
+type APLActionDamageAmplifier struct {
+	defaultAPLActionImpl
+	unit           *Unit
+	lastExecutedAt time.Duration
+	amount         int32
+	percentage     float64
+}
+
+func (rot *APLRotation) newActionDamageAmplifier(config *proto.APLActionDamageAmplifier) APLActionImpl {
+	percentage := 1 + math.Abs(float64(config.Amount)/100)
+
+	if config.Amount <= 0 {
+		percentage = 1 / percentage
+	}
+
+	return &APLActionDamageAmplifier{
+		unit:       rot.unit,
+		amount:     config.Amount,
+		percentage: percentage,
+	}
+}
+func (action *APLActionDamageAmplifier) Reset(sim *Simulation) {
+	action.lastExecutedAt = NeverExpires
+}
+func (action *APLActionDamageAmplifier) IsReady(sim *Simulation) bool {
+	// Prevent infinite loops by only allowing this action to be performed once at each timestamp.
+	return action.lastExecutedAt != sim.CurrentTime
+}
+func (action *APLActionDamageAmplifier) Execute(sim *Simulation) {
+
+	action.unit.PseudoStats.DamageDealtMultiplier *= action.percentage
+
+	if sim.Log != nil {
+		action.unit.Log(sim, "Triggered Damage Amplifier (Percentage = %d%%)", action.amount)
+	}
+}
+func (action *APLActionDamageAmplifier) String() string {
+	return fmt.Sprintf("Damage Amplification(%s%)", action.amount)
 }

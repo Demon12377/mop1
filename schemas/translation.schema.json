@@ -966,6 +966,7 @@
         "name",
         "search",
         "filter",
+        "elapsed_time",
         "phases",
         "tanks",
         "status",
@@ -4442,6 +4443,35 @@
                     "tooltip"
                   ]
                 },
+                "damage_amplification": {
+                  "type": "object",
+                  "properties": {
+                    "label": {
+                      "type": "string"
+                    },
+                    "tooltip": {
+                      "type": "string"
+                    },
+                    "amount": {
+                      "type": "object",
+                      "properties": {
+                        "label": {
+                          "type": "string"
+                        }
+                      },
+                      "additionalProperties": false,
+                      "required": [
+                        "label"
+                      ]
+                    }
+                  },
+                  "additionalProperties": false,
+                  "required": [
+                    "label",
+                    "tooltip",
+                    "amount"
+                  ]
+                },
                 "item_swap": {
                   "type": "object",
                   "properties": {
@@ -4604,6 +4634,7 @@
                 "activate_all_stat_buff_proc_auras",
                 "cancel_aura",
                 "trigger_icd",
+                "damage_amplification",
                 "item_swap",
                 "move",
                 "custom_rotation",
@@ -9808,6 +9839,7 @@
                 "breakpoints_implemented",
                 "post_cap_ep",
                 "reforge_optimization_failed",
+                "reforge_optimization_cancelled",
                 "use_custom",
                 "enable_modification",
                 "modify_in_editor",

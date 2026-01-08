@@ -1070,6 +1070,13 @@
 					"label": "Trigger ICD",
 					"tooltip": "Triggers the specified internal cooldown."
 				},
+				"damage_amplification": {
+					"label": "Damage Amplification",
+					"tooltip": "Increases/Decreases Damage Done % by the specified percentage",
+					"amount": {
+						"label": "Percentage"
+					}
+				},
 				"item_swap": {
 					"label": "Item Swap",
 					"tooltip": "Swaps items, using the swap set specified in Settings."

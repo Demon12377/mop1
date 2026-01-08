@@ -1070,6 +1070,13 @@
                     "label": "Déclencher ICD",
                     "tooltip": "Déclenche l'ICD interne spécifié."
                 },
+				"damage_amplification": {
+					"label": "Amplification des dégâts",
+					"tooltip": "Augmente les dégâts subis par la cible pour le type de dégâts spécifié pendant la durée donnée.",
+					"amount": {
+						"label": "Pourcentage"
+					}
+				},
                 "item_swap": {
                     "label": "Changer d'ensemble",
                     "tooltip": "Échange les ensemble d'équipement, en utilisant l'ensemble d'échange spécifié dans les Paramètres."
