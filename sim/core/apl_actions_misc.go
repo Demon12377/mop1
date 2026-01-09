@@ -398,7 +398,6 @@ func (action *APLActionMoveDuration) String() string {
 type APLActionDamageAmplifier struct {
 	defaultAPLActionImpl
 	unit       *Unit
-	ampType    proto.APLActionDamageAmplifier_AmplificationType
 	amount     int32
 	percentage float64
 	aura       *Aura
@@ -454,10 +453,9 @@ func (rot *APLRotation) newActionDamageAmplifier(config *proto.APLActionDamageAm
 	})
 
 	return &APLActionDamageAmplifier{
-		unit:    rot.unit,
-		ampType: config.AmpType,
-		amount:  config.Amount,
-		aura:    aura,
+		unit:   rot.unit,
+		amount: config.Amount,
+		aura:   aura,
 	}
 }
 func (action *APLActionDamageAmplifier) Reset(sim *Simulation) {
