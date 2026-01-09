@@ -397,23 +397,67 @@ func (action *APLActionMoveDuration) String() string {
 
 type APLActionDamageAmplifier struct {
 	defaultAPLActionImpl
-	unit           *Unit
+	unit       *Unit
+	ampType    proto.APLActionDamageAmplifier_AmplificationType
+	amount     int32
+	percentage float64
+	aura       *Aura
+
 	lastExecutedAt time.Duration
-	amount         int32
-	percentage     float64
 }
 
 func (rot *APLRotation) newActionDamageAmplifier(config *proto.APLActionDamageAmplifier) APLActionImpl {
-	percentage := 1 + math.Abs(float64(config.Amount)/100)
-
-	if config.Amount <= 0 {
-		percentage = 1 / percentage
+	var auraLabel string
+	switch config.AmpType {
+	case proto.APLActionDamageAmplifier_EnvironmentBuff:
+		auraLabel = "Environment Buff"
+	case proto.APLActionDamageAmplifier_TargetDebuff:
+		auraLabel = "Target Debuff"
+	default:
+		auraLabel = "Caster Buff"
 	}
 
+	character := rot.unit.Env.Raid.GetPlayerFromUnit(rot.unit).GetCharacter()
+
+	if character == nil {
+		return nil
+	}
+
+	aura := character.GetOrRegisterAura(Aura{
+		Label:    fmt.Sprintf("Damage Done % (%d)", auraLabel),
+		ActionID: ActionID{OtherID: proto.OtherAction_OtherActionDamageAmplifier}.WithTag(int32(config.AmpType)),
+
+		Duration:  NeverExpires,
+		MaxStacks: math.MaxInt32,
+		OnStacksChange: func(aura *Aura, sim *Simulation, oldStacks int32, newStacks int32) {
+			amount := (1.0 + float64(newStacks)/100) / (1.0 + float64(oldStacks)/100)
+
+			if config.AmpType == proto.APLActionDamageAmplifier_TargetDebuff {
+				for _, unit := range character.Env.Encounter.AllTargetUnits {
+					unit.PseudoStats.DamageTakenMultiplier *= amount
+				}
+			} else {
+				character.PseudoStats.DamageDealtMultiplier *= amount
+				if config.AmpType == proto.APLActionDamageAmplifier_CasterBuff {
+					for _, pet := range character.Pets {
+						if !pet.isGuardian {
+							pet.PseudoStats.DamageDealtMultiplier *= amount
+						}
+					}
+				}
+			}
+
+			if sim.Log != nil {
+				sim.Log("Triggered Damage Done %% (Type = %s, Percentage = %d%%)", auraLabel, config.Amount)
+			}
+		},
+	})
+
 	return &APLActionDamageAmplifier{
-		unit:       rot.unit,
-		amount:     config.Amount,
-		percentage: percentage,
+		unit:    rot.unit,
+		ampType: config.AmpType,
+		amount:  config.Amount,
+		aura:    aura,
 	}
 }
 func (action *APLActionDamageAmplifier) Reset(sim *Simulation) {
@@ -424,12 +468,8 @@ func (action *APLActionDamageAmplifier) IsReady(sim *Simulation) bool {
 	return action.lastExecutedAt != sim.CurrentTime
 }
 func (action *APLActionDamageAmplifier) Execute(sim *Simulation) {
-
-	action.unit.PseudoStats.DamageDealtMultiplier *= action.percentage
-
-	if sim.Log != nil {
-		action.unit.Log(sim, "Triggered Damage Amplifier (Percentage = %d%%)", action.amount)
-	}
+	action.aura.Activate(sim)
+	action.aura.SetStacks(sim, action.aura.GetStacks()+action.amount)
 }
 func (action *APLActionDamageAmplifier) String() string {
 	return fmt.Sprintf("Damage Amplification(%s%)", action.amount)

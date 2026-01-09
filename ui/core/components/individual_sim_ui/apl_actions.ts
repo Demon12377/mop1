@@ -638,6 +638,7 @@ const actionKindFactories: { [f in NonNullable<APLActionKind>]: ActionKindConfig
 			AplHelpers.numberFieldConfig('amount', false, {
 				label: i18n.t('rotation_tab.apl.actions.damage_amplification.amount.label'),
 			}),
+			AplHelpers.damageAmpTypeFieldConfig('ampType')
 		],
 	}),
 	['itemSwap']: inputBuilder({

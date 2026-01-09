@@ -421,6 +421,13 @@ message APLActionMoveDuration {
     APLValue duration = 1;
 }
 message APLActionDamageAmplifier {
+	enum AmplificationType {
+        CasterBuff = 0;
+        EnvironmentBuff = 1;
+        TargetDebuff = 2;
+    }
+
+	AmplificationType ampType = 1;
 	int32 amount = 2;
 }
 
