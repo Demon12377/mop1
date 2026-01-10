@@ -423,7 +423,7 @@ func (rot *APLRotation) newActionDamageAmplifier(config *proto.APLActionDamageAm
 	}
 
 	aura := character.GetOrRegisterAura(Aura{
-		Label:    fmt.Sprintf("Damage Done %% (%d)", auraLabel),
+		Label:    fmt.Sprintf("Damage Done %% (%s)", auraLabel),
 		ActionID: ActionID{OtherID: proto.OtherAction_OtherActionDamageAmplifier}.WithTag(int32(config.AmpType)),
 
 		Duration:  NeverExpires,
@@ -470,5 +470,5 @@ func (action *APLActionDamageAmplifier) Execute(sim *Simulation) {
 	action.aura.SetStacks(sim, action.aura.GetStacks()+action.amount)
 }
 func (action *APLActionDamageAmplifier) String() string {
-	return fmt.Sprintf("Damage Amplification(%s%%)", action.amount)
+	return fmt.Sprintf("Damage Amplification(%d%%)", action.amount)
 }
