@@ -1726,15 +1726,16 @@
 				"amplification_types": {
 					"caster_buff": {
 						"label": "Buff du lanceur",
-						"tooltip": "Buff est sur le lanceur ; capture les DoTs et affecte les familiers"
+						"tooltip": "Buff est sur le lanceur; capture les DoTs et affecte les familiers (pas les gardiens)"
+
 					},
 					"environment_buff": {
 						"label": "Buff de l'environnement",
-						"tooltip": "Buff est sur l'environnement (par ex. la piscine de Jin'Rokh) ; capture les DoTs et n'affecte pas les familiers"
+						"tooltip": "Buff est sur l'environnement (par ex. la piscine de Jin'Rokh); capture les DoTs et affecte les familiers (pas les gardiens)"
 					},
 					"target_debuff": {
 						"label": "Débuff de la cible",
-						"tooltip": "Debuff est sur la cible ; ne capture pas les DoTs et affecte les familiers"
+						"tooltip": "Débuff est sur la cible; ne capture pas les DoTs et affecte les familiers/gardiens"
 					}
 				},
 				"unit_labels": {

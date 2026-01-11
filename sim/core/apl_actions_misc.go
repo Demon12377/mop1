@@ -437,11 +437,10 @@ func (rot *APLRotation) newActionDamageAmplifier(config *proto.APLActionDamageAm
 				}
 			} else {
 				character.PseudoStats.DamageDealtMultiplier *= amount
-				if config.AmpType == proto.APLActionDamageAmplifier_CasterBuff {
-					for _, pet := range character.Pets {
-						if !pet.isGuardian {
-							pet.PseudoStats.DamageDealtMultiplier *= amount
-						}
+
+				for _, pet := range character.Pets {
+					if !pet.isGuardian {
+						pet.PseudoStats.DamageDealtMultiplier *= amount
 					}
 				}
 			}

@@ -1726,11 +1726,11 @@
 				"amplification_types": {
 					"caster_buff": {
 						"label": "Caster Buff",
-						"tooltip": "Buff is on caster; snapshots DoTs and affect pets (not guardians"
+						"tooltip": "Buff is on caster; snapshots DoTs and affect pets (not guardians)"
 					},
 					"environment_buff": {
 						"label": "Environment Buff",
-						"tooltip": "Buff is on the environment (ie. Jin'Rokh' pool); snapshots DoTs and does not affect pets/guardians"
+						"tooltip": "Buff is on the environment (ie. Jin'Rokh' pool); snapshots DoTs and affect pets (not guardians)"
 					},
 					"target_debuff": {
 						"label": "Target Debuff",
