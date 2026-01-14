@@ -68,13 +68,6 @@ export const P3NoTrollDefaultSimpleRotation = FireMage_Rotation.create({
 	combustPostAlter: 10000000,
 });
 
-export const P3MasteryDefaultSimpleRotation = FireMage_Rotation.create({
-	combustAlwaysSend: 8000000,
-	combustBloodlust: 10000000,
-	combustPostAlter: 7000000,
-	combustNoAlter: 900000,
-	combustEndOfCombat: 600000,
-});
 
 export const P1_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P1 - Default', Spec.SpecFireMage, P1TrollDefaultSimpleRotation);
 export const P1_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P1 - Default (No Troll)', Spec.SpecFireMage, P1NoTrollDefaultSimpleRotation);
