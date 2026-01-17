@@ -493,6 +493,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrost-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 145567.70871
+  tps: 106299.7642
+ }
+}
+dps_results: {
  key: "TestFrost-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 162531.43488

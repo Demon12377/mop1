@@ -2362,6 +2362,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBeastMastery-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 213594.5763
+  tps: 100449.52605
+ }
+}
+dps_results: {
  key: "TestBeastMastery-AllItems-VisionofthePredator-81192"
  value: {
   dps: 216402.35687

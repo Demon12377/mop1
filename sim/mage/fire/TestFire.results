@@ -2355,6 +2355,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFire-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 132675.32987
+  tps: 129337.35986
+ }
+}
+dps_results: {
  key: "TestFire-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 132675.32987

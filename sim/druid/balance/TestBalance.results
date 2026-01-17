@@ -575,6 +575,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBalance-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 235578.11269
+  tps: 236143.54927
+  hps: 28500.8022
+ }
+}
+dps_results: {
  key: "TestBalance-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 254015.87299

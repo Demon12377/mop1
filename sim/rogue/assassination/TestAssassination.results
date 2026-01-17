@@ -539,6 +539,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAssassination-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 97619.77777
+  tps: 68662.65176
+ }
+}
+dps_results: {
  key: "TestAssassination-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 99023.95046

@@ -493,6 +493,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestArcane-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 229793.99212
+  tps: 221457.5782
+ }
+}
+dps_results: {
  key: "TestArcane-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 254683.25439

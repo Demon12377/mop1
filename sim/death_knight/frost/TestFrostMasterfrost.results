@@ -2775,6 +2775,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostMasterfrost-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 224055.88173
+  tps: 203740.3246
+  hps: 2284.27703
+ }
+}
+dps_results: {
  key: "TestFrostMasterfrost-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 224902.80471

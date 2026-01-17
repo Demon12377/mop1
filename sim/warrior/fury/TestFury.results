@@ -500,6 +500,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFury-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 238954.2383
+  tps: 152055.5977
+ }
+}
+dps_results: {
  key: "TestFury-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 244459.69289

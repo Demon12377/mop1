@@ -2727,6 +2727,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestWindwalker-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 228176.11627
+  tps: 217773.20161
+  hps: 7840.88758
+ }
+}
+dps_results: {
  key: "TestWindwalker-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 239810.45311

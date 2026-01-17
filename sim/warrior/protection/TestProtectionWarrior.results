@@ -777,9 +777,9 @@ dps_results: {
 dps_results: {
  key: "TestProtectionWarrior-AllItems-EvilEyeofGalakras-105491"
  value: {
-  dps: 263447.21496
-  tps: 1.5219501028e+06
-  dtps: 40435.12328
+  dps: 263857.56045
+  tps: 1.5284511145e+06
+  dtps: 40683.29893
  }
 }
 dps_results: {
@@ -2717,6 +2717,14 @@ dps_results: {
   dps: 246393.07095
   tps: 1.43405888914e+06
   dtps: 43813.0779
+ }
+}
+dps_results: {
+ key: "TestProtectionWarrior-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 249910.85414
+  tps: 1.45531701187e+06
+  dtps: 43480.18024
  }
 }
 dps_results: {

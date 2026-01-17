@@ -2727,6 +2727,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFeral-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 222283.2559
+  tps: 334184.40989
+  hps: 15052.44967
+ }
+}
+dps_results: {
  key: "TestFeral-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 241300.1689

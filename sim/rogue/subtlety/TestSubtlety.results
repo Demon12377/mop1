@@ -507,6 +507,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestSubtlety-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 100823.43931
+  tps: 71053.07808
+ }
+}
+dps_results: {
  key: "TestSubtlety-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 102445.10487

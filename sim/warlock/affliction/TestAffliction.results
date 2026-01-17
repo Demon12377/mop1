@@ -2703,6 +2703,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAffliction-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 217309.7034
+  tps: 150181.64375
+  hps: 3244.9977
+ }
+}
+dps_results: {
  key: "TestAffliction-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 215057.82541

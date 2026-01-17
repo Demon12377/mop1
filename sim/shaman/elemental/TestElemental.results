@@ -2383,6 +2383,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestElemental-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 134839.24277
+  tps: 97980.50427
+ }
+}
+dps_results: {
  key: "TestElemental-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 134913.45478

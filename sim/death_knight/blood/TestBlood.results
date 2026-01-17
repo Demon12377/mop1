@@ -879,10 +879,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-EvilEyeofGalakras-105491"
  value: {
-  dps: 230880.01968
-  tps: 1.16526912054e+06
-  dtps: 60286.60136
-  hps: 73952.91105
+  dps: 231003.46315
+  tps: 1.16591740707e+06
+  dtps: 62298.29046
+  hps: 74610.01863
  }
 }
 dps_results: {
@@ -3124,6 +3124,15 @@ dps_results: {
   tps: 1.09933351476e+06
   dtps: 65397.84033
   hps: 75076.03213
+ }
+}
+dps_results: {
+ key: "TestBlood-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 216765.62463
+  tps: 1.09935375748e+06
+  dtps: 64570.778
+  hps: 78808.08448
  }
 }
 dps_results: {

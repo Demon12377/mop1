@@ -2369,6 +2369,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestDemonology-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 194696.55054
+  tps: 121808.50688
+ }
+}
+dps_results: {
  key: "TestDemonology-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 195559.04946
