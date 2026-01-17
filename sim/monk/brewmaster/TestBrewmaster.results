@@ -87,10 +87,10 @@ dps_results: {
 dps_results: {
  key: "TestBrewmaster-AllItems-AssuranceofConsequence-105472"
  value: {
-  dps: 282583.9004
-  tps: 1.18642072093e+06
-  dtps: 15032.72206
-  hps: 30647.49423
+  dps: 282993.28266
+  tps: 1.18928639677e+06
+  dtps: 17091.2751
+  hps: 31188.56182
  }
 }
 dps_results: {
@@ -1579,6 +1579,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBrewmaster-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 260411.58336
+  tps: 1.12360662126e+06
+  dtps: 15863.96799
+  hps: 35161.34622
+ }
+}
+dps_results: {
  key: "TestBrewmaster-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 269643.62551
@@ -3043,6 +3052,15 @@ dps_results: {
   tps: 1.12002551381e+06
   dtps: 17292.19827
   hps: 30452.09865
+ }
+}
+dps_results: {
+ key: "TestBrewmaster-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 259957.91276
+  tps: 1.12107422881e+06
+  dtps: 16721.94923
+  hps: 29003.58457
  }
 }
 dps_results: {

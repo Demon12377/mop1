@@ -87,10 +87,10 @@ dps_results: {
 dps_results: {
  key: "TestGuardian-AllItems-AssuranceofConsequence-105472"
  value: {
-  dps: 328060.14613
-  tps: 1.97812062594e+06
-  dtps: 42951.96552
-  hps: 29948.89979
+  dps: 328821.16345
+  tps: 1.98374384064e+06
+  dtps: 44575.47476
+  hps: 31392.80096
  }
 }
 dps_results: {
@@ -1579,6 +1579,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestGuardian-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 308346.63237
+  tps: 1.86894669235e+06
+  dtps: 43732.89098
+  hps: 38557.44595
+ }
+}
+dps_results: {
  key: "TestGuardian-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 322917.51145
@@ -3061,6 +3070,15 @@ dps_results: {
   tps: 1.86559519298e+06
   dtps: 45371.10308
   hps: 31725.50616
+ }
+}
+dps_results: {
+ key: "TestGuardian-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 307052.0254
+  tps: 1.86176586352e+06
+  dtps: 42043.056
+  hps: 27488.14956
  }
 }
 dps_results: {

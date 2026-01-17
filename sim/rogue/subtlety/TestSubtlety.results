@@ -311,6 +311,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestSubtlety-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 100826.2993
+  tps: 71055.10868
+  hps: 3185.20419
+ }
+}
+dps_results: {
  key: "TestSubtlety-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 106316.99062
@@ -501,6 +509,13 @@ dps_results: {
 }
 dps_results: {
  key: "TestSubtlety-AllItems-UnerringVisionofLeiShen-96930"
+ value: {
+  dps: 100823.43931
+  tps: 71053.07808
+ }
+}
+dps_results: {
+ key: "TestSubtlety-AllItems-VialofLivingCorruption-105568"
  value: {
   dps: 100823.43931
   tps: 71053.07808

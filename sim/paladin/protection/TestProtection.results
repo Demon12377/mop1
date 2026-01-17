@@ -870,10 +870,10 @@ dps_results: {
 dps_results: {
  key: "TestProtection-AllItems-EvilEyeofGalakras-105491"
  value: {
-  dps: 242209.46687
-  tps: 1.52516906533e+06
-  dtps: 32662.144
-  hps: 38422.01338
+  dps: 242185.02652
+  tps: 1.5228742762e+06
+  dtps: 34987.8302
+  hps: 38438.37262
  }
 }
 dps_results: {
@@ -1549,6 +1549,15 @@ dps_results: {
   tps: 1.50657032785e+06
   dtps: 35644.95976
   hps: 39845.74295
+ }
+}
+dps_results: {
+ key: "TestProtection-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 234354.67957
+  tps: 1.47373543059e+06
+  dtps: 33491.76174
+  hps: 44656.24111
  }
 }
 dps_results: {
@@ -3043,6 +3052,15 @@ dps_results: {
   tps: 1.48510844343e+06
   dtps: 37372.63976
   hps: 37122.3974
+ }
+}
+dps_results: {
+ key: "TestProtection-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 233922.85521
+  tps: 1.46836057689e+06
+  dtps: 34223.47679
+  hps: 37027.11732
  }
 }
 dps_results: {

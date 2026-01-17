@@ -1415,6 +1415,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestWindwalker-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 225969.77571
+  tps: 215580.92711
+  hps: 14631.73201
+ }
+}
+dps_results: {
  key: "TestWindwalker-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 240156.99268
@@ -2723,6 +2731,14 @@ dps_results: {
  value: {
   dps: 228139.35042
   tps: 217736.43576
+  hps: 7840.88758
+ }
+}
+dps_results: {
+ key: "TestWindwalker-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 228176.11627
+  tps: 217773.20161
   hps: 7840.88758
  }
 }

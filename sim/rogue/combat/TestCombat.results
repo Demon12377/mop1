@@ -311,6 +311,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestCombat-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 96978.87253
+  tps: 68327.0184
+  hps: 3063.53857
+ }
+}
+dps_results: {
  key: "TestCombat-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 101549.22747
@@ -501,6 +509,13 @@ dps_results: {
 }
 dps_results: {
  key: "TestCombat-AllItems-UnerringVisionofLeiShen-96930"
+ value: {
+  dps: 96978.87253
+  tps: 68327.0184
+ }
+}
+dps_results: {
+ key: "TestCombat-AllItems-VialofLivingCorruption-105568"
  value: {
   dps: 96978.87253
   tps: 68327.0184

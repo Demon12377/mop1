@@ -1383,6 +1383,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestUnholy-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 217308.59575
+  tps: 153218.42235
+  hps: 7416.94416
+ }
+}
+dps_results: {
  key: "TestUnholy-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 224440.35468
@@ -2772,6 +2780,14 @@ dps_results: {
   dps: 217308.2038
   tps: 153218.42235
   hps: 2535.07542
+ }
+}
+dps_results: {
+ key: "TestUnholy-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 217308.2038
+  tps: 153218.42235
+  hps: 2777.53154
  }
 }
 dps_results: {

@@ -1383,6 +1383,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostTwoHand-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 222852.21865
+  tps: 199291.23001
+  hps: 9771.53927
+ }
+}
+dps_results: {
  key: "TestFrostTwoHand-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 233357.00941
@@ -2780,6 +2788,14 @@ dps_results: {
   dps: 222852.21865
   tps: 199291.23001
   hps: 3438.81678
+ }
+}
+dps_results: {
+ key: "TestFrostTwoHand-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 222852.21865
+  tps: 199291.23001
+  hps: 3767.87209
  }
 }
 dps_results: {
