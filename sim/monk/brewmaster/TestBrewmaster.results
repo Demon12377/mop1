@@ -1579,6 +1579,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBrewmaster-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 260411.58336
+  tps: 1.12360662126e+06
+  dtps: 15863.96799
+  hps: 35161.34622
+ }
+}
+dps_results: {
  key: "TestBrewmaster-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 269643.62551

@@ -860,4 +860,46 @@ func init() {
 			character.ItemSwap.RegisterProcWithSlots(itemID, statBuffTriggerAura, eligibleSlots)
 		})
 	})
+
+	// Juggernaut's Focusing Crystal
+	// Converts 3.16% of all damage you deal into healing on yourself.
+	shared.ItemVersionMap{
+		shared.ItemVersionLFR:             105016,
+		shared.ItemVersionNormal:          102297,
+		shared.ItemVersionHeroic:          104518,
+		shared.ItemVersionWarforged:       105265,
+		shared.ItemVersionHeroicWarforged: 105514,
+		shared.ItemVersionFlexible:        104767,
+	}.RegisterAll(func(version shared.ItemVersion, itemID int32, versionLabel string) {
+		label := "Juggernaut's Focusing Crystal"
+
+		core.NewItemEffect(itemID, func(agent core.Agent, state proto.ItemLevelState) {
+			character := agent.GetCharacter()
+
+			lifeStealSpell := getTrinketSpell(character, 146347, core.SpellSchoolShadow)
+			multiplier := core.GetItemEffectScalingStatValue(itemID, 0.06700000167, state) / 10000
+
+			var baseHealing float64
+			applyEffects := func(sim *core.Simulation, target *core.Unit, spell *core.Spell) {
+				spell.CalcAndDealHealing(sim, &character.Unit, baseHealing, spell.OutcomeHealing)
+			}
+
+			lifeStealTriggerAura := character.MakeProcTriggerAura(core.ProcTrigger{
+				Name:               fmt.Sprintf("%s (%s) - Life Steal Trigger", label, versionLabel),
+				Outcome:            core.OutcomeLanded,
+				Callback:           core.CallbackOnSpellHitDealt | core.CallbackOnPeriodicDamageDealt,
+				RequireDamageDealt: true,
+
+				Handler: func(sim *core.Simulation, spell *core.Spell, result *core.SpellResult) {
+					baseHealing = result.Damage * multiplier
+
+					lifeStealSpell.ApplyEffects = applyEffects
+					lifeStealSpell.Cast(sim, result.Target)
+				},
+			})
+
+			eligibleSlots := character.ItemSwap.EligibleSlotsForItem(itemID)
+			character.ItemSwap.RegisterProcWithSlots(itemID, lifeStealTriggerAura, eligibleSlots)
+		})
+	})
 }

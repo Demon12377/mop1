@@ -1415,6 +1415,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestWindwalker-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 225969.77571
+  tps: 215580.92711
+  hps: 14631.73201
+ }
+}
+dps_results: {
  key: "TestWindwalker-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 240156.99268

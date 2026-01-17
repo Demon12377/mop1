@@ -343,6 +343,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAssassination-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 97619.77777
+  tps: 68662.65176
+  hps: 3083.46116
+ }
+}
+dps_results: {
  key: "TestAssassination-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 103061.64724

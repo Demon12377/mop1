@@ -1391,6 +1391,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFrostMasterfrost-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 224055.88173
+  tps: 203740.3246
+  hps: 8559.74482
+ }
+}
+dps_results: {
  key: "TestFrostMasterfrost-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 234162.38909

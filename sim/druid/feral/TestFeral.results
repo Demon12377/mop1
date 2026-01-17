@@ -1407,6 +1407,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFeral-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 222283.2559
+  tps: 334184.40989
+  hps: 21369.09488
+ }
+}
+dps_results: {
  key: "TestFeral-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 233954.26754
