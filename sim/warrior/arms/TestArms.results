@@ -545,8 +545,8 @@ dps_results: {
 dps_results: {
  key: "TestArms-Settings-Orc-p3_arms_bis-Basic-arms-FullBuffs-25.0yards-LongMultiTarget"
  value: {
-  dps: 1.61889131405e+06
-  tps: 1.27483409799e+06
+  dps: 1.61881221013e+06
+  tps: 1.27481401306e+06
  }
 }
 dps_results: {
@@ -650,8 +650,8 @@ dps_results: {
 dps_results: {
  key: "TestArms-Settings-Worgen-p3_arms_bis-Basic-arms-NoBuffs-25.0yards-LongMultiTarget"
  value: {
-  dps: 1.25988275225e+06
-  tps: 1.00849010583e+06
+  dps: 1.25991444899e+06
+  tps: 1.00849799578e+06
  }
 }
 dps_results: {
