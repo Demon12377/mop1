@@ -432,8 +432,8 @@ dps_results: {
 dps_results: {
  key: "TestSurvival-AllItems-DarkmistVortex-87172"
  value: {
-  dps: 219744.23066
-  tps: 166207.01398
+  dps: 220691.3685
+  tps: 166999.65604
  }
 }
 dps_results: {
@@ -607,8 +607,8 @@ dps_results: {
 dps_results: {
  key: "TestSurvival-AllItems-EnchantWeapon-BloodyDancingSteel-5125"
  value: {
-  dps: 238462.37456
-  tps: 179744.12659
+  dps: 238324.99715
+  tps: 179643.16772
  }
 }
 dps_results: {
@@ -621,8 +621,8 @@ dps_results: {
 dps_results: {
  key: "TestSurvival-AllItems-EnchantWeapon-DancingSteel-4444"
  value: {
-  dps: 238779.43328
-  tps: 180003.85693
+  dps: 238668.78903
+  tps: 179918.73967
  }
 }
 dps_results: {
@@ -1882,8 +1882,8 @@ dps_results: {
 dps_results: {
  key: "TestSurvival-AllItems-Skeer'sBloodsoakedTalisman-105632"
  value: {
-  dps: 222075.42512
-  tps: 168188.92415
+  dps: 221573.86893
+  tps: 168005.99035
  }
 }
 dps_results: {
@@ -2407,8 +2407,8 @@ dps_results: {
 dps_results: {
  key: "TestSurvival-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 217345.93037
-  tps: 165159.91243
+  dps: 217345.09566
+  tps: 165158.79893
  }
 }
 dps_results: {

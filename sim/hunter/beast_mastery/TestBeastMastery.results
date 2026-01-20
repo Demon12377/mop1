@@ -439,8 +439,8 @@ dps_results: {
 dps_results: {
  key: "TestBeastMastery-AllItems-DarkmistVortex-87172"
  value: {
-  dps: 215763.70506
-  tps: 100992.10318
+  dps: 216391.57893
+  tps: 101004.94167
  }
 }
 dps_results: {
@@ -614,8 +614,8 @@ dps_results: {
 dps_results: {
  key: "TestBeastMastery-AllItems-EnchantWeapon-BloodyDancingSteel-5125"
  value: {
-  dps: 240792.65778
-  tps: 111215.14489
+  dps: 240503.98789
+  tps: 111200.85416
  }
 }
 dps_results: {
@@ -628,8 +628,8 @@ dps_results: {
 dps_results: {
  key: "TestBeastMastery-AllItems-EnchantWeapon-DancingSteel-4444"
  value: {
-  dps: 241189.34043
-  tps: 111822.0102
+  dps: 240639.73332
+  tps: 111425.15421
  }
 }
 dps_results: {
@@ -1882,15 +1882,15 @@ dps_results: {
 dps_results: {
  key: "TestBeastMastery-AllItems-SinisterPrimalDiamond"
  value: {
-  dps: 230367.61787
-  tps: 101098.99114
+  dps: 230367.65727
+  tps: 101099.03054
  }
 }
 dps_results: {
  key: "TestBeastMastery-AllItems-Skeer'sBloodsoakedTalisman-105632"
  value: {
-  dps: 218988.56932
-  tps: 102852.7094
+  dps: 217780.70624
+  tps: 102472.95409
  }
 }
 dps_results: {
@@ -2113,8 +2113,8 @@ dps_results: {
 dps_results: {
  key: "TestBeastMastery-AllItems-TickingEbonDetonator-105612"
  value: {
-  dps: 243479.95185
-  tps: 108436.83881
+  dps: 243160.96225
+  tps: 108285.11158
  }
 }
 dps_results: {
