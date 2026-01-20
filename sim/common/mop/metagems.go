@@ -31,6 +31,11 @@ func init() {
 	// (Approximately [19.27 + Haste] procs per minute)
 	core.NewItemEffect(95346, func(agent core.Agent, _ proto.ItemLevelState) {
 		character := agent.GetCharacter()
+
+		if character.Head().ChallengeMode {
+			return
+		}
+
 		var target *core.Unit
 
 		isHunter := character.Class == proto.Class_ClassHunter
@@ -116,6 +121,11 @@ func init() {
 	// (Approximately 1.35 procs per minute)
 	core.NewItemEffect(95347, func(agent core.Agent, _ proto.ItemLevelState) {
 		character := agent.GetCharacter()
+
+		if character.Head().ChallengeMode {
+			return
+		}
+
 		hasteMulti := 1.3
 
 		aura := character.GetOrRegisterAura(core.Aura{
@@ -159,6 +169,10 @@ func init() {
 	// (Approximately 2.57 procs per minute)
 	core.NewItemEffect(95344, func(agent core.Agent, _ proto.ItemLevelState) {
 		character := agent.GetCharacter()
+
+		if character.Head().ChallengeMode {
+			return
+		}
 
 		aura := character.GetOrRegisterAura(core.Aura{
 			Label:    "Fortitude",
