@@ -75,11 +75,10 @@ func init() {
 		})
 
 		character.MakeProcTriggerAura(core.ProcTrigger{
-			Name:               "Lightning Strike Charges Trigger",
-			ActionID:           core.ActionID{SpellID: 137595},
-			RequireDamageDealt: true,
-			Callback:           core.CallbackOnSpellHitDealt,
-			Outcome:            core.OutcomeLanded,
+			Name:     "Lightning Strike Charges Trigger",
+			ActionID: core.ActionID{SpellID: 137595},
+			Callback: core.CallbackOnSpellHitDealt,
+			Outcome:  core.OutcomeLanded,
 			DPM: character.NewRPPMProcManager(95346, false, true, core.ProcMaskMeleeOrRanged, core.RPPMConfig{
 				PPM: 19.27000045776,
 			}.WithHasteMod().
