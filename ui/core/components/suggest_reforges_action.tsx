@@ -26,8 +26,9 @@ import { NumberPicker, NumberPickerConfig } from './pickers/number_picker';
 import { renderSavedEPWeights } from './saved_data_managers/ep_weights';
 import Toast from './toast';
 import { trackEvent, trackPageView } from '../../tracking/utils';
-import { getReforgeWorkerPool } from '../reforge_worker_pool.js';
+import { ReforgeWorkerPool, getReforgeWorkerPool } from '../reforge_worker_pool';
 import type { LPModel, LPSolution, SerializedConstraints, SerializedVariables } from '../../worker/reforge_types';
+import { ProgressTrackerModal } from './progress_tracker_modal';
 
 type YalpsCoefficients = Map<string, number>;
 type YalpsVariables = Map<string, YalpsCoefficients>;
@@ -231,6 +232,7 @@ export class ReforgeOptimizer {
 	protected _softCapsConfig: StatCap[];
 	private useCustomEPValues = false;
 	private useSoftCapBreakpoints = true;
+	protected progressTrackerModal: ProgressTrackerModal;
 	protected softCapBreakpoints: StatCap[] = [];
 	protected updateSoftCaps: ReforgeOptimizerOptions['updateSoftCaps'];
 	protected enableBreakpointLimits: ReforgeOptimizerOptions['enableBreakpointLimits'];
@@ -243,6 +245,9 @@ export class ReforgeOptimizer {
 	protected frozenItemSlots = new Set<ItemSlot>();
 	protected includeTimeout = true;
 	protected undershootCaps = new Stats();
+	protected wasCM: boolean = false;
+	protected isCancelling: boolean = false;
+	protected pendingWorker: ReforgeWorkerPool | null = null;
 	protected previousGear: Gear | null = null;
 	protected previousReforges = new Map<ItemSlot, ReforgeData>();
 	protected currentReforges = new Map<ItemSlot, ReforgeData>();
@@ -283,6 +288,41 @@ export class ReforgeOptimizer {
 		this._statCaps = this.defaults.statCaps || new Stats();
 		this.enableBreakpointLimits = !!options?.enableBreakpointLimits;
 		this.relativeStatCapStat = options?.defaultRelativeStatCap ?? -1;
+		this.progressTrackerModal = new ProgressTrackerModal(simUI.rootElem, {
+			id: 'reforge-optimizer-progress-tracker',
+			title: 'Optimizing Reforges',
+			warning: (
+				<>
+					<p>
+						Reforging can be a lengthy process, especially as specific stat caps and breakpoints come into play for classes. This may take a while,
+						but be assured that the calculation will eventually complete.
+					</p>
+					<p className="mb-0">You may cancel this operation at any time using the button below.</p>
+				</>
+			),
+			onCancel: () => {
+				this.isCancelling = true;
+				if (isDevMode()) {
+					console.log('User cancelled reforge optimization');
+				}
+				try {
+					this.pendingWorker?.terminate();
+				} catch {}
+				if (this.previousGear) this.player.setGear(TypedEvent.nextEventID(), this.previousGear);
+				this.progressTrackerModal.hide();
+				trackEvent({
+					action: 'settings',
+					category: 'reforging',
+					label: 'suggest_cancel',
+				});
+
+				new Toast({
+					variant: 'warning',
+					body: i18n.t('sidebar.buttons.suggest_reforges.reforge_optimization_cancelled'),
+					delay: 3000,
+				});
+			},
+		});
 
 		// Pre-warm the worker pool
 		getReforgeWorkerPool().warmUp();
@@ -290,50 +330,27 @@ export class ReforgeOptimizer {
 		const startReforgeOptimizationEntry: ActionGroupItem = {
 			label: i18n.t('sidebar.buttons.suggest_reforges.title'),
 			cssClass: 'suggest-reforges-action-button flex-grow-1',
-			onClick: async ({ currentTarget }) => {
+			onClick: async () => {
+				this.progressTrackerModal.show();
 				trackEvent({
 					action: 'settings',
 					category: 'reforging',
 					label: 'suggest_start',
 				});
-				const button = currentTarget as HTMLButtonElement;
-				if (button) {
-					button.classList.add('loading');
-					button.disabled = true;
-				}
 
-				const wasCM = simUI.player.getChallengeModeEnabled();
+				this.wasCM = simUI.player.getChallengeModeEnabled();
 				try {
 					performance.mark('reforge-optimization-start');
-					if (wasCM) {
+					if (this.wasCM) {
 						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), false);
 					}
 					await this.optimizeReforges();
 					this.onReforgeDone();
 				} catch (error) {
+					if (this.isCancelling) return;
 					this.onReforgeError(error);
 				} finally {
-					if (wasCM) {
-						simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), true);
-					}
-					performance.mark('reforge-optimization-end');
-					const completionTimeInMs = performance.measure(
-						'reforge-optimization-measure',
-						'reforge-optimization-start',
-						'reforge-optimization-end',
-					).duration;
-					if (isDevMode()) console.log('Reforge optimization took:', `${completionTimeInMs.toFixed(2)}ms`);
-
-					trackEvent({
-						action: 'settings',
-						category: 'reforging',
-						label: 'suggest_duration',
-						value: Math.ceil(completionTimeInMs / 1000),
-					});
-					if (button) {
-						button.classList.remove('loading');
-						button.disabled = false;
-					}
+					this.onReforgeFinally();
 				}
 			},
 		};
@@ -1720,8 +1737,8 @@ export class ReforgeOptimizer {
 
 		const startTimeMs: number = Date.now();
 
-		const workerPool = getReforgeWorkerPool();
-		const solution: LPSolution = await workerPool.solve(model, {
+		this.pendingWorker = getReforgeWorkerPool();
+		const solution: LPSolution = await this.pendingWorker.solve(model, {
 			timeout: maxSeconds * 1000,
 			tolerance: 0.005, // unused currently
 		});
@@ -2101,6 +2118,7 @@ export class ReforgeOptimizer {
 			label: 'suggest_error',
 			value: error,
 		});
+
 		new Toast({
 			variant: 'error',
 			body: (
@@ -2113,6 +2131,24 @@ export class ReforgeOptimizer {
 				</>
 			),
 			delay: 10000,
+		});
+	}
+
+	onReforgeFinally() {
+		this.progressTrackerModal.hide();
+
+		if (this.wasCM) {
+			this.simUI.player.setChallengeModeEnabled(TypedEvent.nextEventID(), true);
+		}
+		performance.mark('reforge-optimization-end');
+		const completionTimeInMs = performance.measure('reforge-optimization-measure', 'reforge-optimization-start', 'reforge-optimization-end').duration;
+		if (isDevMode()) console.log('Reforge optimization took:', `${completionTimeInMs.toFixed(2)}ms`);
+
+		trackEvent({
+			action: 'settings',
+			category: 'reforging',
+			label: 'suggest_duration',
+			value: Math.ceil(completionTimeInMs / 1000),
 		});
 	}
 
