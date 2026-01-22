@@ -374,7 +374,20 @@ export class SettingsTab extends SimTab {
 						playerBuffs: settings.buffs,
 						debuffs: settings.debuffs,
 						consumables: settings.consumables,
+						professions: settings.playerOptions?.profession1 && settings.playerOptions?.profession2
+							? [settings.playerOptions.profession1, settings.playerOptions.profession2]
+							: undefined,
+						distanceFromTarget: settings.playerOptions?.distanceFromTarget,
+						reactionTimeMs: settings.playerOptions?.reactionTimeMs,
+						channelClipDelayMs: settings.playerOptions?.channelClipDelayMs,
+						inFrontOfTarget: settings.playerOptions?.inFrontOfTarget,
+						enableItemSwap: settings.playerOptions?.enableItemSwap,
 					}),
+					onLoad: settings.encounter ? (simUI: IndividualSimUI<any>) => {
+						if (settings.encounter?.encounter) {
+							simUI.sim.encounter.fromProto(TypedEvent.nextEventID(), settings.encounter.encounter);
+						}
+					} : undefined,
 				});
 			});
 

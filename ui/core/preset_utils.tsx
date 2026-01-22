@@ -22,7 +22,7 @@ import {
 	Spec,
 	UnitReference,
 } from './proto/common';
-import { IndividualSimSettings, SavedRotation, SavedTalents } from './proto/ui';
+import { IndividualSimSettings, ReforgeSettings, SavedRotation, SavedTalents } from './proto/ui';
 import { Stats } from './proto_utils/stats';
 import { SpecOptions, SpecRotation, specTypeFunctions } from './proto_utils/utils';
 
@@ -94,6 +94,7 @@ export interface PresetSettings extends PresetBase {
 	consumables?: ConsumesSpec;
 	specOptions?: Partial<SpecOptions<any>>;
 	playerOptions?: PresetPlayerOptions;
+	encounter?: PresetEncounter;
 }
 
 export interface PresetBuild {
@@ -106,6 +107,7 @@ export interface PresetBuild {
 	epWeights?: PresetEpWeights;
 	encounter?: PresetEncounter;
 	settings?: PresetSettings;
+	reforgeSettings?: ReforgeSettings;
 }
 
 export interface PresetBuildOptions extends Omit<PresetBuild, 'name'> {}

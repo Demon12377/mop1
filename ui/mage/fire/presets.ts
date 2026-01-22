@@ -1,6 +1,6 @@
 import { Encounter } from '../../core/encounter';
 import * as PresetUtils from '../../core/preset_utils';
-import { ConsumesSpec, Glyphs, Profession, PseudoStat, Race, Spec, Stat } from '../../core/proto/common';
+import { ConsumesSpec, Debuffs, Encounter as EncounterProto, Glyphs, Profession, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
 import {
 	FireMage_Rotation,
 	MageArmor,
@@ -8,7 +8,7 @@ import {
 	MageMajorGlyph as MajorGlyph,
 	MageMinorGlyph as MinorGlyph,
 } from '../../core/proto/mage';
-import { SavedTalents } from '../../core/proto/ui';
+import { ReforgeSettings, SavedTalents } from '../../core/proto/ui';
 import { Stats, UnitStat, UnitStatPresets } from '../../core/proto_utils/stats';
 import FireApl from './apls/fire.apl.json';
 import MasteryApl from './apls/mastery_fire.apl.json';
@@ -22,11 +22,11 @@ import P3MasteryGear from './gear_sets/mastery_fire.gear.json';
 // Preset options for this spec.
 // Eventually we will import these values for the raid sim too, so its good to
 // keep them in a separate file.
-export const P1_PREBIS = PresetUtils.makePresetGear('P1 - Pre-BIS', P1PreBISGear);
-export const P1_BIS = PresetUtils.makePresetGear('P1 - BIS', P1BISGear);
-export const P2_BIS = PresetUtils.makePresetGear('P2 - BIS', P2BISGear);
-export const P3_BIS = PresetUtils.makePresetGear('P3 - BIS', P3BISGear);
-export const P3_MASTERY = PresetUtils.makePresetGear('P3 - Mastery', P3MasteryGear);
+// export const P1_PREBIS = PresetUtils.makePresetGear('P1 - Pre-BIS', P1PreBISGear);
+// export const P1_BIS = PresetUtils.makePresetGear('P1 - BIS', P1BISGear);
+// export const P2_BIS = PresetUtils.makePresetGear('P2 - BIS', P2BISGear);
+export const P3_BIS = PresetUtils.makePresetGear('P3 - Crit BiS', P3BISGear);
+export const P3_MASTERY = PresetUtils.makePresetGear('P3 - Mastery BiS', P3MasteryGear);
 
 export const P1TrollDefaultSimpleRotation = FireMage_Rotation.create({
 	combustAlwaysSend: 4000000,
@@ -73,7 +73,7 @@ export const P1_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRot
 export const P1_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P1 - Default (No Troll)', Spec.SpecFireMage, P1NoTrollDefaultSimpleRotation);
 export const P2_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P2 - Default', Spec.SpecFireMage, P2TrollDefaultSimpleRotation);
 export const P2_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P2 - Default (No Troll)', Spec.SpecFireMage, P2NoTrollDefaultSimpleRotation);
-export const P3_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P3 - Default', Spec.SpecFireMage, P3TrollDefaultSimpleRotation);
+export const P3_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P3 - Traditional', Spec.SpecFireMage, P3TrollDefaultSimpleRotation);
 export const P3_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P3 - Default (No Troll)', Spec.SpecFireMage, P3NoTrollDefaultSimpleRotation);
 export const P1_ROTATION_PRESET_APL = PresetUtils.makePresetAPLRotation('APL', FireApl);
 export const MASTERY_ROTATION_PRESET_APL = PresetUtils.makePresetAPLRotation('Mastery APL', MasteryApl);
@@ -136,7 +136,7 @@ export const FireTalents = {
 export const FireTalentsCleave = {
 	name: 'Cleave',
 	data: SavedTalents.create({
-		talentsString: '111112',
+		talentsString: '111111',
 		glyphs: Glyphs.create({
 			...FireTalents.data.glyphs,
 		}),
@@ -186,72 +186,192 @@ export const MasteryFireConsumables = ConsumesSpec.create({
 
 export const ENCOUNTER_SINGLE_TARGET = PresetUtils.makePresetEncounter('Single Target', Encounter.defaultEncounterProto());
 export const ENCOUNTER_CLEAVE = PresetUtils.makePresetEncounter('Cleave (3 targets)', Encounter.defaultEncounterProto(3));
+export const ENCOUNTER_MASTERY = PresetUtils.makePresetEncounter(
+	'Mastery (45s)',
+	EncounterProto.create({
+		...Encounter.defaultEncounterProto(),
+		duration: 45,
+		durationVariation: 5,
+	}),
+);
 
-export const P1_PRESET_SINGLE_TARGET = PresetUtils.makePresetBuild('Single Target', {
-	talents: FireTalents,
-	encounter: ENCOUNTER_SINGLE_TARGET,
-});
+// Commented out - kept for reference
+// export const P1_PRESET_SINGLE_TARGET = PresetUtils.makePresetBuild('Single Target', {
+// 	talents: FireTalents,
+// 	encounter: ENCOUNTER_SINGLE_TARGET,
+// });
 
-export const P1_PRESET_CLEAVE = PresetUtils.makePresetBuild('Cleave (3 targets)', {
-	talents: FireTalentsCleave,
-	encounter: ENCOUNTER_CLEAVE,
-});
+// export const P1_PRESET_CLEAVE = PresetUtils.makePresetBuild('Cleave (3 targets)', {
+// 	talents: FireTalentsCleave,
+// 	encounter: ENCOUNTER_CLEAVE,
+// });
 
-export const P2_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P2 - Troll', {
-	gear: P2_BIS,
-	rotation: P2_SIMPLE_ROTATION_PRESET_DEFAULT,
-	settings: {
-		name: 'P2 - Troll',
-		specOptions: DefaultFireOptions,
-		consumables: DefaultFireConsumables,
-	},
-});
-export const P2_NO_TROLL_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P2 - No-Troll', {
-	gear: P2_BIS,
-	rotation: P2_SIMPLE_ROTATION_NO_TROLL,
-	settings: {
-		name: 'P2 - No-Troll',
-		specOptions: DefaultFireOptions,
-		consumables: DefaultFireConsumables,
-	},
-});
-
-export const P3_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P3 - Troll', {
+export const P3_CRIT_FIRE_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Crit Fire', {
 	gear: P3_BIS,
 	rotation: P3_SIMPLE_ROTATION_PRESET_DEFAULT,
+	talents: FireTalents,
+	epWeights: DEFAULT_EP_PRESET,
+	encounter: ENCOUNTER_SINGLE_TARGET,
 	settings: {
-		name: 'P3 - Troll',
+		name: 'P3 - Crit Fire',
+		race: Race.RaceTroll,
 		specOptions: DefaultFireOptions,
 		consumables: DefaultFireConsumables,
+		raidBuffs: RaidBuffs.create({
+			arcaneBrilliance: true,
+			blessingOfKings: true,
+			mindQuickening: true,
+			leaderOfThePack: true,
+			blessingOfMight: true,
+			unholyAura: true,
+			bloodlust: true,
+			skullBannerCount: 2,
+			stormlashTotemCount: 4,
+		}),
+		debuffs: Debuffs.create({
+			curseOfElements: true,
+		}),
+		playerOptions: {
+			profession1: Profession.Engineering,
+			profession2: Profession.Tailoring,
+			distanceFromTarget: 20,
+		},
 	},
+	reforgeSettings: ReforgeSettings.create({
+		useCustomEpValues: false,
+		useSoftCapBreakpoints: true,
+	}),
 });
-export const P3_NO_TROLL_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P3 - No-Troll', {
-	gear: P3_BIS,
-	rotation: P3_SIMPLE_ROTATION_NO_TROLL,
-	settings: {
-		name: 'P3 - No-Troll',
-		specOptions: DefaultFireOptions,
-		consumables: DefaultFireConsumables,
-	},
-});
-export const MASTERY_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('Mastery - Troll', {
+export const P3_MASTERY_FIRE_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery Fire', {
 	gear: P3_MASTERY,
 	rotation: MASTERY_ROTATION_PRESET_APL,
 	talents: FireTalentsMastery,
 	epWeights: MASTERY_EP_PRESET,
+	encounter: ENCOUNTER_MASTERY,
 	settings: {
-		name: 'Mastery',
+		name: 'P3 - Mastery Fire',
+		race: Race.RaceTroll,
 		specOptions: MasteryFireOptions,
 		consumables: MasteryFireConsumables,
+		raidBuffs: RaidBuffs.create({
+			arcaneBrilliance: true,
+			blessingOfKings: true,
+			mindQuickening: true,
+			leaderOfThePack: true,
+			blessingOfMight: true,
+			unholyAura: true,
+			bloodlust: true,
+			skullBannerCount: 2,
+			stormlashTotemCount: 4,
+		}),
+		debuffs: Debuffs.create({
+			curseOfElements: true,
+		}),
+		playerOptions: {
+			profession1: Profession.Engineering,
+			profession2: Profession.Tailoring,
+			distanceFromTarget: 20,
+		},
 	},
+	reforgeSettings: ReforgeSettings.create({
+		useCustomEpValues: true,
+		useSoftCapBreakpoints: false,
+		statCaps: new Stats().withPseudoStat(PseudoStat.PseudoStatSpellHitPercent, 15).toProto(),
+	}),
 });
 
+// Commented out - kept for reference
+// export const P2_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P2 - Troll', {
+// 	gear: P2_BIS,
+// 	rotation: P2_SIMPLE_ROTATION_PRESET_DEFAULT,
+// 	encounter: ENCOUNTER_SINGLE_TARGET,
+// 	settings: {
+// 		name: 'P2 - Troll',
+// 		specOptions: DefaultFireOptions,
+// 		consumables: DefaultFireConsumables,
+// 	},
+// });
+// export const P2_NO_TROLL_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P2 - No-Troll', {
+// 	gear: P2_BIS,
+// 	rotation: P2_SIMPLE_ROTATION_NO_TROLL,
+// 	encounter: ENCOUNTER_SINGLE_TARGET,
+// 	settings: {
+// 		name: 'P2 - No-Troll',
+// 		specOptions: DefaultFireOptions,
+// 		consumables: DefaultFireConsumables,
+// 	},
+// });
+// export const P3_NO_TROLL_PRESET_BUILD_DEFAULT = PresetUtils.makePresetBuild('P3 - No-Troll', {
+// 	gear: P3_BIS,
+// 	rotation: P3_SIMPLE_ROTATION_NO_TROLL,
+// 	encounter: ENCOUNTER_SINGLE_TARGET,
+// 	settings: {
+// 		name: 'P3 - No-Troll',
+// 		specOptions: DefaultFireOptions,
+// 		consumables: DefaultFireConsumables,
+// 	},
+// });
 
 export const OtherDefaults = {
 	distanceFromTarget: 20,
 	profession1: Profession.Engineering,
 	profession2: Profession.Tailoring,
 	race: Race.RaceTroll,
+};
+
+// Saved Settings presets
+export const TRADITIONAL_SETTINGS: PresetUtils.PresetSettings = {
+	name: 'Traditional',
+	race: Race.RaceTroll,
+	specOptions: DefaultFireOptions,
+	consumables: DefaultFireConsumables,
+	raidBuffs: RaidBuffs.create({
+		arcaneBrilliance: true,
+		blessingOfKings: true,
+		mindQuickening: true,
+		leaderOfThePack: true,
+		blessingOfMight: true,
+		unholyAura: true,
+		bloodlust: true,
+		skullBannerCount: 2,
+		stormlashTotemCount: 4,
+	}),
+	debuffs: Debuffs.create({
+		curseOfElements: true,
+	}),
+	playerOptions: {
+		profession1: Profession.Engineering,
+		profession2: Profession.Tailoring,
+		distanceFromTarget: 20,
+	},
+	encounter: ENCOUNTER_SINGLE_TARGET,
+};
+
+export const MASTERY_SETTINGS: PresetUtils.PresetSettings = {
+	name: 'Mastery',
+	race: Race.RaceTroll,
+	specOptions: MasteryFireOptions,
+	consumables: MasteryFireConsumables,
+	raidBuffs: RaidBuffs.create({
+		arcaneBrilliance: true,
+		blessingOfKings: true,
+		mindQuickening: true,
+		leaderOfThePack: true,
+		blessingOfMight: true,
+		unholyAura: true,
+		bloodlust: true,
+		skullBannerCount: 2,
+		stormlashTotemCount: 4,
+	}),
+	debuffs: Debuffs.create({
+		curseOfElements: true,
+	}),
+	playerOptions: {
+		profession1: Profession.Engineering,
+		profession2: Profession.Tailoring,
+		distanceFromTarget: 20,
+	},
+	encounter: ENCOUNTER_MASTERY,
 };
 
 export const COMBUSTION_BREAKPOINT: UnitStatPresets = {
