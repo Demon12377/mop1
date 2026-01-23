@@ -1,6 +1,7 @@
 import { Encounter } from '../../core/encounter';
 import * as PresetUtils from '../../core/preset_utils';
-import { ConsumesSpec, Debuffs, Encounter as EncounterProto, Glyphs, Profession, PseudoStat, Race, RaidBuffs, Spec, Stat } from '../../core/proto/common';
+import { ConsumesSpec, Encounter as EncounterProto, Glyphs, Profession, PseudoStat, Race, Spec, Stat } from '../../core/proto/common';
+import { DefaultDebuffs, DefaultRaidBuffs } from '../presets';
 import {
 	FireMage_Rotation,
 	MageArmor,
@@ -184,7 +185,7 @@ export const MasteryFireConsumables = ConsumesSpec.create({
 	// No prepot for mastery build
 });
 
-export const ENCOUNTER_SINGLE_TARGET = PresetUtils.makePresetEncounter('Single Target', Encounter.defaultEncounterProto());
+export const ENCOUNTER_SINGLE_TARGET = PresetUtils.makePresetEncounter('Traditional (300s)', Encounter.defaultEncounterProto());
 export const ENCOUNTER_CLEAVE = PresetUtils.makePresetEncounter('Cleave (3 targets)', Encounter.defaultEncounterProto(3));
 export const ENCOUNTER_MASTERY = PresetUtils.makePresetEncounter(
 	'Mastery (45s)',
@@ -194,6 +195,13 @@ export const ENCOUNTER_MASTERY = PresetUtils.makePresetEncounter(
 		durationVariation: 5,
 	}),
 );
+
+export const OtherDefaults = {
+	distanceFromTarget: 20,
+	profession1: Profession.Engineering,
+	profession2: Profession.Tailoring,
+	race: Race.RaceTroll,
+};
 
 // Commented out - kept for reference
 // export const P1_PRESET_SINGLE_TARGET = PresetUtils.makePresetBuild('Single Target', {
@@ -206,72 +214,40 @@ export const ENCOUNTER_MASTERY = PresetUtils.makePresetEncounter(
 // 	encounter: ENCOUNTER_CLEAVE,
 // });
 
-export const P3_CRIT_FIRE_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Crit Fire', {
+export const P3_CRIT_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Crit', {
 	gear: P3_BIS,
 	rotation: P3_SIMPLE_ROTATION_PRESET_DEFAULT,
 	talents: FireTalents,
 	epWeights: DEFAULT_EP_PRESET,
 	encounter: ENCOUNTER_SINGLE_TARGET,
 	settings: {
-		name: 'P3 - Crit Fire',
+		name: 'P3 - Crit',
 		race: Race.RaceTroll,
 		specOptions: DefaultFireOptions,
 		consumables: DefaultFireConsumables,
-		raidBuffs: RaidBuffs.create({
-			arcaneBrilliance: true,
-			blessingOfKings: true,
-			mindQuickening: true,
-			leaderOfThePack: true,
-			blessingOfMight: true,
-			unholyAura: true,
-			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
-		}),
-		debuffs: Debuffs.create({
-			curseOfElements: true,
-		}),
-		playerOptions: {
-			profession1: Profession.Engineering,
-			profession2: Profession.Tailoring,
-			distanceFromTarget: 20,
-		},
+		raidBuffs: DefaultRaidBuffs,
+		debuffs: DefaultDebuffs,
+		playerOptions: OtherDefaults,
 	},
 	reforgeSettings: ReforgeSettings.create({
 		useCustomEpValues: false,
 		useSoftCapBreakpoints: true,
 	}),
 });
-export const P3_MASTERY_FIRE_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery Fire', {
+export const P3_MASTERY_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery', {
 	gear: P3_MASTERY,
 	rotation: MASTERY_ROTATION_PRESET_APL,
 	talents: FireTalentsMastery,
 	epWeights: MASTERY_EP_PRESET,
 	encounter: ENCOUNTER_MASTERY,
 	settings: {
-		name: 'P3 - Mastery Fire',
+		name: 'P3 - Mastery',
 		race: Race.RaceTroll,
 		specOptions: MasteryFireOptions,
 		consumables: MasteryFireConsumables,
-		raidBuffs: RaidBuffs.create({
-			arcaneBrilliance: true,
-			blessingOfKings: true,
-			mindQuickening: true,
-			leaderOfThePack: true,
-			blessingOfMight: true,
-			unholyAura: true,
-			bloodlust: true,
-			skullBannerCount: 2,
-			stormlashTotemCount: 4,
-		}),
-		debuffs: Debuffs.create({
-			curseOfElements: true,
-		}),
-		playerOptions: {
-			profession1: Profession.Engineering,
-			profession2: Profession.Tailoring,
-			distanceFromTarget: 20,
-		},
+		raidBuffs: DefaultRaidBuffs,
+		debuffs: DefaultDebuffs,
+		playerOptions: OtherDefaults,
 	},
 	reforgeSettings: ReforgeSettings.create({
 		useCustomEpValues: true,
@@ -312,39 +288,15 @@ export const P3_MASTERY_FIRE_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Ma
 // 	},
 // });
 
-export const OtherDefaults = {
-	distanceFromTarget: 20,
-	profession1: Profession.Engineering,
-	profession2: Profession.Tailoring,
-	race: Race.RaceTroll,
-};
-
 // Saved Settings presets
 export const TRADITIONAL_SETTINGS: PresetUtils.PresetSettings = {
 	name: 'Traditional',
 	race: Race.RaceTroll,
 	specOptions: DefaultFireOptions,
 	consumables: DefaultFireConsumables,
-	raidBuffs: RaidBuffs.create({
-		arcaneBrilliance: true,
-		blessingOfKings: true,
-		mindQuickening: true,
-		leaderOfThePack: true,
-		blessingOfMight: true,
-		unholyAura: true,
-		bloodlust: true,
-		skullBannerCount: 2,
-		stormlashTotemCount: 4,
-	}),
-	debuffs: Debuffs.create({
-		curseOfElements: true,
-	}),
-	playerOptions: {
-		profession1: Profession.Engineering,
-		profession2: Profession.Tailoring,
-		distanceFromTarget: 20,
-	},
-	encounter: ENCOUNTER_SINGLE_TARGET,
+	raidBuffs: DefaultRaidBuffs,
+	debuffs: DefaultDebuffs,
+	playerOptions: OtherDefaults,
 };
 
 export const MASTERY_SETTINGS: PresetUtils.PresetSettings = {
@@ -352,26 +304,9 @@ export const MASTERY_SETTINGS: PresetUtils.PresetSettings = {
 	race: Race.RaceTroll,
 	specOptions: MasteryFireOptions,
 	consumables: MasteryFireConsumables,
-	raidBuffs: RaidBuffs.create({
-		arcaneBrilliance: true,
-		blessingOfKings: true,
-		mindQuickening: true,
-		leaderOfThePack: true,
-		blessingOfMight: true,
-		unholyAura: true,
-		bloodlust: true,
-		skullBannerCount: 2,
-		stormlashTotemCount: 4,
-	}),
-	debuffs: Debuffs.create({
-		curseOfElements: true,
-	}),
-	playerOptions: {
-		profession1: Profession.Engineering,
-		profession2: Profession.Tailoring,
-		distanceFromTarget: 20,
-	},
-	encounter: ENCOUNTER_MASTERY,
+	raidBuffs: DefaultRaidBuffs,
+	debuffs: DefaultDebuffs,
+	playerOptions: OtherDefaults,
 };
 
 export const COMBUSTION_BREAKPOINT: UnitStatPresets = {

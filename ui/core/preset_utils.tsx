@@ -94,7 +94,6 @@ export interface PresetSettings extends PresetBase {
 	consumables?: ConsumesSpec;
 	specOptions?: Partial<SpecOptions<any>>;
 	playerOptions?: PresetPlayerOptions;
-	encounter?: PresetEncounter;
 }
 
 export interface PresetBuild {

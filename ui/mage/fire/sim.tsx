@@ -165,8 +165,14 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 		// gear: [Presets.P1_PREBIS, Presets.P1_BIS, Presets.P2_BIS, Presets.P3_BIS, Presets.P3_MASTERY],
 
 		builds: [
-			Presets.P3_CRIT_FIRE_PRESET_BUILD,
-			Presets.P3_MASTERY_FIRE_PRESET_BUILD,
+			Presets.P3_CRIT_PRESET_BUILD,
+			Presets.P3_MASTERY_PRESET_BUILD,
+		],
+
+		// Saved Encounter presets
+		encounters: [
+			Presets.ENCOUNTER_SINGLE_TARGET,
+			Presets.ENCOUNTER_MASTERY,
 		],
 
 		// Saved Settings presets
