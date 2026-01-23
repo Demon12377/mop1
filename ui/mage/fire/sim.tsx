@@ -177,7 +177,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 
 		// Saved Settings presets
 		settings: [
-			Presets.TRADITIONAL_SETTINGS,
+			Presets.CRIT_SETTINGS,
 			Presets.MASTERY_SETTINGS,
 		],
 	},
@@ -187,7 +187,7 @@ const SPEC_CONFIG = registerSpecConfig(Spec.SpecFireMage, {
 		// if (numTargets >= 3) {
 		// 	return Presets.FIRE_ROTATION_PRESET_CLEAVE.rotation.rotation!;
 		// } else {
-		return Presets.P1_SIMPLE_ROTATION_PRESET_DEFAULT.rotation.rotation!;
+		return Presets.P3_SIMPLE_ROTATION_PRESET_DEFAULT.rotation.rotation!;
 		// }
 	},
 
