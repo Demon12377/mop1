@@ -284,7 +284,7 @@
             "copy_to_reforge_lite": "Copier vers Reforge Lite"
         },
         "reforge_success": {
-            "title": "Les éléments suivants ont été retouchés :",
+            "title": "Les éléments suivants ont été modifiés:",
             "removed_reforge": "retouche supprimé",
             "no_changes": "Aucun changement de retouche n'a été effectué !",
             "copy_to_reforge_lite": "Copier vers Reforge Lite"
