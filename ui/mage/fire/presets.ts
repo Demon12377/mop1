@@ -13,10 +13,6 @@ import { ReforgeSettings, SavedTalents } from '../../core/proto/ui';
 import { Stats, UnitStat, UnitStatPresets } from '../../core/proto_utils/stats';
 import FireApl from './apls/fire.apl.json';
 import MasteryApl from './apls/mastery_fire.apl.json';
-import FireCleaveApl from './apls/fire_cleave.apl.json';
-import P1PreBISGear from './gear_sets/p1_prebis.gear.json';
-import P1BISGear from './gear_sets/p1_bis.gear.json';
-import P2BISGear from './gear_sets/p2_bis.gear.json';
 import P3BISGear from './gear_sets/p3_bis.gear.json';
 import P3MasteryGear from './gear_sets/mastery_fire.gear.json';
 
@@ -69,12 +65,7 @@ export const P3NoTrollDefaultSimpleRotation = FireMage_Rotation.create({
 	combustPostAlter: 10000000,
 });
 
-
-export const P1_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P1 - Default', Spec.SpecFireMage, P1TrollDefaultSimpleRotation);
-export const P1_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P1 - Default (No Troll)', Spec.SpecFireMage, P1NoTrollDefaultSimpleRotation);
-export const P2_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P2 - Default', Spec.SpecFireMage, P2TrollDefaultSimpleRotation);
-export const P2_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P2 - Default (No Troll)', Spec.SpecFireMage, P2NoTrollDefaultSimpleRotation);
-export const P3_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P3 - Traditional', Spec.SpecFireMage, P3TrollDefaultSimpleRotation);
+export const P3_SIMPLE_ROTATION_PRESET_DEFAULT = PresetUtils.makePresetSimpleRotation('P3 - Crit', Spec.SpecFireMage, P3TrollDefaultSimpleRotation);
 export const P3_SIMPLE_ROTATION_NO_TROLL = PresetUtils.makePresetSimpleRotation('P3 - Default (No Troll)', Spec.SpecFireMage, P3NoTrollDefaultSimpleRotation);
 export const P1_ROTATION_PRESET_APL = PresetUtils.makePresetAPLRotation('APL', FireApl);
 export const MASTERY_ROTATION_PRESET_APL = PresetUtils.makePresetAPLRotation('Mastery APL', MasteryApl);
@@ -185,7 +176,7 @@ export const MasteryFireConsumables = ConsumesSpec.create({
 	// No prepot for mastery build
 });
 
-export const ENCOUNTER_SINGLE_TARGET = PresetUtils.makePresetEncounter('Traditional (300s)', Encounter.defaultEncounterProto());
+export const ENCOUNTER_SINGLE_TARGET = PresetUtils.makePresetEncounter('Crit (300s)', Encounter.defaultEncounterProto());
 export const ENCOUNTER_CLEAVE = PresetUtils.makePresetEncounter('Cleave (3 targets)', Encounter.defaultEncounterProto(3));
 export const ENCOUNTER_MASTERY = PresetUtils.makePresetEncounter(
 	'Mastery (45s)',
@@ -214,21 +205,34 @@ export const OtherDefaults = {
 // 	encounter: ENCOUNTER_CLEAVE,
 // });
 
+// Saved Settings presets
+export const CRIT_SETTINGS: PresetUtils.PresetSettings = {
+	name: 'Crit',
+	race: Race.RaceTroll,
+	specOptions: DefaultFireOptions,
+	consumables: DefaultFireConsumables,
+	raidBuffs: DefaultRaidBuffs,
+	debuffs: DefaultDebuffs,
+	playerOptions: OtherDefaults,
+};
+
+export const MASTERY_SETTINGS: PresetUtils.PresetSettings = {
+	name: 'Mastery',
+	race: Race.RaceTroll,
+	specOptions: MasteryFireOptions,
+	consumables: MasteryFireConsumables,
+	raidBuffs: DefaultRaidBuffs,
+	debuffs: DefaultDebuffs,
+	playerOptions: OtherDefaults,
+};
+
 export const P3_CRIT_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Crit', {
 	gear: P3_BIS,
 	rotation: P3_SIMPLE_ROTATION_PRESET_DEFAULT,
 	talents: FireTalents,
 	epWeights: DEFAULT_EP_PRESET,
 	encounter: ENCOUNTER_SINGLE_TARGET,
-	settings: {
-		name: 'P3 - Crit',
-		race: Race.RaceTroll,
-		specOptions: DefaultFireOptions,
-		consumables: DefaultFireConsumables,
-		raidBuffs: DefaultRaidBuffs,
-		debuffs: DefaultDebuffs,
-		playerOptions: OtherDefaults,
-	},
+	settings: CRIT_SETTINGS,
 	reforgeSettings: ReforgeSettings.create({
 		useCustomEpValues: false,
 		useSoftCapBreakpoints: true,
@@ -240,15 +244,7 @@ export const P3_MASTERY_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery
 	talents: FireTalentsMastery,
 	epWeights: MASTERY_EP_PRESET,
 	encounter: ENCOUNTER_MASTERY,
-	settings: {
-		name: 'P3 - Mastery',
-		race: Race.RaceTroll,
-		specOptions: MasteryFireOptions,
-		consumables: MasteryFireConsumables,
-		raidBuffs: DefaultRaidBuffs,
-		debuffs: DefaultDebuffs,
-		playerOptions: OtherDefaults,
-	},
+	settings: MASTERY_SETTINGS,
 	reforgeSettings: ReforgeSettings.create({
 		useCustomEpValues: true,
 		useSoftCapBreakpoints: false,
@@ -288,26 +284,7 @@ export const P3_MASTERY_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery
 // 	},
 // });
 
-// Saved Settings presets
-export const TRADITIONAL_SETTINGS: PresetUtils.PresetSettings = {
-	name: 'Traditional',
-	race: Race.RaceTroll,
-	specOptions: DefaultFireOptions,
-	consumables: DefaultFireConsumables,
-	raidBuffs: DefaultRaidBuffs,
-	debuffs: DefaultDebuffs,
-	playerOptions: OtherDefaults,
-};
 
-export const MASTERY_SETTINGS: PresetUtils.PresetSettings = {
-	name: 'Mastery',
-	race: Race.RaceTroll,
-	specOptions: MasteryFireOptions,
-	consumables: MasteryFireConsumables,
-	raidBuffs: DefaultRaidBuffs,
-	debuffs: DefaultDebuffs,
-	playerOptions: OtherDefaults,
-};
 
 export const COMBUSTION_BREAKPOINT: UnitStatPresets = {
 	unitStat: UnitStat.fromPseudoStat(PseudoStat.PseudoStatSpellHastePercent),
