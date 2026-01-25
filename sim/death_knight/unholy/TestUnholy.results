@@ -105,9 +105,9 @@ dps_results: {
 dps_results: {
  key: "TestUnholy-AllItems-BattleplateofCyclopeanDread"
  value: {
-  dps: 207076.85709
-  tps: 145834.74332
-  hps: 2536.16146
+  dps: 209560.57313
+  tps: 147336.23157
+  hps: 2539.0913
  }
 }
 dps_results: {
@@ -1383,6 +1383,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestUnholy-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 217308.59575
+  tps: 153218.42235
+  hps: 7416.94416
+ }
+}
+dps_results: {
  key: "TestUnholy-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 224440.35468
@@ -1929,9 +1937,9 @@ dps_results: {
 dps_results: {
  key: "TestUnholy-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 225715.95142
-  tps: 159412.01859
-  hps: 2614.42257
+  dps: 225580.43504
+  tps: 159245.02815
+  hps: 2642.48736
  }
 }
 dps_results: {
@@ -2465,9 +2473,9 @@ dps_results: {
 dps_results: {
  key: "TestUnholy-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 253469.13184
-  tps: 175033.65645
-  hps: 2612.06585
+  dps: 252511.72443
+  tps: 174076.39906
+  hps: 2619.82608
  }
 }
 dps_results: {
@@ -2775,6 +2783,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestUnholy-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 217308.2038
+  tps: 153218.42235
+  hps: 2777.53154
+ }
+}
+dps_results: {
  key: "TestUnholy-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 220909.30897
@@ -2825,8 +2841,8 @@ dps_results: {
 dps_results: {
  key: "TestUnholy-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 237721.47171
-  tps: 165810.22748
+  dps: 238895.29778
+  tps: 166567.14851
   hps: 2674.74243
  }
 }

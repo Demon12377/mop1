@@ -879,10 +879,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-EvilEyeofGalakras-105491"
  value: {
-  dps: 230880.01968
-  tps: 1.16526912054e+06
-  dtps: 60286.60136
-  hps: 73952.91105
+  dps: 231003.46315
+  tps: 1.16591740707e+06
+  dtps: 62298.29046
+  hps: 74610.01863
  }
 }
 dps_results: {
@@ -1552,6 +1552,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBlood-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 222865.33139
+  tps: 1.12714720163e+06
+  dtps: 63276.8001
+  hps: 79803.69722
+ }
+}
+dps_results: {
  key: "TestBlood-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 225013.98706
@@ -2175,10 +2184,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 221114.6103
-  tps: 1.13011827705e+06
-  dtps: 65350.88916
-  hps: 75810.63691
+  dps: 222639.21539
+  tps: 1.13738991284e+06
+  dtps: 65501.94312
+  hps: 77087.89491
  }
 }
 dps_results: {
@@ -2778,10 +2787,10 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 235162.10111
-  tps: 1.17836885814e+06
-  dtps: 61829.69343
-  hps: 74675.65419
+  dps: 234442.55094
+  tps: 1.16684998645e+06
+  dtps: 61978.86325
+  hps: 73970.5914
  }
 }
 dps_results: {
@@ -3127,6 +3136,15 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBlood-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 216765.62463
+  tps: 1.09935375748e+06
+  dtps: 64570.778
+  hps: 78808.08448
+ }
+}
+dps_results: {
  key: "TestBlood-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 216906.98329
@@ -3183,8 +3201,8 @@ dps_results: {
 dps_results: {
  key: "TestBlood-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 213846.33161
-  tps: 1.08569398657e+06
+  dps: 212948.44989
+  tps: 1.08019487124e+06
   dtps: 67813.38211
   hps: 83796.77159
  }

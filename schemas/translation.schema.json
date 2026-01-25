@@ -107,6 +107,9 @@
         "filter": {
           "type": "string"
         },
+        "elapsed_time": {
+          "type": "string"
+        },
         "phases": {
           "type": "object",
           "properties": {
@@ -9746,6 +9749,9 @@
                   "type": "string"
                 },
                 "reforge_optimization_failed": {
+                  "type": "string"
+                },
+                "reforge_optimization_cancelled": {
                   "type": "string"
                 },
                 "use_custom": {
