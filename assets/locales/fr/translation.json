@@ -27,921 +27,921 @@
 		"search": "Rechercher",
 		"filter": "Filtrer",
 		"elapsed_time": "Temps écoulé",
-		"phases": {
-			"1": "Phase 1 (5.0 - T14)",
-			"2": "Phase 2 (5.1)",
-			"3": "Phase 3 (5.2 - T15)",
-			"4": "Phase 4 (5.3)",
-			"5": "Phase 5 (5.4 - T16)"
-		},
-		"tanks": {
-			"title": "Tanks",
-			"main_tank": "Tank Principal",
-			"tank_2": "Tank 2",
-			"tank_3": "Tank 3",
-			"tank_4": "Tank 4"
-		},
-		"status": {
-			"unlaunched": "Pas encore supporté",
-			"alpha": "Alpha",
-			"beta": "Bêta",
-			"launched": "Lancé"
-		},
-		"mob_types": {
-			"unknown": "Aucun",
-			"beast": "Bête",
-			"demon": "Démon",
-			"dragonkin": "Draconien",
-			"elemental": "Élémentaire",
-			"giant": "Géant",
-			"humanoid": "Humanoïde",
-			"mechanical": "Mécanique",
-			"undead": "Mort-vivant"
-		},
-		"sources": {
-			"unknown": "Inconnu",
-			"crafting": "Artisanat",
-			"quest": "Quête",
-			"sold_by": "Vendu par",
-			"reputation": "Réputation",
-			"pvp": "JcJ",
-			"dungeon": "Donjon",
-			"dungeon_h": "Donjon (H)",
-			"raid": "Raid",
-			"raid_h": "Raid (H)",
-			"raid_rf": "Raid (RF)",
-			"raid_flex": "Raid (Dynamique)"
-		},
-		"raids": {
-			"unknown": "Inconnu",
-			"mogushan_vaults": "Caveaux Mogu'shan",
-			"heart_of_fear": "Cœur de la Peur",
-			"terrace_of_endless_spring": "Terrasse Printanière",
-			"throne_of_thunder": "Trône du Tonnerre",
-			"siege_of_orgrimmar": "Siège d'Orgrimmar"
-		},
-		"armor_types": {
-			"unknown": "Inconnu",
-			"cloth": "Tissu",
-			"leather": "Cuir",
-			"mail": "Maille",
-			"plate": "Plaques"
-		},
-		"weapon_types": {
-			"unknown": "Inconnu",
-			"axe": "Hache",
-			"dagger": "Dague",
-			"fist": "Arme de pugilat",
-			"mace": "Masse",
-			"off_hand": "Main gauche",
-			"polearm": "Armes d'hast",
-			"shield": "Bouclier",
-			"staff": "Bâton",
-			"sword": "Épée"
-		},
-		"ranged_weapon_types": {
-			"unknown": "Inconnu",
-			"bow": "Arc",
-			"crossbow": "Arbalète",
-			"gun": "Arme à feu",
-			"thrown": "Arme de jet",
-			"wand": "Baguette"
-		},
-		"spell_schools": {
-			"physical": "Physique",
-			"arcane": "Arcanes",
-			"fire": "Feu",
-			"frost": "Givre",
-			"holy": "Sacré",
-			"nature": "Nature",
-			"shadow": "Ombre"
-		},
-		"resource_types": {
-			"health": "Vie",
-			"mana": "Mana",
-			"energy": "Énergie",
-			"rage": "Rage",
-			"focus": "Focalisation",
-			"runic_power": "Puissance Runique",
-			"chi": "Chi",
-			"holy_power": "Puissance Sacrée",
-			"shadow_orbs": "Orbes d'Ombre",
-			"combo_points": "Points de Combo",
-			"maelstrom": "Maelström",
-			"demonic_fury": "Fureur Démoniaque",
-			"burning_embers": "Braises Ardentes"
-		},
-		"stats": {
-			"strength": "Force",
-			"agility": "Agilité",
-			"stamina": "Endurance",
-			"intellect": "Intelligence",
-			"spirit": "Esprit",
-			"hit": "Toucher",
-			"crit": "Critiques",
-			"haste": "Hâte",
-			"expertise": "Expertise",
-			"dodge": "Esquive",
-			"parry": "Parade",
-			"mastery": "Maîtrise",
-			"attack_power": "Puissance d'attaque",
-			"ranged_attack_power": "Puissance d'attaque à distance",
-			"spell_power": "Puissance des sorts",
-			"pvp_resilience": "Résilience JcJ",
-			"pvp_power": "Puissance JcJ",
-			"armor": "Armure",
-			"bonus_armor": "Armure bonus",
-			"health": "Vie",
-			"mana": "Mana",
-			"mp5": "MP5",
-			"main_hand_dps": "DPS main droite",
-			"off_hand_dps": "DPS main gauche",
-			"ranged_dps": "DPS à distance",
-			"block": "Blocage",
-			"melee_speed_multiplier": "Multiplicateur de vitesse d'attaque en mêlée",
-			"ranged_speed_multiplier": "Multiplicateur de vitesse d'attaque à distance",
-			"cast_speed_multiplier": "Multiplicateur de vitesse d'incantation des sorts",
-			"spell_hit": "Toucher des sorts",
-			"spell_crit": "Critiques des sorts",
-			"spell_haste": "Hâte des sorts",
-			"melee_hit": "Toucher de mêlée",
-			"melee_crit": "Critiques de mêlée",
-			"melee_haste": "Hâte de mêlée",
-			"ranged_haste": "Hâte à distance"
-		},
-		"mastery_spell_names": {
-			"unknown": "Inconnu",
-			"potent_poisons": "Poisons violents",
-			"main_gauche": "Main gauche",
-			"executioner": "Bourreau",
-			"blood_shield": "Bouclier de sang",
-			"frozen_heart": "Cœur gelé",
-			"dreadblade": "Lame d'effroi",
-			"total_eclipse": "Éclipse totale",
-			"razor_claws": "Griffes rasoir",
-			"natures_guardian": "Gardien de la nature",
-			"harmony": "Harmonie",
-			"illuminated_healing": "Soins illuminés",
-			"divine_bulwark": "Rempart divin",
-			"hand_of_light": "Main de lumière",
-			"elemental_overload": "Surcharge élémentaire",
-			"enhanced_elements": "Éléments amplifiés",
-			"deep_healing": "Soins profonds",
-			"master_of_beasts": "Maître des bêtes",
-			"wild_quiver": "Carquois sauvage",
-			"essence_of_the_viper": "Essence de la vipère",
-			"strikes_of_opportunity": "Frappes opportunes",
-			"unshackled_fury": "Fureur déchaînée",
-			"critical_block": "Blocage critique",
-			"mana_adept": "Adepte du mana",
-			"ignite": "Enflammer",
-			"icicles": "Glaçons",
-			"shield_discipline": "Discipline du bouclier",
-			"echo_of_light": "Écho de la Lumière",
-			"shadow_orb_power": "Rappel ténébreux",
-			"potent_afflictions": "Afflictions puissantes",
-			"master_demonologist": "Maître démonologue",
-			"emberstorm": "Tempête ardente",
-			"elusive_brawler": "Bagarreur insaisissable",
-			"gift_of_the_serpent": "Don du serpent",
-			"bottled_fury": "Fureur en bouteille"
-		},
-		"currency": {
-			"valorPoints": "Points de vaillance",
-			"justicePoints": "Points de justice",
-			"honorPoints": "Points d’honneur"
-		},
-		"copy_button": {
-			"default_text": "Copier dans le presse-papiers",
-			"copied": "Copié"
-		},
-		"list_picker": {
-			"new_item": "Nouvelle {{itemLabel}}",
-			"delete_item": "Supprimer {{itemLabel}}",
-			"copy_to_new": "Copier vers une nouvelle {{itemLabel}}",
-			"move_drag_drop": "Déplacer (Glisser+Déposer)",
-			"warnings": "Avertissements",
-			"additional_information": "Informations supplémentaires :",
-			"action_has_warnings": "Cette action a des avertissements et pourrait ne pas se comporter comme prévu.",
-			"action_has_errors": "Cette action a des erreurs et ne se comportera pas comme prévu."
-		},
-		"preset": {
-			"ep_weights": "Poids EP",
-			"gear": "Équipement",
-			"talents": "Talents",
-			"rotation": "Rotation",
-			"encounter": "Rencontre",
-			"settings": "Paramètres",
-			"description": "Ce préréglage affecte les paramètres suivants :",
-			"stat_weights": "Poids des Stats",
-			"class_spec_options": "Options Classe/Spé",
-			"consumables": "Consommables",
-			"other_settings": "Autres Paramètres",
-			"buffs": "Buffs"
-		}
-	},
-	"sim": {
-		"title": "Simulateur {{class}} {{spec}} - Mists of Pandaria",
-		"description": "Simulations {{class}} {{spec}} pour World of Warcraft® Mists of Pandaria Classic.",
-		"basic_bis_disclaimer": "<p>Les listes d'équipement prédéfinies fournie sont approximatives du meilleur équipement possible, et ne seront souvent pas la configuration optimale pour vous. Votre configuration d'équipement optimale dépendra de nombreux facteurs ; c'est pourquoi nous avons un simulateur !</p><p>Les objets peuvent également être omis des préréglages s'ils sont très contestés et clairement mieux utilisés sur d'autres classes, pour encourager un équipement équitable pour le raid dans son ensemble.</p>",
-		"healing_sim_disclaimer": "*** AVERTISSEMENT - UTILISEZ À VOS PROPRES RISQUES ***\n\nLe concept entier d'un simulateur de soins est EXPÉRIMENTAL. Tous les résultats doivent être pris avec un grain de sel EXTREMEMENT important.\n\nCet outil est actuellement plus similaire à une feuille de calcul qu'à un véritable simulateur. Les options pour spécifier les profils de dégâts entrants afin d'avoir des rotations réactives appropriées n'ont pas encore été ajoutées.",
-		"notice_local_download": {
-			"title": "Le saviez-vous ?",
-			"message": "Vous pouvez télécharger notre simulateur en local pour accélérer considérablement vos simulations ?",
-			"download_button": "Télécharger"
-		},
-		"crash_modal": {
-			"title": "Informations supplémentaires sur le crash",
-			"header": "Veuillez ajouter le lien complet suivant au rapport que vous venez de créer. Cela simplifiera le débogage du problème."
-		},
-		"unlaunched": {
-			"title": "Ce simulateur n'est actuellement pas pris en charge.",
-			"contribute_message": "Vous voulez contribuer ?",
-			"discord_message": "Assurez-vous de rejoindre notre Discord !",
-			"healing_message": "Vous cherchez des simulations de soins ?",
-			"qe_live_message": "Consultez QE Live !"
-		},
-		"notifications": {
-			"raid_sim_cancelled": "Simulation annulée.",
-			"simulation_failed": "La simulation a échoué. Un rapport d'erreur a été généré.",
-			"failed_to_file_report": "Échec du rapport... réessayez une autre fois :"
-		},
-		"crash_report": {
-			"confirm_title": "Échec de la simulation :",
-			"confirm_message": "Appuyez sur Ok pour signaler le crash",
-			"report_title": "Rapport de crash"
-		}
-	},
-	"gear_tab": {
-		"title": "Équipement",
-		"gem_summary": {
-			"title": "Résumé des gemmes",
-			"reset_gems": "Réinitialiser les gemmes"
-		},
-		"reforge_summary": {
-			"title": "Résumé des retouches",
-			"reset_reforges": "Réinitialiser les retouches",
-			"copy_to_reforge_lite": "Copier vers Reforge Lite"
-		},
-		"reforge_success": {
-			"title": "Les éléments suivants ont été retouchés :",
-			"removed_reforge": "retouche supprimé",
-			"no_changes": "Aucun changement de retouche n'a été effectué !",
-			"copy_to_reforge_lite": "Copier vers Reforge Lite"
-		},
-		"gear_sets": {
-			"title": "Ensembles d'équipement",
-			"gear_set": "Ensemble d'équipement",
-			"gear_set_name": "Nom de l'ensemble",
-			"save_gear_set": "Sauvegarder l'ensemble"
-		},
-		"gear_picker": {
-			"tabs": {
-				"items": "Objet",
-				"random_suffix": "Suffixe aléatoire",
-				"enchants": "Enchantements",
-				"tinkers": "Bricolages",
-				"reforging": "Retouche",
-				"upgrades": "Améliorations",
-				"gem1": "Gemme",
-				"gem2": "Gemme",
-				"gem3": "Gemme"
-			},
-			"remove_buttons": {
-				"remove_enchant": "Retirer l'enchantement",
-				"remove_tinkers": "Retirer le bricolage",
-				"remove_reforge": "Retirer la retouche",
-				"remove_random_suffix": "Retirer le suffixe aléatoire",
-				"remove_upgrade": "Retirer l'amélioration",
-				"remove_gem": "Retirer la gemme"
-			},
-			"filters": {
-				"title": "Filtres",
-				"general": "Général",
-				"min_ilvl": "ILvl Min",
-				"max_ilvl": "ILvl Max",
-				"faction_restrictions": "Restrictions de Faction",
-				"source": "Source",
-				"raids": "Raids",
-				"faction_labels": {
-					"none": "Aucune",
-					"alliance_only": "Alliance uniquement",
-					"horde_only": "Horde uniquement"
-				}
-			},
-			"quick_popovers": {
-				"favorite_gems": {
-					"title": "Gemmes favorites",
-					"empty_message": "Ajouter des gemmes favorites.",
-					"open_gems": "Liste des gemmes"
-				},
-				"favorite_enchants": {
-					"title": "Enchantements favoris",
-					"empty_message": "Ajouter des enchantements favoris",
-					"open_enchants": "Liste des enchantements"
-				}
-			},
-			"missing_gear_message": {
-				"title": "Si un objet manque, vérifiez la phase sélectionnée et vos filtres d'équipement.",
-				"description": "Si le problème persiste, sauvegardez toutes les données non sauvegardées, cliquez sur l'icône de rouage en haut à droite pour ouvrir les options, puis cliquez sur \"Restaurer les paramètres par défaut\"."
-			},
-			"cooldowns": {
-				"title": "Cooldowns",
-				"tooltip": "Spécifiez les timings de cooldown, en secondes. Les cooldowns seront utilisés dès que possible après leurs timings spécifiés. Quand non spécifié, les cooldowns seront utilisés quand prêts et qu'il est raisonnable de le faire.<br><br>Plusieurs timings peuvent être fournis en séparant par des virgules. Toute utilisation de cooldown après le dernier timing fourni utilisera la logique par défaut."
-			},
-			"ep_tooltip": "EP (Points d'Équivalence) est une façon de comparer les objets en multipliant les stats brutes d'un objet avec vos poids de stats actuels. Plus d'EP ne signifie pas nécessairement plus de DPS, car les EPs ne prennent pas en compte les caps de stats et les calculs de stats non linéaires.",
-			"filters_button": "Filtres",
-			"unequip_item": "Déséquiper l'objet",
-			"table_headers": {
-				"ilvl": "ILvl",
-				"item": "Objet",
-				"source": "Source"
-			},
-			"show_ep": "Afficher EP",
-			"armor_type": "Type d'Armure",
-			"weapon_type": "Type d'Armes",
-			"weapon_speed": "Vitesse d'Armes",
-			"min_mh_speed": "Vitesse Main droite Min",
-			"max_mh_speed": "Vitesse Main droite Max",
-			"min_oh_speed": "Vitesse Main gauche Min",
-			"max_oh_speed": "Vitesse Main gauche Max",
-			"ranged_weapon_type": "Type d'Armes à distance",
-			"ranged_weapon_speed": "Vitesse d'Armes à distance",
-			"min_ranged_speed": "Vitesse à distance Min",
-			"max_ranged_speed": "Vitesse à distance Max",
-			"reforge_text": "Retouché {{fromAmount}} {{fromStat}} → {{toAmount}} {{toStat}}"
-		},
-		"preset_configurations": {
-			"title": "Configurations prédéfinies",
-			"tooltip": "Les configurations prédéfinies peuvent appliquer une combinaison optimale d'équipement, talents, rotation et paramètres de raid."
-		},
-		"upgrade_summary": {
-			"title": "Coûts d'amélioration restants",
-			"upgrade_all_items": "Améliorer tous les objets",
-			"reset_upgrades": "Réinitialiser les améliorations"
-		}
-	},
-	"settings_tab": {
-		"title": "Paramètres",
-		"raid_buffs": {
-			"title": "Buffs de Raid",
-			"tooltip": "Buffs fournis par <strong>d'autres</strong> membres du groupe/raid.",
-			"description": "Tous les buffs/debuffs de raid sélectionnés sont supposés être fournis par d'autres membres du raid que le joueur simulé.",
-			"misc": {
-				"label": "Divers",
-				"tooltip": "Buffs de raid divers"
-			},
-			"stats": "Stats",
-			"attack_power": "Puissance d'attaque",
-			"attack_speed": "Vitesse d'attaque",
-			"spell_power": "Puissance des sorts",
-			"spell_haste": "Hâte des sorts",
-			"crit_percent": "Crit %",
-			"mastery": "Maîtrise",
-			"stamina": "Endurance"
-		},
-		"external_damage_cooldowns": {
-			"title": "Cooldowns de dégâts externes",
-			"tooltip": "Cooldowns de dégâts majeurs fournis par <strong>d'autres</strong> membres du groupe/raid.",
-			"bloodlust": "Furie sanguinaire",
-			"skull_banner": "Bannière du crâne",
-			"stormlash_totem": "Totem fouette-tempête",
-			"tricks_of_the_trade": "Ficelles du métier",
-			"unholy_frenzy": "Frénésie impie",
-			"shattering_throw": "Lancer fracassant"
-		},
-		"external_defensive_cooldowns": {
-			"title": "Cooldowns défensifs externes",
-			"tooltip": "Cooldowns défensifs majeurs fournis par <strong>d'autres</strong> membres du groupe/raid.",
-			"vigilance": "Vigilance",
-			"devotion_aura": "Aura de dévotion",
-			"pain_suppression": "Suppression de la douleur",
-			"rallying_cry": "Cri de ralliement"
-		},
-		"debuffs": {
-			"title": "Debuffs",
-			"tooltip": "Debuffs appliqués par d'autres membres du raid.",
-			"misc": {
-				"label": "Divers",
-				"tooltip": "Debuffs divers"
-			},
-			"armor_reduction": "Réduction d'armure",
-			"phys_dmg_reduction": "Réduction dégâts physique",
-			"cast_speed": "Vitesse de sort",
-			"phys_dmg": "Dégâts physique",
-			"spell_dmg": "Dégâts magique"
-		},
-		"other": {
-			"title": "Autre",
-			"challenge_mode": {
-				"label": "Mode Défi",
-				"tooltip": "Active le Mode Défi"
-			},
-			"input_delay": {
-				"label": "Temps de réaction",
-				"tooltip": "Temps de réaction du joueur, en millisecondes. Spécifie le délai minimum sur les actions qui ne peuvent pas être mises en file d'attente, comme les sorts qui attendent des gains de ressources ou l'expiration d'un temps de recharge. Utilisé également pour certaines valeurs APL (comme 'Aura active (avec Temps de Réaction)'). Modélise approximativement la somme du temps de réaction + la latence du serveur."
-			},
-			"channel_clip_delay": {
-				"label": "Délai d'interruption de sort canalisé",
-				"tooltip": "Délai suivant l'interruption d'un sort canalisé, en millisecondes. Ce délai se produit après toute canalisation complète ou partielle se terminant après que le GCD devienne disponible, en raison de l'incapacité du joueur à mettre en file d'attente le sort suivant."
-			},
-			"in_front_of_target": {
-				"label": "Devant la cible",
-				"tooltip": "Se tenir devant la cible, causant l'inclusion des blocages et parades dans la table d'attaque."
-			},
-			"distance_from_target": {
-				"label": "Distance de la cible",
-				"tooltip": "Distance des cibles, en mètres. Utilisé pour calculer le temps de trajet de certains sorts."
-			},
-			"tank_assignment": {
-				"label": "Attribution de tank",
-				"tooltip": "Détermine quels mobs seront tankés. La plupart des mobs ciblent par défaut le Tank Principal, mais dans les rencontres multi-cibles prédéfinies ce n'est pas toujours vrai."
-			},
-			"incoming_hps": {
-				"label": "HPS reçu",
-				"tooltip": "Quantité moyenne de soins reçus par seconde. Utilisé pour calculer la chance de mort. Si défini à 0, par défaut 25% du DPS de base de la cible principale."
-			},
-			"healing_cadence": {
-				"label": "Intervalle de soins",
-				"tooltip": "Durée entre deux 'ticks' de soins, en secondes. Généralement, les durées plus longues favorisent les Points de Vie Effectifs (EHP) pour minimiser la Chance de Mort, tandis que les durées plus courtes favorisent l'évitement. Exemple : si HPS reçu est défini à 1000 et ceci à 1s, alors toutes les 1s un soin de 1000 sera reçu. Si ceci est défini à 2s, alors toutes les 2s un soin de 2000 sera reçu. Si défini à 0, les valeurs par défaut pour la Cadence de soins et Cadence +/- sont déduites des paramètres de dégâts du boss."
-			},
-			"healing_cadence_variation": {
-				"label": "Intervalle +/-",
-				"tooltip": "Ampleur de la variation aléatoire dans les intervalles de soins, en secondes. Exemple : si l'intervalle de soins est définie à 1s avec 0.5s de variation, alors l'intervalle entre les soins successifs variera uniformément entre 0.5 et 1.5s. Si la variation est définie à 2s, alors 50% des intervalles de soins tomberont entre 0s et 1s, et les autres 50% tomberont entre 1s et 3s. La quantité de soins par 'tick' est automatiquement mise à l'échelle en fonction du temps depuis le dernier tick, afin de maintenir les HPS constants."
-			},
-			"absorb_frac": {
-				"label": "Absorption %",
-				"tooltip": "% de chaque 'tick' de soin entrant à modéliser comme un bouclier d'absorption plutôt que comme un soin direct."
-			},
-			"burst_window": {
-				"label": "Fenêtre de burst TMI",
-				"tooltip": "Durée en secondes de la fenêtre de burst pour calculer le TMI. Il est important d'utiliser le même paramètre lors de la comparaison de cette métrique. Par défaut il est de 6 secondes. Si défini à 0, les calculs TMI sont désactivés."
-			},
-			"hp_percent_for_defensives": {
-				"label": "% PV pour CDs défensifs",
-				"tooltip": "% de Santé Maximum, en dessous duquel les cooldowns défensifs sont autorisés à être utilisés. Si défini à 0, cette restriction est désactivée."
-			},
-			"pet_uptime": {
-				"label": "Temps de présence du familier (%)",
-				"tooltip": "Pourcentage de la durée du combat pendant lequel votre familier sera en vie."
-			},
-			"glaive_toss_chance": {
-				"label": "Chance de succès de Lancer de glaive (%)",
-				"tooltip": "La chance que Lancer de glaive touche les cibles secondaires en pourcentages."
-			},
-			"detonate_seed": {
-				"label": "Détoner la Graine instantanément",
-				"tooltip": "Simule le raid faisant des dégâts aux cibles de telle sorte que la graine détonne immédiatement à la fin du cast."
-			},
-			"stance_snapshot": {
-				"label": "Posture Snapshot",
-				"tooltip": "Les sorts qui sont lancés en même temps que le changement de posture bénéficieront du bonus de la posture avant le changement."
-			},
-			"assume_bleed_active": {
-				"label": "Saignement toujours actif",
-				"tooltip": "Suppose que le saignement est toujours actif pour les calculs de 'Pourfendre et Déchirer'. Sinon, ne calculera que sur la base de ses propres Déchirure/Griffure/Lacérer."
-			},
-			"cannot_shred_target": {
-				"label": "Ne peut pas Lambeau la cible",
-				"tooltip": "Alternative à \"Devant la cible\" pour modéliser les boss qui ne parade ou bloque pas, mais que vous ne pouvez toujours pas Lambeau."
-			},
-			"okf_uptime": {
-				"label": "Temps de présence Frénésie du chouettide (%)",
-				"tooltip": "Pourcentage de la durée totale du combat du temps de présence de Frénésie du chouettide"
-			},
-			"sync_type": {
-				"label": "Synchro des auto-attaques",
-				"tooltip": "Choisissez votre option de synchronisation ou d'échelonnement. Auto : Choisira automatiquement les options de sync basées sur les vitesses d'attaque de vos armes. Aucun : Pas de Sync ou d'Échelonnement, utilisé pour les vitesses d'armes non assorties. Synchro Parfaite : Fait que vos armes attaquent toujours en même temps, pour les vitesses d'armes assorties. Main secondaire retardée : Ajoute un léger délai aux attaques de la main secondaire tout en restant dans la fenêtre d'ICD de 0.5s de Rafale.",
-				"values": {
-					"automatic": "Automatique",
-					"none": "Aucun",
-					"perfect_sync": "Syncho Parfaite",
-					"delayed_offhand": "Main secondaire retardée"
-				}
-			},
-			"show_1h_weapons": {
-				"label": "1M",
-				"tooltip": "Afficher les armes à une main"
-			},
-			"show_2h_weapons": {
-				"label": "2M",
-				"tooltip": "Afficher les armes à deux mains"
-			},
-			"show_matching_gems": {
-				"label": "Respecter le sertissage",
-				"tooltip": "Afficher uniquement les gemmes avec des couleurs qui respectent le bonus de sertissage"
-			},
-			"show_ep_values": {
-				"label": "Afficher EP",
-				"tooltip": "Afficher les valeurs EP (Puissance Effective)"
-			},
-			"phase_selector": {
-				"label": "Phase",
-				"tooltip": "Sélectionner la phase de jeu pour la disponibilité des objets"
-			},
-			"enable_item_swap": {
-				"label": "Activer le changement de stuff",
-				"tooltip": "Permet de configurer un ensemble d'objets qui sera utilisé avec l'action APL <b>Changer d'ensemble</b>."
-			},
-			"item_swap": {
-				"label": "Échanger les ensembles",
-				"tooltip": "Échanger avec les objets équipés"
-			},
-			"assume_prepull_mastery_elixir": {
-				"label": "Supposer Élixir de Maîtrise en prepull",
-				"tooltip": "Activer ceci suppose que vous utilisez un Élixir de Maîtrise avant le debut du combat."
-			},
-			"blessings": {
-				"title": "Bénédictions",
-				"tooltip": "Spécifiez les Bénédictions de Paladin pour chaque rôle, par ordre de priorité. Les Bénédictions dans la 1ère colonne seront utilisées s'il y a au moins 1 Paladin dans le raid, 2ème colonne s'il y en a au moins 2, etc."
-			},
-			"shaman_disable_immolate": {
-				"label": "Désactiver Immolation pendant Déchaînement du vent",
-				"tooltip": "Lorsque que le talent Elémentaliste primordial est selectionné et que le lancement automatiquue de Immolation est activé, cette option permet d'empêcher le lancement d'Immolation lorsque le buff est actif sur le joueur."
-			},
-			"shaman_disable_immolate_duration": {
-				"label": "Etendre la désactivation de",
-				"tooltip": "Durée en secondes pour laquel Immolation ne sera toujours pas lancé àpres la fin du buff Déchaînement du vent sur le joueur. Mettre 0 pour désactiver Immolation seulement pendant que le buff est actif."
-			}
-		},
-		"consumables": {
-			"title": "Consommables",
-			"potions": {
-				"title": "Potions",
-				"prepop": "Potion pre-combat",
-				"combat": "Potion en combat"
-			},
-			"elixirs": {
-				"title": "Élixirs"
-			},
-			"food": {
-				"title": "Nourriture"
-			},
-			"engineering": {
-				"title": "Ingénierie",
-				"explosives": "Explosifs"
-			},
-			"pet": {
-				"title": "Familier"
-			}
-		},
-		"encounter": {
-			"title": "Rencontre",
-			"target_inputs": {
-				"label": "Options de Cible",
-				"frenzy_time": {
-					"label": "Frénésie à (s)",
-					"tooltip": "Temps de simulation (en secondes) auquel désactiver les changements de tank et activer le buff Frénésie du boss"
-				},
-				"spiritual_grasp_frequency": {
-					"label": "Fréquence d'Etreinte spirituelle",
-					"tooltip": "Temps moyen (en secondes) entre les coups d'Etreinte spirituelle, suivant une distribution exponentielle"
-				},
-				"jalak_death_time": {
-					"label": "Temps de mort de Jalak",
-					"tooltip": "Temps de simulation (en secondes) auquel désactiver War-God Jalak et déclencher le buff Rampage sur Horridon. Si défini plus longtemps que la durée de combat simulée, alors Jalak sera tanké tout le temps et Rampage ne sera jamais déclenché."
-				},
-				"taunt_swap_for_triple_puncture": {
-					"label": "Échange de provocation pour Triple perforation",
-					"tooltip": "Si coché, échange de provocation à la mort de Jalak et à chaque autre application de Triple perforation par la suite afin de limiter l'accumulation de charges sur un seul tank."
-				},
-				"movement_interval": {
-					"label": "Intervalle de mouvement",
-					"tooltip": "À quelle fréquence le joueur se déplacera en secondes"
-				},
-				"reaction_time": {
-					"label": "Temps de réaction",
-					"tooltip": "Combien de temps le joueur peut attendre que les sorts se terminent avant de se déplacer en secondes"
-				},
-				"yards": {
-					"label": "Mètres",
-					"tooltip": "De combien de mètres le joueur se déplace"
-				},
-				"adds_respawn_time": {
-					"label": "Temps de respawn des add(s)",
-					"tooltip": "Temps pour que les add(s) réapparaissent après la mort du précédent (en secondes)"
-				},
-				"adds_lifetime": {
-					"label": "Durée de vie des add(s)",
-					"tooltip": "Combien de temps les add(s) restent en vie (en secondes)"
-				},
-				"adds_spawn_delay": {
-					"label": "Délai d'apparition des add(s)",
-					"tooltip": "Délai initial avant l'apparition des add(s) (en secondes)"
-				}
-			},
-			"duration": {
-				"label": "Durée",
-				"tooltip": "La durée du combat pour chaque itération de simulation, en secondes."
-			},
-			"duration_variation": {
-				"label": "Durée +/-",
-				"tooltip": "Ajoute une quantité aléatoire de temps, en secondes, entre [valeur, -1 * valeur] à chaque itération de simulation. Par exemple, régler la Durée à 180 et Durée +/- à 10 donnera des durées aléatoires entre 170s et 190s."
-			},
-			"execute_duration_20": {
-				"label": "Durée d'Exécution 20 (%)",
-				"tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 20% PV) pour les effets comme Exécution du Guerrier ou Fureur Fondue du Mage."
-			},
-			"execute_duration_25": {
-				"label": "Durée d'Exécution 25 (%)",
-				"tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 25% PV) pour les effets comme Drain d'Âme du Démoniste."
-			},
-			"execute_duration_35": {
-				"label": "Durée d'Exécution 35 (%)",
-				"tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 35% PV) pour les effets comme Faucheur d'Âme du Chevalier de la Mort."
-			},
-			"execute_duration_45": {
-				"label": "Durée d'Exécution 45 (%)",
-				"tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 45% PV) pour les effets comme Faucheur d'Âme du Chevalier de la Mort avec 4pc DPS T15."
-			},
-			"duration_below_high_hp": {
-				"label": "Durée passée sous le seuil HP élevé (%)",
-				"tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles sont considérées hors de portée pour les effets comme Visée Précise du Chasseur (<90% PV) ou Coups Prédateurs du Druide (<80% PV)."
-			},
-			"encounter_preset": {
-				"label": "Rencontre",
-				"tooltip": "Sélectionne une configuration de rencontre prédéfinie."
-			},
-			"advanced": "Avancé",
-			"use_health": {
-				"label": "Utiliser les PVs",
-				"tooltip": "Utilise une limite de dégâts au lieu d'une limite de durée. La limite de dégâts est égale à la somme de la vie de toutes les cibles."
-			},
-			"target": "Cible",
-			"num_allies": {
-				"label": "Nombre d'alliés",
-				"tooltip": "Nombre de joueurs alliés dans le raid."
-			},
-			"min_base_damage": {
-				"label": "Dégâts de base Min",
-				"tooltip": "Dégâts de base pour les attaques automatiques, c'est-à-dire le jet le plus bas avec 0 PA contre un Joueur à 0 armure."
-			},
-			"npc": {
-				"label": "PNJ",
-				"tooltip": "Sélectionne une configuration PNJ prédéfinie."
-			},
-			"ai": {
-				"label": "IA",
-				"tooltip": "Détermine la rotation de capacités de la cible. Notez que la plupart des rotations ne sont pas encore implémentées."
-			},
-			"level": "Niveau",
-			"mob_type": "Type de créature",
-			"tanked_by": {
-				"label": "Tanké par",
-				"tooltip": "Détermine quel joueur du raid cette cible ennemie attaquera. Si aucun joueur n'est assigné à l'emplacement de tank spécifié, cette cible n'attaquera pas."
-			},
-			"swing_speed": {
-				"label": "Vitesse d'attaque",
-				"tooltip": "Temps en secondes entre les attaques automatiques. Réglez à 0 pour désactiver les attaques automatiques."
-			},
-			"dual_wield": {
-				"label": "Combat à deux mains",
-				"tooltip": "Utilise 2 armes séparées pour attaquer."
-			},
-			"dual_wield_penalty": {
-				"label": "Pénalité Combat à deux mains",
-				"tooltip": "Active la Pénalité d'Échec de Combat à Deux Mains (+19% de chance d'échec) si vous combattez à deux mains. Les boss dans Hyjal/BT/SWP ont généralement ceci désactivé pour empêcher les tanks de stacker l'évitement."
-			},
-			"parry_haste": {
-				"label": "Hâte de parade",
-				"tooltip": "Si cet ennemi gagnera la hâte de parade en parant les attaques."
-			},
-			"spell_school": {
-				"label": "École de sort",
-				"tooltip": "Type de dégâts causés par les attaques automatiques. Ceci est généralement Physique, mais certains ennemis ont des attaques élémentaires."
-			},
-			"damage_spread": {
-				"label": "Écart de dégâts",
-				"tooltip": "Écart fractionnel entre les dégâts minimum et maximum d'attaque automatique de cet ennemi à 0 Puissance d'Attaque."
-			},
-			"suppress_dodge": "Ignorer l'esquive",
-			"second_tank_index": "Index du deuxième tank",
-			"disabled_at_start": "Désactivé au début du combat"
-		},
-		"player": {
-			"title": "Joueur",
-			"race": "Race",
-			"profession_1": "Métier 1",
-			"profession_2": "Métier 2"
-		},
-		"saved_encounters": {
-			"title": "Rencontres sauvegardées",
-			"encounter": "Rencontre",
-			"encounter_name": "Nom de la rencontre",
-			"save_encounter": "Sauvegarder la rencontre"
-		},
-		"saved_settings": {
-			"title": "Paramètres sauvegardés",
-			"settings": "Paramètres",
-			"settings_name": "Nom des paramètres",
-			"save_settings": "Sauvegarder les paramètres"
-		},
-		"external_buffs": {
-			"title": "Buffs externes",
-			"tooltip": "Buffs fournis par <strong>d'autres</strong> membres du groupe/raid."
-		}
-	},
-	"talents_tab": {
-		"title": "Talents",
-		"copy_button": {
-			"label": "Copier",
-			"tooltip": "Copier les talents"
-		},
-		"reset_button": {
-			"tooltip": "Réinitialiser les points de talent"
-		},
-		"glyphs": {
-			"major": "Glyphes Majeurs",
-			"minor": "Glyphes Mineurs",
-			"modal": {
-				"title": "Glyphes"
-			},
-			"empty": "Vide"
-		},
-		"saved_talents": {
-			"title": "Talents sauvegardés",
-			"label": "Talents",
-			"name_label": "Nom",
-			"save_button": "Sauvegarder les talents",
-			"delete": {
-				"confirm": "Supprimer les talents sauvegardés '{{name}}' ?",
-				"tooltip": "Supprimer les talents sauvegardés"
-			},
-			"alerts": {
-				"choose_name": "Choisissez un nom pour vos talents sauvegardés !",
-				"name_exists": "Des talents avec le nom {{name}} existent déjà."
-			}
-		}
-	},
-	"bulk_tab": {
-		"title": "Lot (<span class=\"text-success\">Nouveau</span>)",
-		"description": "<span className=\"bold\">Simulation par lot</span> est une nouvelle fonctionnalité similaire à la simulation <span className=\"bold\">Top Gear</span> sur <a href=\"https://raidbots.com\" target=\"_blank\">Raidbots.com</a> qui vous permet de sélectionner plusieurs objets et de les simuler pour trouver les meilleures combinaisons.<br />C'est une fonctionnalité <span className=\"text-brand\">Alpha</span>, donc si vous avez des commentaires ou trouvez un bug, veuillez le signaler !",
-		"download_local": "Téléchargez le simulateur en local pour des résultats plus rapides.",
-		"tabs": {
-			"setup": "Configuration",
-			"results": "Résultats"
-		},
-		"actions": {
-			"import_bags": "Importer depuis les sacs",
-			"import_favorites": "Importer les favoris",
-			"clear_items": "Effacer les objets",
-			"simulate_batch": "Simuler le lot"
-		},
-		"search": {
-			"title": "Recherche d'objets",
-			"name_label": "Nom",
-			"clear_search": "Effacer la recherche",
-			"min_ilvl": "ILvl min",
-			"max_ilvl": "ILvl max",
-			"no_results": "Aucun résultat trouvé.",
-			"showing_results": "Affichage de {{max}} sur {{total}} résultats totaux.",
-			"item_added": "{{itemName}} a été ajouté au lot.",
-			"item_removed": "{{itemName}} a été retiré du lot.",
-			"item_unique": "{{itemName}} est unique et a déjà été ajouté."
-		},
-		"settings": {
-			"combinations_count": "{{count}} Combinaisons",
-			"combination_singular": "1 Combinaison",
-			"iterations": "Itérations",
-			"default_gems": "Gemmes par défaut",
-			"inherit_upgrades": {
-				"label": "Hériter des améliorations",
-				"tooltip": "Lorsque cette option est activée, les objets hériteront des améliorations de l'objet équipé. Sinon, les objets seront simulés sans aucune amélioration."
-			},
-			"freeze_ring": {
-				"label": "Geler un emplacement d'anneau",
-				"tooltip": "Geler un anneau équipé pour réduire le nombre de combinaisons"
-			},
-			"freeze_trinket": {
-				"label": "Geler un emplacement de bijou",
-				"tooltip": "Geler un bijou équipé pour réduire le nombre de combinaisons"
-			}
-		},
-		"progress": {
-			"total_combinations": "{{count}} combinaisons totales.",
-			"refining_rounds": "{{current}} / {{total}} tours d'affinage",
-			"simulations_complete": "{{completed}} / {{total}}<br />simulations terminées",
-			"iterations_complete": "{{completed}} / {{total}}<br />itérations terminées",
-			"seconds_remaining": "{{seconds}} secondes restantes."
-		},
-		"notifications": {
-			"bulk_sim_cancelled": "Simulation par lot annulée.",
-			"failed_to_remove_item": "Échec de la suppression de l'objet, veuillez signaler ce problème."
-		},
-		"warning": {
-			"iterations_limit": "Simuler plus de {{limit}} itérations dans le simulateur web prendra beaucoup de temps ou ne fonctionnera peut-être pas du tout. Pour les simulations par lot plus importantes, nous recommandons d'utiliser le mode rapide ou de télécharger l'exécutable et de l'exécuter sur votre machine."
-		},
-		"picker": {
-			"no_items": "Aucun objet sélectionné.",
-			"remove_tooltip": "Retirer cet objet du lot.",
-			"failed_update": "Échec de la mise à jour de l'objet, veuillez signaler ce problème.",
-			"failed_remove": "Échec de la suppression de l'objet, veuillez signaler ce problème."
-		},
-		"results": {
-			"run_simulation": "Exécutez une simulation pour voir les résultats",
-			"equip_button": "Équiper",
-			"gear_equipped": "Équipement du lot équipé !",
-			"current_gear": "Équipement actuel"
-		},
-		"gem_selector": {
-			"title": "Choisir la gemme par défaut"
-		},
-		"import_modal": {
-			"title": "Importation d'objets de sac",
-			"description_line1": "Importez des objets de sac à partir d'un fichier JSON, qui peut être créé par l'AddOn en jeu WowSimsExporter.",
-			"description_line2": "Pour importer, téléchargez le fichier ou collez le texte ci-dessous, puis cliquez sur 'Importer'."
-		}
-	},
-	"rotation_tab": {
-		"title": "Rotation",
-		"common": {
-			"rotation_type": {
-				"label": "Type",
-				"auto": "Auto",
-				"simple": "Simple",
-				"apl": "APL",
-				"single_target": "Cible unique",
-				"aoe": "AoE",
-				"custom": "Personnalisé"
-			}
-		},
-		"apl": {
-			"actionGroups": {
-				"attributes": {
-					"actions": "Actions",
-					"name": "Nom"
-				},
-				"header": "Groupes d'actions",
-				"name": "Groupe d'actions",
-				"newGroupName": "Nouveau groupe d'actions",
-				"tooltips": {
-					"actions": "Actions dans ce groupe. Elles seront exécutées dans l'ordre lorsqu'un groupe est référencé.",
-					"name": "Nom de ce groupe d'actions (par exemple, 'careful_aim', 'cooldowns').",
-					"overview": "Groupes d'actions pouvant être référencés dans la Liste de Priorité d'Actions (APL). Utile pour organiser votre APL et réutiliser des séquences d'actions communes. Les actions sont effectuées de haut en bas dans un groupe."
-				}
-			},
-			"floatingActionBar": {
-				"new": "Nouveau {{itemName}}",
-				"reset": "Réinitialiser l'APL"
-			},
-			"prePullActions": {
-				"header": "Liste d'actions pré-pull",
-				"name": "Action pré-pull",
-				"tooltips": {
-					"overview": "Actions exécutées avant le début du combat, comme les buffs pré-pull ou les potions."
-				}
-			},
-			"priorityList": {
-				"header": "Liste de Priorité d'Actions (APL)",
-				"name": "Action",
-				"tooltips": {
-					"overview": "Une liste d'actions représentant les actions de votre personnage pendant le combat. Le sim évaluera la liste du haut (priorité la plus élevée) vers le bas (priorité la plus basse) et choisira la première action valide à exécuter à tout moment."
-				}
-			},
-			"tabs": {
-				"actionGroups": "Groupes d'actions",
-				"priorityList": "Liste de priorité",
-				"variables": "Variables"
-			},
-			"variables": {
-				"attributes": {
-					"name": "Nom",
-					"nameTooltip": "Nom de la variable (par exemple, 'my_dot_remains', 'boss_health_pct')",
-					"value": "Valeur",
-					"valueTooltip": "L'expression de la valeur que représente cette variable."
-				},
-				"copyName": "{{variableName}} (Copie)",
-				"header": "Variables",
-				"name": "Variable",
-				"newVariableName": "Nouvelle variable",
-				"tooltips": {
-					"name": "Nom de la variable (par exemple, 'my_dot_remains', 'boss_health_pct')",
-					"overview": "Les variables peuvent être utilisées pour stocker des conditions complexes référencées dans l'APL. Utile pour stocker des valeurs dynamiques changeant pendant le combat, comme les timers de CD ou les ressources.",
-					"value": "L'expression de la valeur que représente cette variable."
-				}
-			},
-			"prepull_actions": {
-				"title": "Actions de pré-pull",
-				"tooltip": "Actions à effectuer avant le pull.",
-				"item_label": "Actions de pré-pull",
-				"do_at": {
-					"label": "Faire à",
-					"tooltip": "Temps auquel éxécuter l'action avant le pull. Doit être négatif, et formaté comme '-1s' ou '-2500ms'."
-				},
-				"new_action": "Nouvelle action"
-			},
-			"priority_list": {
-				"title": "Liste de Priorité",
-				"tooltip": "À chaque point de décision, la simulation effectuera la première action valide de cette liste.",
-				"item_label": "Action",
-				"if_label": "Si :",
-				"new_action": "Nouvelle action"
-			},
-			"actions": {
-				"cast": {
-					"label": "Lancer",
-					"tooltip": "Lance le sort si possible, c'est-à-dire si toutes les exigences de ressources/temps de recharge/GCD/etc sont remplies."
-				},
+        "phases": {
+            "1": "Phase 1 (5.0 - T14)",
+            "2": "Phase 2 (5.1)",
+            "3": "Phase 3 (5.2 - T15)",
+            "4": "Phase 4 (5.3)",
+            "5": "Phase 5 (5.4 - T16)"
+        },
+        "tanks": {
+            "title": "Tanks",
+            "main_tank": "Tank Principal",
+            "tank_2": "Tank 2",
+            "tank_3": "Tank 3",
+            "tank_4": "Tank 4"
+        },
+        "status": {
+            "unlaunched": "Pas encore supporté",
+            "alpha": "Alpha",
+            "beta": "Bêta",
+            "launched": "Lancé"
+        },
+        "mob_types": {
+            "unknown": "Aucun",
+            "beast": "Bête",
+            "demon": "Démon",
+            "dragonkin": "Draconien",
+            "elemental": "Élémentaire",
+            "giant": "Géant",
+            "humanoid": "Humanoïde",
+            "mechanical": "Mécanique",
+            "undead": "Mort-vivant"
+        },
+        "sources": {
+            "unknown": "Inconnu",
+            "crafting": "Artisanat",
+            "quest": "Quête",
+            "sold_by": "Vendu par",
+            "reputation": "Réputation",
+            "pvp": "JcJ",
+            "dungeon": "Donjon",
+            "dungeon_h": "Donjon (H)",
+            "raid": "Raid",
+            "raid_h": "Raid (H)",
+            "raid_rf": "Raid (RF)",
+            "raid_flex": "Raid (Dynamique)"
+        },
+        "raids": {
+            "unknown": "Inconnu",
+            "mogushan_vaults": "Caveaux Mogu'shan",
+            "heart_of_fear": "Cœur de la Peur",
+            "terrace_of_endless_spring": "Terrasse Printanière",
+            "throne_of_thunder": "Trône du Tonnerre",
+            "siege_of_orgrimmar": "Siège d'Orgrimmar"
+        },
+        "armor_types": {
+            "unknown": "Inconnu",
+            "cloth": "Tissu",
+            "leather": "Cuir",
+            "mail": "Maille",
+            "plate": "Plaques"
+        },
+        "weapon_types": {
+            "unknown": "Inconnu",
+            "axe": "Hache",
+            "dagger": "Dague",
+            "fist": "Arme de pugilat",
+            "mace": "Masse",
+            "off_hand": "Main gauche",
+            "polearm": "Armes d'hast",
+            "shield": "Bouclier",
+            "staff": "Bâton",
+            "sword": "Épée"
+        },
+        "ranged_weapon_types": {
+            "unknown": "Inconnu",
+            "bow": "Arc",
+            "crossbow": "Arbalète",
+            "gun": "Arme à feu",
+            "thrown": "Arme de jet",
+            "wand": "Baguette"
+        },
+        "spell_schools": {
+            "physical": "Physique",
+            "arcane": "Arcanes",
+            "fire": "Feu",
+            "frost": "Givre",
+            "holy": "Sacré",
+            "nature": "Nature",
+            "shadow": "Ombre"
+        },
+        "resource_types": {
+            "health": "Vie",
+            "mana": "Mana",
+            "energy": "Énergie",
+            "rage": "Rage",
+            "focus": "Focalisation",
+            "runic_power": "Puissance Runique",
+            "chi": "Chi",
+            "holy_power": "Puissance Sacrée",
+            "shadow_orbs": "Orbes d'Ombre",
+            "combo_points": "Points de Combo",
+            "maelstrom": "Maelström",
+            "demonic_fury": "Fureur Démoniaque",
+            "burning_embers": "Braises Ardentes"
+        },
+        "stats": {
+            "strength": "Force",
+            "agility": "Agilité",
+            "stamina": "Endurance",
+            "intellect": "Intelligence",
+            "spirit": "Esprit",
+            "hit": "Toucher",
+            "crit": "Critiques",
+            "haste": "Hâte",
+            "expertise": "Expertise",
+            "dodge": "Esquive",
+            "parry": "Parade",
+            "mastery": "Maîtrise",
+            "attack_power": "Puissance d'attaque",
+            "ranged_attack_power": "Puissance d'attaque à distance",
+            "spell_power": "Puissance des sorts",
+            "pvp_resilience": "Résilience JcJ",
+            "pvp_power": "Puissance JcJ",
+            "armor": "Armure",
+            "bonus_armor": "Armure bonus",
+            "health": "Vie",
+            "mana": "Mana",
+            "mp5": "MP5",
+            "main_hand_dps": "DPS main droite",
+            "off_hand_dps": "DPS main gauche",
+            "ranged_dps": "DPS à distance",
+            "block": "Blocage",
+            "melee_speed_multiplier": "Multiplicateur de vitesse d'attaque en mêlée",
+            "ranged_speed_multiplier": "Multiplicateur de vitesse d'attaque à distance",
+            "cast_speed_multiplier": "Multiplicateur de vitesse d'incantation des sorts",
+            "spell_hit": "Toucher des sorts",
+            "spell_crit": "Critiques des sorts",
+            "spell_haste": "Hâte des sorts",
+            "melee_hit": "Toucher de mêlée",
+            "melee_crit": "Critiques de mêlée",
+            "melee_haste": "Hâte de mêlée",
+            "ranged_haste": "Hâte à distance"
+        },
+        "mastery_spell_names": {
+            "unknown": "Inconnu",
+            "potent_poisons": "Poisons violents",
+            "main_gauche": "Main gauche",
+            "executioner": "Bourreau",
+            "blood_shield": "Bouclier de sang",
+            "frozen_heart": "Cœur gelé",
+            "dreadblade": "Lame d'effroi",
+            "total_eclipse": "Éclipse totale",
+            "razor_claws": "Griffes rasoir",
+            "natures_guardian": "Gardien de la nature",
+            "harmony": "Harmonie",
+            "illuminated_healing": "Soins illuminés",
+            "divine_bulwark": "Rempart divin",
+            "hand_of_light": "Main de lumière",
+            "elemental_overload": "Surcharge élémentaire",
+            "enhanced_elements": "Éléments amplifiés",
+            "deep_healing": "Soins profonds",
+            "master_of_beasts": "Maître des bêtes",
+            "wild_quiver": "Carquois sauvage",
+            "essence_of_the_viper": "Essence de la vipère",
+            "strikes_of_opportunity": "Frappes opportunes",
+            "unshackled_fury": "Fureur déchaînée",
+            "critical_block": "Blocage critique",
+            "mana_adept": "Adepte du mana",
+            "ignite": "Enflammer",
+            "icicles": "Glaçons",
+            "shield_discipline": "Discipline du bouclier",
+            "echo_of_light": "Écho de la Lumière",
+            "shadow_orb_power": "Rappel ténébreux",
+            "potent_afflictions": "Afflictions puissantes",
+            "master_demonologist": "Maître démonologue",
+            "emberstorm": "Tempête ardente",
+            "elusive_brawler": "Bagarreur insaisissable",
+            "gift_of_the_serpent": "Don du serpent",
+            "bottled_fury": "Fureur en bouteille"
+        },
+        "currency": {
+            "valorPoints": "Points de vaillance",
+            "justicePoints": "Points de justice",
+            "honorPoints": "Points d’honneur"
+        },
+        "copy_button": {
+            "default_text": "Copier dans le presse-papiers",
+            "copied": "Copié"
+        },
+        "list_picker": {
+            "new_item": "Nouvelle {{itemLabel}}",
+            "delete_item": "Supprimer {{itemLabel}}",
+            "copy_to_new": "Copier vers une nouvelle {{itemLabel}}",
+            "move_drag_drop": "Déplacer (Glisser+Déposer)",
+            "warnings": "Avertissements",
+            "additional_information": "Informations supplémentaires :",
+            "action_has_warnings": "Cette action a des avertissements et pourrait ne pas se comporter comme prévu.",
+            "action_has_errors": "Cette action a des erreurs et ne se comportera pas comme prévu."
+        },
+        "preset": {
+            "ep_weights": "Poids EP",
+            "gear": "Équipement",
+            "talents": "Talents",
+            "rotation": "Rotation",
+            "encounter": "Rencontre",
+            "settings": "Paramètres",
+            "description": "Ce préréglage affecte les paramètres suivants :",
+            "stat_weights": "Poids des Stats",
+            "class_spec_options": "Options Classe/Spé",
+            "consumables": "Consommables",
+            "other_settings": "Autres Paramètres",
+            "buffs": "Buffs"
+        }
+    },
+    "sim": {
+        "title": "Simulateur {{class}} {{spec}} - Mists of Pandaria",
+        "description": "Simulations {{class}} {{spec}} pour World of Warcraft® Mists of Pandaria Classic.",
+        "basic_bis_disclaimer": "<p>Les listes d'équipement prédéfinies fournie sont approximatives du meilleur équipement possible, et ne seront souvent pas la configuration optimale pour vous. Votre configuration d'équipement optimale dépendra de nombreux facteurs ; c'est pourquoi nous avons un simulateur !</p><p>Les objets peuvent également être omis des préréglages s'ils sont très contestés et clairement mieux utilisés sur d'autres classes, pour encourager un équipement équitable pour le raid dans son ensemble.</p>",
+        "healing_sim_disclaimer": "*** AVERTISSEMENT - UTILISEZ À VOS PROPRES RISQUES ***\n\nLe concept entier d'un simulateur de soins est EXPÉRIMENTAL. Tous les résultats doivent être pris avec un grain de sel EXTREMEMENT important.\n\nCet outil est actuellement plus similaire à une feuille de calcul qu'à un véritable simulateur. Les options pour spécifier les profils de dégâts entrants afin d'avoir des rotations réactives appropriées n'ont pas encore été ajoutées.",
+        "notice_local_download": {
+            "title": "Le saviez-vous ?",
+            "message": "Vous pouvez télécharger notre simulateur en local pour accélérer considérablement vos simulations ?",
+            "download_button": "Télécharger"
+        },
+        "crash_modal": {
+            "title": "Informations supplémentaires sur le crash",
+            "header": "Veuillez ajouter le lien complet suivant au rapport que vous venez de créer. Cela simplifiera le débogage du problème."
+        },
+        "unlaunched": {
+            "title": "Ce simulateur n'est actuellement pas pris en charge.",
+            "contribute_message": "Vous voulez contribuer ?",
+            "discord_message": "Assurez-vous de rejoindre notre Discord !",
+            "healing_message": "Vous cherchez des simulations de soins ?",
+            "qe_live_message": "Consultez QE Live !"
+        },
+        "notifications": {
+            "raid_sim_cancelled": "Simulation annulée.",
+            "simulation_failed": "La simulation a échoué. Un rapport d'erreur a été généré.",
+            "failed_to_file_report": "Échec du rapport... réessayez une autre fois :"
+        },
+        "crash_report": {
+            "confirm_title": "Échec de la simulation :",
+            "confirm_message": "Appuyez sur Ok pour signaler le crash",
+            "report_title": "Rapport de crash"
+        }
+    },
+    "gear_tab": {
+        "title": "Équipement",
+        "gem_summary": {
+            "title": "Résumé des gemmes",
+            "reset_gems": "Réinitialiser les gemmes"
+        },
+        "reforge_summary": {
+            "title": "Résumé des retouches",
+            "reset_reforges": "Réinitialiser les retouches",
+            "copy_to_reforge_lite": "Copier vers Reforge Lite"
+        },
+        "reforge_success": {
+            "title": "Les éléments suivants ont été modifiés:",
+            "removed_reforge": "retouche supprimé",
+            "no_changes": "Aucun changement de retouche n'a été effectué !",
+            "copy_to_reforge_lite": "Copier vers Reforge Lite"
+        },
+        "gear_sets": {
+            "title": "Ensembles d'équipement",
+            "gear_set": "Ensemble d'équipement",
+            "gear_set_name": "Nom de l'ensemble",
+            "save_gear_set": "Sauvegarder l'ensemble"
+        },
+        "gear_picker": {
+            "tabs": {
+                "items": "Objet",
+                "random_suffix": "Suffixe aléatoire",
+                "enchants": "Enchantements",
+                "tinkers": "Bricolages",
+                "reforging": "Retouche",
+                "upgrades": "Améliorations",
+                "gem1": "Gemme",
+                "gem2": "Gemme",
+                "gem3": "Gemme"
+            },
+            "remove_buttons": {
+                "remove_enchant": "Retirer l'enchantement",
+                "remove_tinkers": "Retirer le bricolage",
+                "remove_reforge": "Retirer la retouche",
+                "remove_random_suffix": "Retirer le suffixe aléatoire",
+                "remove_upgrade": "Retirer l'amélioration",
+                "remove_gem": "Retirer la gemme"
+            },
+            "filters": {
+                "title": "Filtres",
+                "general": "Général",
+                "min_ilvl": "ILvl Min",
+                "max_ilvl": "ILvl Max",
+                "faction_restrictions": "Restrictions de Faction",
+                "source": "Source",
+                "raids": "Raids",
+                "faction_labels": {
+                    "none": "Aucune",
+                    "alliance_only": "Alliance uniquement",
+                    "horde_only": "Horde uniquement"
+                }
+            },
+            "quick_popovers": {
+                "favorite_gems": {
+                    "title": "Gemmes favorites",
+                    "empty_message": "Ajouter des gemmes favorites.",
+                    "open_gems": "Liste des gemmes"
+                },
+                "favorite_enchants": {
+                    "title": "Enchantements favoris",
+                    "empty_message": "Ajouter des enchantements favoris",
+                    "open_enchants": "Liste des enchantements"
+                }
+            },
+            "missing_gear_message": {
+                "title": "Si un objet manque, vérifiez la phase sélectionnée et vos filtres d'équipement.",
+                "description": "Si le problème persiste, sauvegardez toutes les données non sauvegardées, cliquez sur l'icône de rouage en haut à droite pour ouvrir les options, puis cliquez sur \"Restaurer les paramètres par défaut\"."
+            },
+            "cooldowns": {
+                "title": "Cooldowns",
+                "tooltip": "Spécifiez les timings de cooldown, en secondes. Les cooldowns seront utilisés dès que possible après leurs timings spécifiés. Quand non spécifié, les cooldowns seront utilisés quand prêts et qu'il est raisonnable de le faire.<br><br>Plusieurs timings peuvent être fournis en séparant par des virgules. Toute utilisation de cooldown après le dernier timing fourni utilisera la logique par défaut."
+            },
+            "ep_tooltip": "EP (Points d'Équivalence) est une façon de comparer les objets en multipliant les stats brutes d'un objet avec vos poids de stats actuels. Plus d'EP ne signifie pas nécessairement plus de DPS, car les EPs ne prennent pas en compte les caps de stats et les calculs de stats non linéaires.",
+            "filters_button": "Filtres",
+            "unequip_item": "Déséquiper l'objet",
+            "table_headers": {
+                "ilvl": "ILvl",
+                "item": "Objet",
+                "source": "Source"
+            },
+            "show_ep": "Afficher EP",
+            "armor_type": "Type d'Armure",
+            "weapon_type": "Type d'Armes",
+            "weapon_speed": "Vitesse d'Armes",
+            "min_mh_speed": "Vitesse Main droite Min",
+            "max_mh_speed": "Vitesse Main droite Max",
+            "min_oh_speed": "Vitesse Main gauche Min",
+            "max_oh_speed": "Vitesse Main gauche Max",
+            "ranged_weapon_type": "Type d'Armes à distance",
+            "ranged_weapon_speed": "Vitesse d'Armes à distance",
+            "min_ranged_speed": "Vitesse à distance Min",
+            "max_ranged_speed": "Vitesse à distance Max",
+            "reforge_text": "Retouché {{fromAmount}} {{fromStat}} → {{toAmount}} {{toStat}}"
+        },
+        "preset_configurations": {
+            "title": "Configurations prédéfinies",
+            "tooltip": "Les configurations prédéfinies peuvent appliquer une combinaison optimale d'équipement, talents, rotation et paramètres de raid."
+        },
+        "upgrade_summary": {
+            "title": "Coûts d'amélioration restants",
+            "upgrade_all_items": "Améliorer tous les objets",
+            "reset_upgrades": "Réinitialiser les améliorations"
+        }
+    },
+    "settings_tab": {
+        "title": "Paramètres",
+        "raid_buffs": {
+            "title": "Buffs de Raid",
+            "tooltip": "Buffs fournis par <strong>d'autres</strong> membres du groupe/raid.",
+            "description": "Tous les buffs/debuffs de raid sélectionnés sont supposés être fournis par d'autres membres du raid que le joueur simulé.",
+            "misc": {
+                "label": "Divers",
+                "tooltip": "Buffs de raid divers"
+            },
+            "stats": "Stats",
+            "attack_power": "Puissance d'attaque",
+            "attack_speed": "Vitesse d'attaque",
+            "spell_power": "Puissance des sorts",
+            "spell_haste": "Hâte des sorts",
+            "crit_percent": "Crit %",
+            "mastery": "Maîtrise",
+            "stamina": "Endurance"
+        },
+        "external_damage_cooldowns": {
+            "title": "Cooldowns de dégâts externes",
+            "tooltip": "Cooldowns de dégâts majeurs fournis par <strong>d'autres</strong> membres du groupe/raid.",
+            "bloodlust": "Furie sanguinaire",
+            "skull_banner": "Bannière du crâne",
+            "stormlash_totem": "Totem fouette-tempête",
+            "tricks_of_the_trade": "Ficelles du métier",
+            "unholy_frenzy": "Frénésie impie",
+            "shattering_throw": "Lancer fracassant"
+        },
+        "external_defensive_cooldowns": {
+            "title": "Cooldowns défensifs externes",
+            "tooltip": "Cooldowns défensifs majeurs fournis par <strong>d'autres</strong> membres du groupe/raid.",
+            "vigilance": "Vigilance",
+            "devotion_aura": "Aura de dévotion",
+            "pain_suppression": "Suppression de la douleur",
+            "rallying_cry": "Cri de ralliement"
+        },
+        "debuffs": {
+            "title": "Debuffs",
+            "tooltip": "Debuffs appliqués par d'autres membres du raid.",
+            "misc": {
+                "label": "Divers",
+                "tooltip": "Debuffs divers"
+            },
+            "armor_reduction": "Réduction d'armure",
+            "phys_dmg_reduction": "Réduction dégâts physique",
+            "cast_speed": "Vitesse de sort",
+            "phys_dmg": "Dégâts physique",
+            "spell_dmg": "Dégâts magique"
+        },
+        "other": {
+            "title": "Autre",
+            "challenge_mode": {
+                "label": "Mode Défi",
+                "tooltip": "Active le Mode Défi"
+            },
+            "input_delay": {
+                "label": "Temps de réaction",
+                "tooltip": "Temps de réaction du joueur, en millisecondes. Spécifie le délai minimum sur les actions qui ne peuvent pas être mises en file d'attente, comme les sorts qui attendent des gains de ressources ou l'expiration d'un temps de recharge. Utilisé également pour certaines valeurs APL (comme 'Aura active (avec Temps de Réaction)'). Modélise approximativement la somme du temps de réaction + la latence du serveur."
+            },
+            "channel_clip_delay": {
+                "label": "Délai d'interruption de sort canalisé",
+                "tooltip": "Délai suivant l'interruption d'un sort canalisé, en millisecondes. Ce délai se produit après toute canalisation complète ou partielle se terminant après que le GCD devienne disponible, en raison de l'incapacité du joueur à mettre en file d'attente le sort suivant."
+            },
+            "in_front_of_target": {
+                "label": "Devant la cible",
+                "tooltip": "Se tenir devant la cible, causant l'inclusion des blocages et parades dans la table d'attaque."
+            },
+            "distance_from_target": {
+                "label": "Distance de la cible",
+                "tooltip": "Distance des cibles, en mètres. Utilisé pour calculer le temps de trajet de certains sorts."
+            },
+            "tank_assignment": {
+                "label": "Attribution de tank",
+                "tooltip": "Détermine quels mobs seront tankés. La plupart des mobs ciblent par défaut le Tank Principal, mais dans les rencontres multi-cibles prédéfinies ce n'est pas toujours vrai."
+            },
+            "incoming_hps": {
+                "label": "HPS reçu",
+                "tooltip": "Quantité moyenne de soins reçus par seconde. Utilisé pour calculer la chance de mort. Si défini à 0, par défaut 25% du DPS de base de la cible principale."
+            },
+            "healing_cadence": {
+                "label": "Intervalle de soins",
+                "tooltip": "Durée entre deux 'ticks' de soins, en secondes. Généralement, les durées plus longues favorisent les Points de Vie Effectifs (EHP) pour minimiser la Chance de Mort, tandis que les durées plus courtes favorisent l'évitement. Exemple : si HPS reçu est défini à 1000 et ceci à 1s, alors toutes les 1s un soin de 1000 sera reçu. Si ceci est défini à 2s, alors toutes les 2s un soin de 2000 sera reçu. Si défini à 0, les valeurs par défaut pour la Cadence de soins et Cadence +/- sont déduites des paramètres de dégâts du boss."
+            },
+            "healing_cadence_variation": {
+                "label": "Intervalle +/-",
+                "tooltip": "Ampleur de la variation aléatoire dans les intervalles de soins, en secondes. Exemple : si l'intervalle de soins est définie à 1s avec 0.5s de variation, alors l'intervalle entre les soins successifs variera uniformément entre 0.5 et 1.5s. Si la variation est définie à 2s, alors 50% des intervalles de soins tomberont entre 0s et 1s, et les autres 50% tomberont entre 1s et 3s. La quantité de soins par 'tick' est automatiquement mise à l'échelle en fonction du temps depuis le dernier tick, afin de maintenir les HPS constants."
+            },
+            "absorb_frac": {
+                "label": "Absorption %",
+                "tooltip": "% de chaque 'tick' de soin entrant à modéliser comme un bouclier d'absorption plutôt que comme un soin direct."
+            },
+            "burst_window": {
+                "label": "Fenêtre de burst TMI",
+                "tooltip": "Durée en secondes de la fenêtre de burst pour calculer le TMI. Il est important d'utiliser le même paramètre lors de la comparaison de cette métrique. Par défaut il est de 6 secondes. Si défini à 0, les calculs TMI sont désactivés."
+            },
+            "hp_percent_for_defensives": {
+                "label": "% PV pour CDs défensifs",
+                "tooltip": "% de Santé Maximum, en dessous duquel les cooldowns défensifs sont autorisés à être utilisés. Si défini à 0, cette restriction est désactivée."
+            },
+            "pet_uptime": {
+                "label": "Temps de présence du familier (%)",
+                "tooltip": "Pourcentage de la durée du combat pendant lequel votre familier sera en vie."
+            },
+            "glaive_toss_chance": {
+                "label": "Chance de succès de Lancer de glaive (%)",
+                "tooltip": "La chance que Lancer de glaive touche les cibles secondaires en pourcentages."
+            },
+            "detonate_seed": {
+                "label": "Détoner la Graine instantanément",
+                "tooltip": "Simule le raid faisant des dégâts aux cibles de telle sorte que la graine détonne immédiatement à la fin du cast."
+            },
+            "stance_snapshot": {
+                "label": "Posture Snapshot",
+                "tooltip": "Les sorts qui sont lancés en même temps que le changement de posture bénéficieront du bonus de la posture avant le changement."
+            },
+            "assume_bleed_active": {
+                "label": "Saignement toujours actif",
+                "tooltip": "Suppose que le saignement est toujours actif pour les calculs de 'Pourfendre et Déchirer'. Sinon, ne calculera que sur la base de ses propres Déchirure/Griffure/Lacérer."
+            },
+            "cannot_shred_target": {
+                "label": "Ne peut pas Lambeau la cible",
+                "tooltip": "Alternative à \"Devant la cible\" pour modéliser les boss qui ne parade ou bloque pas, mais que vous ne pouvez toujours pas Lambeau."
+            },
+            "okf_uptime": {
+                "label": "Temps de présence Frénésie du chouettide (%)",
+                "tooltip": "Pourcentage de la durée totale du combat du temps de présence de Frénésie du chouettide"
+            },
+            "sync_type": {
+                "label": "Synchro des auto-attaques",
+                "tooltip": "Choisissez votre option de synchronisation ou d'échelonnement. Auto : Choisira automatiquement les options de sync basées sur les vitesses d'attaque de vos armes. Aucun : Pas de Sync ou d'Échelonnement, utilisé pour les vitesses d'armes non assorties. Synchro Parfaite : Fait que vos armes attaquent toujours en même temps, pour les vitesses d'armes assorties. Main secondaire retardée : Ajoute un léger délai aux attaques de la main secondaire tout en restant dans la fenêtre d'ICD de 0.5s de Rafale.",
+                "values": {
+                    "automatic": "Automatique",
+                    "none": "Aucun",
+                    "perfect_sync": "Syncho Parfaite",
+                    "delayed_offhand": "Main secondaire retardée"
+                }
+            },
+            "show_1h_weapons": {
+                "label": "1M",
+                "tooltip": "Afficher les armes à une main"
+            },
+            "show_2h_weapons": {
+                "label": "2M",
+                "tooltip": "Afficher les armes à deux mains"
+            },
+            "show_matching_gems": {
+                "label": "Respecter le sertissage",
+                "tooltip": "Afficher uniquement les gemmes avec des couleurs qui respectent le bonus de sertissage"
+            },
+            "show_ep_values": {
+                "label": "Afficher EP",
+                "tooltip": "Afficher les valeurs EP (Puissance Effective)"
+            },
+            "phase_selector": {
+                "label": "Phase",
+                "tooltip": "Sélectionner la phase de jeu pour la disponibilité des objets"
+            },
+            "enable_item_swap": {
+                "label": "Activer le changement de stuff",
+                "tooltip": "Permet de configurer un ensemble d'objets qui sera utilisé avec l'action APL <b>Changer d'ensemble</b>."
+            },
+            "item_swap": {
+                "label": "Échanger les ensembles",
+                "tooltip": "Échanger avec les objets équipés"
+            },
+            "assume_prepull_mastery_elixir": {
+                "label": "Supposer Élixir de Maîtrise en prepull",
+                "tooltip": "Activer ceci suppose que vous utilisez un Élixir de Maîtrise avant le debut du combat."
+            },
+            "blessings": {
+                "title": "Bénédictions",
+                "tooltip": "Spécifiez les Bénédictions de Paladin pour chaque rôle, par ordre de priorité. Les Bénédictions dans la 1ère colonne seront utilisées s'il y a au moins 1 Paladin dans le raid, 2ème colonne s'il y en a au moins 2, etc."
+            },
+            "shaman_disable_immolate": {
+                "label": "Désactiver Immolation pendant Déchaînement du vent",
+                "tooltip": "Lorsque que le talent Elémentaliste primordial est selectionné et que le lancement automatiquue de Immolation est activé, cette option permet d'empêcher le lancement d'Immolation lorsque le buff est actif sur le joueur."
+            },
+            "shaman_disable_immolate_duration": {
+                "label": "Etendre la désactivation de",
+                "tooltip": "Durée en secondes pour laquel Immolation ne sera toujours pas lancé àpres la fin du buff Déchaînement du vent sur le joueur. Mettre 0 pour désactiver Immolation seulement pendant que le buff est actif."
+            }
+        },
+        "consumables": {
+            "title": "Consommables",
+            "potions": {
+                "title": "Potions",
+                "prepop": "Potion pre-combat",
+                "combat": "Potion en combat"
+            },
+            "elixirs": {
+                "title": "Élixirs"
+            },
+            "food": {
+                "title": "Nourriture"
+            },
+            "engineering": {
+                "title": "Ingénierie",
+                "explosives": "Explosifs"
+            },
+            "pet": {
+                "title": "Familier"
+            }
+        },
+        "encounter": {
+            "title": "Rencontre",
+            "target_inputs": {
+                "label": "Options de Cible",
+                "frenzy_time": {
+                    "label": "Frénésie à (s)",
+                    "tooltip": "Temps de simulation (en secondes) auquel désactiver les changements de tank et activer le buff Frénésie du boss"
+                },
+                "spiritual_grasp_frequency": {
+                    "label": "Fréquence d'Etreinte spirituelle",
+                    "tooltip": "Temps moyen (en secondes) entre les coups d'Etreinte spirituelle, suivant une distribution exponentielle"
+                },
+                "jalak_death_time": {
+                    "label": "Temps de mort de Jalak",
+                    "tooltip": "Temps de simulation (en secondes) auquel désactiver War-God Jalak et déclencher le buff Rampage sur Horridon. Si défini plus longtemps que la durée de combat simulée, alors Jalak sera tanké tout le temps et Rampage ne sera jamais déclenché."
+                },
+                "taunt_swap_for_triple_puncture": {
+                    "label": "Échange de provocation pour Triple perforation",
+                    "tooltip": "Si coché, échange de provocation à la mort de Jalak et à chaque autre application de Triple perforation par la suite afin de limiter l'accumulation de charges sur un seul tank."
+                },
+                "movement_interval": {
+                    "label": "Intervalle de mouvement",
+                    "tooltip": "À quelle fréquence le joueur se déplacera en secondes"
+                },
+                "reaction_time": {
+                    "label": "Temps de réaction",
+                    "tooltip": "Combien de temps le joueur peut attendre que les sorts se terminent avant de se déplacer en secondes"
+                },
+                "yards": {
+                    "label": "Mètres",
+                    "tooltip": "De combien de mètres le joueur se déplace"
+                },
+                "adds_respawn_time": {
+                    "label": "Temps de respawn des add(s)",
+                    "tooltip": "Temps pour que les add(s) réapparaissent après la mort du précédent (en secondes)"
+                },
+                "adds_lifetime": {
+                    "label": "Durée de vie des add(s)",
+                    "tooltip": "Combien de temps les add(s) restent en vie (en secondes)"
+                },
+                "adds_spawn_delay": {
+                    "label": "Délai d'apparition des add(s)",
+                    "tooltip": "Délai initial avant l'apparition des add(s) (en secondes)"
+                }
+            },
+            "duration": {
+                "label": "Durée",
+                "tooltip": "La durée du combat pour chaque itération de simulation, en secondes."
+            },
+            "duration_variation": {
+                "label": "Durée +/-",
+                "tooltip": "Ajoute une quantité aléatoire de temps, en secondes, entre [valeur, -1 * valeur] à chaque itération de simulation. Par exemple, régler la Durée à 180 et Durée +/- à 10 donnera des durées aléatoires entre 170s et 190s."
+            },
+            "execute_duration_20": {
+                "label": "Durée d'Exécution 20 (%)",
+                "tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 20% PV) pour les effets comme Exécution du Guerrier ou Fureur Fondue du Mage."
+            },
+            "execute_duration_25": {
+                "label": "Durée d'Exécution 25 (%)",
+                "tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 25% PV) pour les effets comme Drain d'Âme du Démoniste."
+            },
+            "execute_duration_35": {
+                "label": "Durée d'Exécution 35 (%)",
+                "tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 35% PV) pour les effets comme Faucheur d'Âme du Chevalier de la Mort."
+            },
+            "execute_duration_45": {
+                "label": "Durée d'Exécution 45 (%)",
+                "tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles seront considérées en phase d'exécution (< 45% PV) pour les effets comme Faucheur d'Âme du Chevalier de la Mort avec 4pc DPS T15."
+            },
+            "duration_below_high_hp": {
+                "label": "Durée passée sous le seuil HP élevé (%)",
+                "tooltip": "Pourcentage de la durée totale de la rencontre, pour laquelle les cibles sont considérées hors de portée pour les effets comme Visée Précise du Chasseur (<90% PV) ou Coups Prédateurs du Druide (<80% PV)."
+            },
+            "encounter_preset": {
+                "label": "Rencontre",
+                "tooltip": "Sélectionne une configuration de rencontre prédéfinie."
+            },
+            "advanced": "Avancé",
+            "use_health": {
+                "label": "Utiliser les PVs",
+                "tooltip": "Utilise une limite de dégâts au lieu d'une limite de durée. La limite de dégâts est égale à la somme de la vie de toutes les cibles."
+            },
+            "target": "Cible",
+            "num_allies": {
+                "label": "Nombre d'alliés",
+                "tooltip": "Nombre de joueurs alliés dans le raid."
+            },
+            "min_base_damage": {
+                "label": "Dégâts de base Min",
+                "tooltip": "Dégâts de base pour les attaques automatiques, c'est-à-dire le jet le plus bas avec 0 PA contre un Joueur à 0 armure."
+            },
+            "npc": {
+                "label": "PNJ",
+                "tooltip": "Sélectionne une configuration PNJ prédéfinie."
+            },
+            "ai": {
+                "label": "IA",
+                "tooltip": "Détermine la rotation de capacités de la cible. Notez que la plupart des rotations ne sont pas encore implémentées."
+            },
+            "level": "Niveau",
+            "mob_type": "Type de créature",
+            "tanked_by": {
+                "label": "Tanké par",
+                "tooltip": "Détermine quel joueur du raid cette cible ennemie attaquera. Si aucun joueur n'est assigné à l'emplacement de tank spécifié, cette cible n'attaquera pas."
+            },
+            "swing_speed": {
+                "label": "Vitesse d'attaque",
+                "tooltip": "Temps en secondes entre les attaques automatiques. Réglez à 0 pour désactiver les attaques automatiques."
+            },
+            "dual_wield": {
+                "label": "Combat à deux mains",
+                "tooltip": "Utilise 2 armes séparées pour attaquer."
+            },
+            "dual_wield_penalty": {
+                "label": "Pénalité Combat à deux mains",
+                "tooltip": "Active la Pénalité d'Échec de Combat à Deux Mains (+19% de chance d'échec) si vous combattez à deux mains. Les boss dans Hyjal/BT/SWP ont généralement ceci désactivé pour empêcher les tanks de stacker l'évitement."
+            },
+            "parry_haste": {
+                "label": "Hâte de parade",
+                "tooltip": "Si cet ennemi gagnera la hâte de parade en parant les attaques."
+            },
+            "spell_school": {
+                "label": "École de sort",
+                "tooltip": "Type de dégâts causés par les attaques automatiques. Ceci est généralement Physique, mais certains ennemis ont des attaques élémentaires."
+            },
+            "damage_spread": {
+                "label": "Écart de dégâts",
+                "tooltip": "Écart fractionnel entre les dégâts minimum et maximum d'attaque automatique de cet ennemi à 0 Puissance d'Attaque."
+            },
+            "suppress_dodge": "Ignorer l'esquive",
+            "second_tank_index": "Index du deuxième tank",
+            "disabled_at_start": "Désactivé au début du combat"
+        },
+        "player": {
+            "title": "Joueur",
+            "race": "Race",
+            "profession_1": "Métier 1",
+            "profession_2": "Métier 2"
+        },
+        "saved_encounters": {
+            "title": "Rencontres sauvegardées",
+            "encounter": "Rencontre",
+            "encounter_name": "Nom de la rencontre",
+            "save_encounter": "Sauvegarder la rencontre"
+        },
+        "saved_settings": {
+            "title": "Paramètres sauvegardés",
+            "settings": "Paramètres",
+            "settings_name": "Nom des paramètres",
+            "save_settings": "Sauvegarder les paramètres"
+        },
+        "external_buffs": {
+            "title": "Buffs externes",
+            "tooltip": "Buffs fournis par <strong>d'autres</strong> membres du groupe/raid."
+        }
+    },
+    "talents_tab": {
+        "title": "Talents",
+        "copy_button": {
+            "label": "Copier",
+            "tooltip": "Copier les talents"
+        },
+        "reset_button": {
+            "tooltip": "Réinitialiser les points de talent"
+        },
+        "glyphs": {
+            "major": "Glyphes Majeurs",
+            "minor": "Glyphes Mineurs",
+            "modal": {
+                "title": "Glyphes"
+            },
+            "empty": "Vide"
+        },
+        "saved_talents": {
+            "title": "Talents sauvegardés",
+            "label": "Talents",
+            "name_label": "Nom",
+            "save_button": "Sauvegarder les talents",
+            "delete": {
+                "confirm": "Supprimer les talents sauvegardés '{{name}}' ?",
+                "tooltip": "Supprimer les talents sauvegardés"
+            },
+            "alerts": {
+                "choose_name": "Choisissez un nom pour vos talents sauvegardés !",
+                "name_exists": "Des talents avec le nom {{name}} existent déjà."
+            }
+        }
+    },
+    "bulk_tab": {
+        "title": "Lot (<span class=\"text-success\">Nouveau</span>)",
+        "description": "<span className=\"bold\">Simulation par lot</span> est une nouvelle fonctionnalité similaire à la simulation <span className=\"bold\">Top Gear</span> sur <a href=\"https://raidbots.com\" target=\"_blank\">Raidbots.com</a> qui vous permet de sélectionner plusieurs objets et de les simuler pour trouver les meilleures combinaisons.<br />C'est une fonctionnalité <span className=\"text-brand\">Alpha</span>, donc si vous avez des commentaires ou trouvez un bug, veuillez le signaler !",
+        "download_local": "Téléchargez le simulateur en local pour des résultats plus rapides.",
+        "tabs": {
+            "setup": "Configuration",
+            "results": "Résultats"
+        },
+        "actions": {
+            "import_bags": "Importer depuis les sacs",
+            "import_favorites": "Importer les favoris",
+            "clear_items": "Effacer les objets",
+            "simulate_batch": "Simuler le lot"
+        },
+        "search": {
+            "title": "Recherche d'objets",
+            "name_label": "Nom",
+            "clear_search": "Effacer la recherche",
+            "min_ilvl": "ILvl min",
+            "max_ilvl": "ILvl max",
+            "no_results": "Aucun résultat trouvé.",
+            "showing_results": "Affichage de {{max}} sur {{total}} résultats totaux.",
+            "item_added": "{{itemName}} a été ajouté au lot.",
+            "item_removed": "{{itemName}} a été retiré du lot.",
+            "item_unique": "{{itemName}} est unique et a déjà été ajouté."
+        },
+        "settings": {
+            "combinations_count": "{{count}} Combinaisons",
+            "combination_singular": "1 Combinaison",
+            "iterations": "Itérations",
+            "default_gems": "Gemmes par défaut",
+            "inherit_upgrades": {
+                "label": "Hériter des améliorations",
+                "tooltip": "Lorsque cette option est activée, les objets hériteront des améliorations de l'objet équipé. Sinon, les objets seront simulés sans aucune amélioration."
+            },
+            "freeze_ring": {
+                "label": "Geler un emplacement d'anneau",
+                "tooltip": "Geler un anneau équipé pour réduire le nombre de combinaisons"
+            },
+            "freeze_trinket": {
+                "label": "Geler un emplacement de bijou",
+                "tooltip": "Geler un bijou équipé pour réduire le nombre de combinaisons"
+            }
+        },
+        "progress": {
+            "total_combinations": "{{count}} combinaisons totales.",
+            "refining_rounds": "{{current}} / {{total}} tours d'affinage",
+            "simulations_complete": "{{completed}} / {{total}}<br />simulations terminées",
+            "iterations_complete": "{{completed}} / {{total}}<br />itérations terminées",
+            "seconds_remaining": "{{seconds}} secondes restantes."
+        },
+        "notifications": {
+            "bulk_sim_cancelled": "Simulation par lot annulée.",
+            "failed_to_remove_item": "Échec de la suppression de l'objet, veuillez signaler ce problème."
+        },
+        "warning": {
+            "iterations_limit": "Simuler plus de {{limit}} itérations dans le simulateur web prendra beaucoup de temps ou ne fonctionnera peut-être pas du tout. Pour les simulations par lot plus importantes, nous recommandons d'utiliser le mode rapide ou de télécharger l'exécutable et de l'exécuter sur votre machine."
+        },
+        "picker": {
+            "no_items": "Aucun objet sélectionné.",
+            "remove_tooltip": "Retirer cet objet du lot.",
+            "failed_update": "Échec de la mise à jour de l'objet, veuillez signaler ce problème.",
+            "failed_remove": "Échec de la suppression de l'objet, veuillez signaler ce problème."
+        },
+        "results": {
+            "run_simulation": "Exécutez une simulation pour voir les résultats",
+            "equip_button": "Équiper",
+            "gear_equipped": "Équipement du lot équipé !",
+            "current_gear": "Équipement actuel"
+        },
+        "gem_selector": {
+            "title": "Choisir la gemme par défaut"
+        },
+        "import_modal": {
+            "title": "Importation d'objets de sac",
+            "description_line1": "Importez des objets de sac à partir d'un fichier JSON, qui peut être créé par l'AddOn en jeu WowSimsExporter.",
+            "description_line2": "Pour importer, téléchargez le fichier ou collez le texte ci-dessous, puis cliquez sur 'Importer'."
+        }
+    },
+    "rotation_tab": {
+        "title": "Rotation",
+        "common": {
+            "rotation_type": {
+                "label": "Type",
+                "auto": "Auto",
+                "simple": "Simple",
+                "apl": "APL",
+                "single_target": "Cible unique",
+                "aoe": "AoE",
+                "custom": "Personnalisé"
+            }
+        },
+        "apl": {
+            "actionGroups": {
+                "attributes": {
+                    "actions": "Actions",
+                    "name": "Nom"
+                },
+                "header": "Groupes d'actions",
+                "name": "Groupe d'actions",
+                "newGroupName": "Nouveau groupe d'actions",
+                "tooltips": {
+                    "actions": "Actions dans ce groupe. Elles seront exécutées dans l'ordre lorsqu'un groupe est référencé.",
+                    "name": "Nom de ce groupe d'actions (par exemple, 'careful_aim', 'cooldowns').",
+                    "overview": "Groupes d'actions pouvant être référencés dans la Liste de Priorité d'Actions (APL). Utile pour organiser votre APL et réutiliser des séquences d'actions communes. Les actions sont effectuées de haut en bas dans un groupe."
+                }
+            },
+            "floatingActionBar": {
+                "new": "Nouveau {{itemName}}",
+                "reset": "Réinitialiser l'APL"
+            },
+            "prePullActions": {
+                "header": "Liste d'actions pré-pull",
+                "name": "Action pré-pull",
+                "tooltips": {
+                    "overview": "Actions exécutées avant le début du combat, comme les buffs pré-pull ou les potions."
+                }
+            },
+            "priorityList": {
+                "header": "Liste de Priorité d'Actions (APL)",
+                "name": "Action",
+                "tooltips": {
+                    "overview": "Une liste d'actions représentant les actions de votre personnage pendant le combat. Le sim évaluera la liste du haut (priorité la plus élevée) vers le bas (priorité la plus basse) et choisira la première action valide à exécuter à tout moment."
+                }
+            },
+            "tabs": {
+                "actionGroups": "Groupes d'actions",
+                "priorityList": "Liste de priorité",
+                "variables": "Variables"
+            },
+            "variables": {
+                "attributes": {
+                    "name": "Nom",
+                    "nameTooltip": "Nom de la variable (par exemple, 'my_dot_remains', 'boss_health_pct')",
+                    "value": "Valeur",
+                    "valueTooltip": "L'expression de la valeur que représente cette variable."
+                },
+                "copyName": "{{variableName}} (Copie)",
+                "header": "Variables",
+                "name": "Variable",
+                "newVariableName": "Nouvelle variable",
+                "tooltips": {
+                    "name": "Nom de la variable (par exemple, 'my_dot_remains', 'boss_health_pct')",
+                    "overview": "Les variables peuvent être utilisées pour stocker des conditions complexes référencées dans l'APL. Utile pour stocker des valeurs dynamiques changeant pendant le combat, comme les timers de CD ou les ressources.",
+                    "value": "L'expression de la valeur que représente cette variable."
+                }
+            },
+            "prepull_actions": {
+                "title": "Actions de pré-pull",
+                "tooltip": "Actions à effectuer avant le pull.",
+                "item_label": "Actions de pré-pull",
+                "do_at": {
+                    "label": "Faire à",
+                    "tooltip": "Temps auquel éxécuter l'action avant le pull. Doit être négatif, et formaté comme '-1s' ou '-2500ms'."
+                },
+                "new_action": "Nouvelle action"
+            },
+            "priority_list": {
+                "title": "Liste de Priorité",
+                "tooltip": "À chaque point de décision, la simulation effectuera la première action valide de cette liste.",
+                "item_label": "Action",
+                "if_label": "Si :",
+                "new_action": "Nouvelle action"
+            },
+            "actions": {
+                "cast": {
+                    "label": "Lancer",
+                    "tooltip": "Lance le sort si possible, c'est-à-dire si toutes les exigences de ressources/temps de recharge/GCD/etc sont remplies."
+                },
 				"cancel_cast": {
 					"label": "Annuler le lancement",
 					"tooltip": "Annule le lancement du sort en cours. (Cela n'est évalué que pendant le lancement dur et nécessite que \"ReactToEvent\" soit ajouté au déclencheur dans le cœur du Sim."

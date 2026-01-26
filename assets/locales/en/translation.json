@@ -284,7 +284,7 @@
 			"copy_to_reforge_lite": "Copy to Reforge Lite"
 		},
 		"reforge_success": {
-			"title": "The following items were reforged:",
+			"title": "The following items were changed:",
 			"removed_reforge": "Removed reforge",
 			"no_changes": "No reforge changes were made!",
 			"copy_to_reforge_lite": "Copy to Reforge Lite"

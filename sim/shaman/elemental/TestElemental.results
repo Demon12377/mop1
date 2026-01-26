@@ -1228,6 +1228,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestElemental-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 134839.24277
+  tps: 97980.50427
+  hps: 4083.27534
+ }
+}
+dps_results: {
  key: "TestElemental-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 159216.79421
@@ -2380,6 +2388,13 @@ dps_results: {
  value: {
   dps: 139240.00311
   tps: 101207.97189
+ }
+}
+dps_results: {
+ key: "TestElemental-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 134839.24277
+  tps: 97980.50427
  }
 }
 dps_results: {
