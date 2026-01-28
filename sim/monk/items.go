@@ -5,6 +5,7 @@ import (
 	"time"
 
 	"github.com/wowsims/mop/sim/core"
+	"github.com/wowsims/mop/sim/core/proto"
 )
 
 // T14 - Windwalker
@@ -217,6 +218,10 @@ var ItemSetBattlegearOfSevenSacredSeals = core.NewItemSet(core.ItemSet{
 	Bonuses: map[int32]core.ApplySetBonus{
 		2: func(agent core.Agent, setBonusAura *core.Aura) {
 			monk := agent.(MonkAgent).GetMonk()
+
+			if monk.Spec != proto.Spec_SpecWindwalkerMonk {
+				return
+			}
 
 			registerComboBreakerDamageMod := func(aura *core.Aura, spellMask int64) {
 				damageMod := monk.AddDynamicMod(core.SpellModConfig{
