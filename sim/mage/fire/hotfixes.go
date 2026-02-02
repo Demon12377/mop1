@@ -12,6 +12,7 @@ func (fire *FireMage) registerHotfixes() {
 
 	// 2025-07-01 - Pyroblast's direct damage increase raised to 30% (was 11%).
 	// 2025-11-13 - Pyroblast's direct damage decreased to 15% (was 30%).
+	// 2026-02-02 - Reverted hotfix bonus, now 0% again.
 	fire.AddStaticMod(core.SpellModConfig{
 		ClassMask:  mage.MageSpellPyroblast,
 		Kind:       core.SpellMod_DamageDone_Pct,
@@ -19,5 +20,6 @@ func (fire *FireMage) registerHotfixes() {
 	})
 
 	// 2025-07-01 - Combustion Ignite scaling increased to 50% (was 20%).
+	// 2026-02-02 - Reverted hotfix bonus, now 20% again.
 	fire.combustionDotDamageMultiplier += 0
 }
