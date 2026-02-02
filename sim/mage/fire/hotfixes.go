@@ -20,6 +20,6 @@ func (fire *FireMage) registerHotfixes() {
 	// })
 
 	// 2025-07-01 - Combustion Ignite scaling increased to 50% (was 20%).
-	// 2026-02-02 - Reverted hotfix bonus, now 20% again.
+	// 2026-02-02 - Reverted hotfix bonus, now 20% again
 	// fire.combustionDotDamageMultiplier += 0
 }
