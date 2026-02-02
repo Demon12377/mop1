@@ -15,9 +15,9 @@ func (fire *FireMage) registerHotfixes() {
 	fire.AddStaticMod(core.SpellModConfig{
 		ClassMask:  mage.MageSpellPyroblast,
 		Kind:       core.SpellMod_DamageDone_Pct,
-		FloatValue: 0.15,
+		FloatValue: 0,
 	})
 
 	// 2025-07-01 - Combustion Ignite scaling increased to 50% (was 20%).
-	fire.combustionDotDamageMultiplier += 0.3
+	fire.combustionDotDamageMultiplier += 0
 }
