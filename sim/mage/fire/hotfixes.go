@@ -1,9 +1,9 @@
 package fire
 
-import (
-	"github.com/wowsims/mop/sim/core"
-	"github.com/wowsims/mop/sim/mage"
-)
+// import (
+// 	"github.com/wowsims/mop/sim/core"
+// 	"github.com/wowsims/mop/sim/mage"
+// )
 
 func (fire *FireMage) registerHotfixes() {
 	// 2025-07-01 - Critical Mass Critical Strike bonus increased to 1.5x (was 1.3x).
