@@ -1,10 +1,5 @@
 package affliction
 
-// import (
-// 	"github.com/wowsims/mop/sim/core"
-// 	"github.com/wowsims/mop/sim/warlock"
-// )
-
 func (affliction *AfflictionWarlock) registerHotfixes() {
 	// 2025-07-31 - Agony’s damage over time increased by 5%.
 	// 2025-11-13 - Agony’s damage over time decreased to 0% (was 5%).
