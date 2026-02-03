@@ -52,11 +52,11 @@ export const P2NoTrollDefaultSimpleRotation = FireMage_Rotation.create({
 });
 
 export const P3TrollDefaultSimpleRotation = FireMage_Rotation.create({
-	combustAlwaysSend: 11000000,
-	combustBloodlust: 13000000,
-	combustPostAlter: 10000000,
-	combustNoAlter: 1100000,
-	combustEndOfCombat: 700000,
+	combustAlwaysSend: 5250000,
+	combustBloodlust: 4750000,
+	combustPostAlter: 2000000,
+	combustNoAlter: 500000,
+	combustEndOfCombat: 200000,
 });
 export const P3NoTrollDefaultSimpleRotation = FireMage_Rotation.create({
 	...P3TrollDefaultSimpleRotation,
@@ -96,12 +96,12 @@ export const P1_PREBIS_EP_PRESET = PresetUtils.makePresetEpWeights(
 		[Stat.StatMasteryRating]: 0.59,
 	}),
 );
-	export const MASTERY_EP_PRESET = PresetUtils.makePresetEpWeights(
+export const MASTERY_EP_PRESET = PresetUtils.makePresetEpWeights(
 	'Mastery',
 	Stats.fromMap({
 		[Stat.StatIntellect]: 1.37,
 		[Stat.StatSpellPower]: 1.0,
-		[Stat.StatHitRating]: 1.20,
+		[Stat.StatHitRating]: 1.2,
 		[Stat.StatCritRating]: 0.55,
 		[Stat.StatHasteRating]: 0.62,
 		[Stat.StatMasteryRating]: 1.05,
@@ -283,8 +283,6 @@ export const P3_MASTERY_PRESET_BUILD = PresetUtils.makePresetBuild('P3 - Mastery
 // 		consumables: DefaultFireConsumables,
 // 	},
 // });
-
-
 
 export const COMBUSTION_BREAKPOINT: UnitStatPresets = {
 	unitStat: UnitStat.fromPseudoStat(PseudoStat.PseudoStatSpellHastePercent),
