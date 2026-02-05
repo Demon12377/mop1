@@ -73,11 +73,13 @@ func (mage *Mage) registerAlterTimeCD() {
 					auraState[aura.Label] = nil
 				}
 			}
+			mage.ReactToEvent(sim, false)
 		},
 		OnExpire: func(aura *core.Aura, sim *core.Simulation) {
 			if aura.StartedAt()+aura.Duration <= sim.CurrentTime {
 				restoreState(sim)
 			}
+			mage.ReactToEvent(sim, false)
 		},
 	})
 

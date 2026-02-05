@@ -1367,6 +1367,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAffliction-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 215057.82541
+  tps: 148747.77353
+  hps: 8898.95527
+ }
+}
+dps_results: {
  key: "TestAffliction-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 258736.35447
@@ -1897,9 +1905,9 @@ dps_results: {
 dps_results: {
  key: "TestAffliction-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 253977.97179
-  tps: 175573.88123
-  hps: 2901.74192
+  dps: 257060.061
+  tps: 178112.33031
+  hps: 2918.95141
  }
 }
 dps_results: {
@@ -2401,9 +2409,9 @@ dps_results: {
 dps_results: {
  key: "TestAffliction-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 225949.37018
-  tps: 156919.64571
-  hps: 2981.12763
+  dps: 228262.08231
+  tps: 158417.41417
+  hps: 2977.79676
  }
 }
 dps_results: {
@@ -2703,6 +2711,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestAffliction-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 217309.7034
+  tps: 150181.64375
+  hps: 3244.9977
+ }
+}
+dps_results: {
  key: "TestAffliction-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 215057.82541
@@ -2745,9 +2761,9 @@ dps_results: {
 dps_results: {
  key: "TestAffliction-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 291189.00963
-  tps: 209862.17939
-  hps: 2971.85025
+  dps: 264397.59723
+  tps: 183156.81702
+  hps: 2992.47218
  }
 }
 dps_results: {

@@ -343,6 +343,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBalance-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 235578.11269
+  tps: 236143.54927
+  hps: 34978.23199
+ }
+}
+dps_results: {
  key: "TestBalance-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 273632.79693
@@ -393,9 +401,9 @@ dps_results: {
 dps_results: {
  key: "TestBalance-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 276197.33173
-  tps: 275733.20113
-  hps: 29382.34781
+  dps: 276221.03817
+  tps: 275755.77442
+  hps: 29838.94537
  }
 }
 dps_results: {
@@ -545,9 +553,9 @@ dps_results: {
 dps_results: {
  key: "TestBalance-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 246259.23078
-  tps: 246648.84658
-  hps: 28679.03862
+  dps: 245758.28812
+  tps: 246165.53635
+  hps: 28536.86164
  }
 }
 dps_results: {
@@ -575,6 +583,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestBalance-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 235578.11269
+  tps: 236143.54927
+  hps: 28500.8022
+ }
+}
+dps_results: {
  key: "TestBalance-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
   dps: 254015.87299
@@ -585,9 +601,9 @@ dps_results: {
 dps_results: {
  key: "TestBalance-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 285794.33055
-  tps: 286274.08827
-  hps: 28994.00598
+  dps: 260277.16856
+  tps: 260447.34449
+  hps: 29034.27947
  }
 }
 dps_results: {

@@ -297,6 +297,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestFury-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 238954.2383
+  tps: 152055.5977
+  hps: 7550.95393
+ }
+}
+dps_results: {
  key: "TestFury-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 251232.44489
@@ -355,8 +363,8 @@ dps_results: {
 dps_results: {
  key: "TestFury-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 249884.9906
-  tps: 157752.34332
+  dps: 251667.16291
+  tps: 159103.42497
  }
 }
 dps_results: {
@@ -467,8 +475,8 @@ dps_results: {
 dps_results: {
  key: "TestFury-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 265714.70492
-  tps: 167225.20627
+  dps: 267534.46546
+  tps: 168668.28729
  }
 }
 dps_results: {
@@ -494,6 +502,13 @@ dps_results: {
 }
 dps_results: {
  key: "TestFury-AllItems-UnerringVisionofLeiShen-96930"
+ value: {
+  dps: 238954.2383
+  tps: 152055.5977
+ }
+}
+dps_results: {
+ key: "TestFury-AllItems-VialofLivingCorruption-105568"
  value: {
   dps: 238954.2383
   tps: 152055.5977

@@ -26,6 +26,7 @@
 		"name": "Name",
 		"search": "Search",
 		"filter": "Filter",
+		"elapsed_time": "Elapsed Time",
 		"phases": {
 			"1": "Phase 1 (5.0 - T14)",
 			"2": "Phase 2 (5.1)",
@@ -2331,6 +2332,7 @@
 				"breakpoints_implemented": "The following breakpoints have been implemented for this spec:",
 				"post_cap_ep": "Post cap EP",
 				"reforge_optimization_failed": "Reforge optimization failed. Please try again, or report the issue if it persists.",
+				"reforge_optimization_cancelled": "Reforge optimization cancelled.",
 				"use_custom": "Use custom EP Weights",
 				"enable_modification": "This will enable modification of the default EP weights and setting custom stat caps.",
 				"modify_in_editor": "Ep weights can be modified in the Stat Weights editor.",

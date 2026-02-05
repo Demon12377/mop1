@@ -1200,6 +1200,14 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestDemonology-AllItems-Juggernaut'sFocusingCrystal-105514"
+ value: {
+  dps: 195559.04946
+  tps: 122822.39678
+  hps: 3918.01725
+ }
+}
+dps_results: {
  key: "TestDemonology-AllItems-Kardris'ToxicTotem-105540"
  value: {
   dps: 225725.62459
@@ -1664,8 +1672,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-PurifiedBindingsofImmerseus-105422"
  value: {
-  dps: 232865.01554
-  tps: 146258.04703
+  dps: 229787.2954
+  tps: 144859.85488
  }
 }
 dps_results: {
@@ -2105,8 +2113,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-Thok'sTailTip-105609"
  value: {
-  dps: 208680.27266
-  tps: 132007.84469
+  dps: 207100.77529
+  tps: 131438.43266
  }
 }
 dps_results: {
@@ -2369,6 +2377,13 @@ dps_results: {
  }
 }
 dps_results: {
+ key: "TestDemonology-AllItems-VialofLivingCorruption-105568"
+ value: {
+  dps: 194696.55054
+  tps: 121808.50688
+ }
+}
+dps_results: {
  key: "TestDemonology-AllItems-ViciousTalismanoftheShado-PanAssault-94511"
  value: {
   dps: 195559.04946
@@ -2406,8 +2421,8 @@ dps_results: {
 dps_results: {
  key: "TestDemonology-AllItems-Xing-Ho,BreathofYu'lon-102246"
  value: {
-  dps: 341892.37097
-  tps: 233404.16567
+  dps: 279288.29825
+  tps: 170657.82951
  }
 }
 dps_results: {
