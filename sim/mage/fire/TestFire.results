@@ -89,8 +89,8 @@ dps_results: {
 dps_results: {
  key: "TestFire-AllItems-BlackBloodofY'Shaarj-105648"
  value: {
-  dps: 153105.31182
-  tps: 148522.21961
+  dps: 149652.07636
+  tps: 145321.419
  }
 }
 dps_results: {
@@ -2407,8 +2407,8 @@ dps_results: {
 dps_results: {
  key: "TestFire-AllItems-Wushoolay'sFinalChoice-96785"
  value: {
-  dps: 134123.10116
-  tps: 130122.77802
+  dps: 132682.65256
+  tps: 128728.94128
  }
 }
 dps_results: {
