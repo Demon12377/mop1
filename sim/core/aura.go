@@ -1169,14 +1169,17 @@ func (aura *Aura) RestoreState(state AuraState, sim *Simulation) {
 		timeSinceSnapshot := sim.CurrentTime - state.SnapshotTime
 		originalWouldHaveExpired := timeSinceSnapshot > state.RemainingDuration
 
+		hadNaturallyExpired := aura.expires > 0 && aura.expires <= sim.CurrentTime
+
 		// Deactivate first to cancel any existing periodic actions
 		if aura.active {
 			aura.Deactivate(sim)
 		}
 		// Activate without triggering OnGain's immediate effects
 		aura.activate(sim, false)
-		// Then call the restore callback to restart periodic actions properly
-		aura.OnRestore(aura, sim, state, !originalWouldHaveExpired)
+
+		wasActive := !originalWouldHaveExpired || hadNaturallyExpired
+		aura.OnRestore(aura, sim, state, wasActive)
 	} else {
 		if !aura.active {
 			aura.Activate(sim)
