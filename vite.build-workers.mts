@@ -44,6 +44,7 @@ const buildWorkers = async () => {
 	const highsWasmSrc = path.resolve(WORKER_BASE_PATH, 'highs.wasm');
 	const highsWasmDest = path.resolve(OUT_DIR, 'highs.wasm');
 	try {
+		await fs.mkdir(OUT_DIR, { recursive: true });
 		await fs.copyFile(highsWasmSrc, highsWasmDest);
 		console.log('Copied highs.wasm to output directory');
 	} catch (err) {

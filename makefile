@@ -225,7 +225,7 @@ release: wowsimmop wowsimmop-windows.exe
 	zip wowsimcli-windows.exe.zip wowsimcli-windows.exe
 
 sim/core/proto/api.pb.go: proto/*.proto node_modules
-	npx protoc -I=./proto --go_out=./sim/core ./proto/*.proto
+	npx protoc -I ./proto --go_out=./sim/core ./proto/*.proto
 
 # Only useful for building the lib on a host platform that matches the target platform
 .PHONY: locallib

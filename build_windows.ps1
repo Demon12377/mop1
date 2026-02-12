@@ -6,6 +6,12 @@ Write-Host "--- Step 1: Installing dependencies ---" -ForegroundColor Cyan
 npm install
 
 Write-Host "`n--- Step 2: Generating Protobuf files ---" -ForegroundColor Cyan
+# Ensure Go bin is in PATH
+$goPath = go env GOPATH
+if ($goPath) {
+    $env:PATH += ";$goPath\bin"
+}
+
 # Ensure directories exist
 if (!(Test-Path "ui/core/proto")) { New-Item -ItemType Directory -Force -Path "ui/core/proto" }
 if (!(Test-Path "sim/core/proto")) { New-Item -ItemType Directory -Force -Path "sim/core/proto" }
@@ -21,7 +27,8 @@ Write-Host "Generating Go protos..."
 try {
     # Check if protoc-gen-go is available
     if (Get-Command "protoc-gen-go" -ErrorAction SilentlyContinue) {
-        npx protoc -I=./proto --go_out=./sim/core ./proto/api.proto ./proto/test.proto ./proto/ui.proto ./proto/common.proto ./proto/apl.proto ./proto/db.proto ./proto/spell.proto
+        $protoFiles = Get-ChildItem -Path "proto" -Filter "*.proto" | ForEach-Object { "./proto/$($_.Name)" }
+        npx protoc -I ./proto --go_out=./sim/core $protoFiles
     } else {
         Write-Warning "protoc-gen-go not found. Skipping Go proto generation. If .pb.go files are missing, the build will fail."
         Write-Host "You can install it with: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
