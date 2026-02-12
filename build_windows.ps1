@@ -27,8 +27,8 @@ Write-Host "Generating Go protos..."
 try {
     # Check if protoc-gen-go is available
     if (Get-Command "protoc-gen-go" -ErrorAction SilentlyContinue) {
-        $protoFiles = Get-ChildItem -Path "proto" -Filter "*.proto" | ForEach-Object { "./proto/$($_.Name)" }
-        npx protoc -I ./proto --go_out=./sim/core $protoFiles
+        $protoFiles = Get-ChildItem -Path "proto" -Filter "*.proto" | ForEach-Object { "proto/$($_.Name)" }
+        npx protoc "--proto_path=proto" "--go_out=sim/core" $protoFiles
     } else {
         Write-Warning "protoc-gen-go not found. Skipping Go proto generation. If .pb.go files are missing, the build will fail."
         Write-Host "You can install it with: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
@@ -50,6 +50,33 @@ $indexContent = $files | ForEach-Object {
     "import ""./$importPath"";"
 }
 $indexContent | Out-File -FilePath "ui/core/index.ts" -Encoding utf8 -NoNewline
+
+Write-Host "`n--- Step 3.5: Generating spec index.html files ---" -ForegroundColor Cyan
+$template = Get-Content "ui/index_template.html" -Raw
+$specs = @(
+    "death_knight/blood", "death_knight/frost", "death_knight/unholy",
+    "druid/balance", "druid/feral", "druid/guardian", "druid/restoration",
+    "hunter/beast_mastery", "hunter/marksmanship", "hunter/survival",
+    "mage/arcane", "mage/fire", "mage/frost",
+    "monk/brewmaster", "monk/mistweaver", "monk/windwalker",
+    "paladin/holy", "paladin/protection", "paladin/retribution",
+    "priest/discipline", "priest/holy", "priest/shadow",
+    "rogue/assassination", "rogue/combat", "rogue/subtlety",
+    "shaman/elemental", "shaman/enhancement", "shaman/restoration",
+    "warlock/affliction", "warlock/demonology", "warlock/destruction",
+    "warrior/arms", "warrior/fury", "warrior/protection",
+    "raid/full"
+)
+foreach ($specPath in $specs) {
+    $parts = $specPath -split "/"
+    $class = $parts[0]
+    $spec = $parts[1]
+
+    $targetDir = "ui/$specPath"
+    if (!(Test-Path $targetDir)) { New-Item -ItemType Directory -Force -Path $targetDir }
+    $content = $template.Replace("@@CLASS@@", $class).Replace("@@SPEC@@", $spec)
+    $content | Out-File -FilePath "$targetDir/index.html" -Encoding utf8 -NoNewline
+}
 
 Write-Host "`n--- Step 4: Building UI ---" -ForegroundColor Cyan
 npx tsx vite.build-workers.mts
