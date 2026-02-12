@@ -10,10 +10,10 @@ import {
 	IndividualCLIExporter,
 	IndividualJsonExporter,
 	IndividualLinkExporter,
-	IndividualNeuralNetworkExporter,
 	IndividualPawnEPExporter,
 	IndividualWowheadGearPlannerExporter,
 } from './components/individual_sim_ui/exporters';
+import { IndividualNeuralNetworkExporter } from './components/individual_sim_ui/exporters/individual_neural_network_exporter';
 import { GearTab } from './components/individual_sim_ui/gear_tab';
 import {
 	// Individual60UImporter,
@@ -489,7 +489,7 @@ export abstract class IndividualSimUI<SpecType extends Spec> extends SimUI {
 
 		this.simHeader.addExportLink('Link', new IndividualLinkExporter(this.rootElem, this), false);
 		this.simHeader.addExportLink('JSON', new IndividualJsonExporter(this.rootElem, this), true);
-		this.simHeader.addExportLink('Neural Network', new IndividualNeuralNetworkExporter(this.rootElem, this), true);
+		this.simHeader.addExportLink('Neural Network', new IndividualNeuralNetworkExporter<SpecType>(this.rootElem, this), true);
 		this.simHeader.addExportLink('WoWHead', new IndividualWowheadGearPlannerExporter(this.rootElem, this), false, false);
 		// this.simHeader.addExportLink('60U Cata EP', new Individual60UEPExporter(this.rootElem, this), false);
 		this.simHeader.addExportLink('Pawn EP', new IndividualPawnEPExporter(this.rootElem, this), false);

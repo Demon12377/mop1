@@ -1,5 +1,5 @@
 import { SimSettingCategories } from '../../../constants/sim_settings';
-import { IndividualSimUI } from '../../../individual_sim_ui';
+import type { IndividualSimUI } from '../../../individual_sim_ui';
 import { Class, EquipmentSpec, Glyphs, Profession, Race, Spec } from '../../../proto/common';
 import { Database } from '../../../proto_utils/database';
 import { classNames } from '../../../proto_utils/names';

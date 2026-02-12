@@ -1,38 +1,55 @@
 import { ref } from 'tsx-vanilla';
-import { IndividualSimUI } from '../../../individual_sim_ui';
-import { Spec } from '../../../proto/common';
+
 import { RaidSimRequest, RaidSimResult } from '../../../proto/api';
-import { BaseModal } from '../../base_modal';
+import { Spec } from '../../../proto/common';
 import { downloadString } from '../../../utils';
+import type { IndividualSimUI } from '../../../individual_sim_ui';
+import { IndividualExporter } from './individual_exporter';
 
-export class IndividualNeuralNetworkExporter<SpecType extends Spec> extends BaseModal {
-	private readonly simUI: IndividualSimUI<SpecType>;
-
+export class IndividualNeuralNetworkExporter<SpecType extends Spec> extends IndividualExporter<SpecType> {
 	constructor(parent: HTMLElement, simUI: IndividualSimUI<SpecType>) {
-		super(parent, 'neural-network-exporter', { title: 'Export for Neural Network', footer: true });
-		this.simUI = simUI;
+		super(parent, simUI, { title: 'Export for Neural Network', allowDownload: true });
 
-		this.body.innerHTML = `
-			<p>This tool runs a 1-iteration simulation with detailed debug logging enabled and exports the full result as a JSON file. This is useful for analyzing rotation, resource management, and APL decisions for neural network training.</p>
-			<p>The exported file will contain the original request (including APL settings) and the full simulation results with logs.</p>
+		const description = document.createElement('div');
+		description.innerHTML = `
+			<div style="margin-top: 10px;">
+				<p>Этот инструмент запускает 1 итерацию боя с подробным логом (Debug) и экспортирует результат в JSON для обучения нейросети.</p>
+				<p>Файл содержит:</p>
+				<ul>
+					<li>Настройки персонажа и APL ротацию</li>
+					<li>Полный лог событий (урон, ресурсы, баффы)</li>
+					<li>Лог принятия решений APL (какое действие было выбрано и почему)</li>
+				</ul>
+			</div>
 		`;
+		this.body.prepend(description);
 
 		const exportBtnRef = ref<HTMLButtonElement>();
 		this.footer!.appendChild(
-			<button className="btn btn-primary" ref={exportBtnRef} onclick={() => this.runAndExport()}>
-				<i className="fa fa-play me-1"></i>
-				Run and Export
-			</button>
+			(
+				<button className="btn btn-primary" ref={exportBtnRef} onclick={() => this.runAndExport()}>
+					<i className="fa fa-play me-1"></i>
+					Запустить и Экспортировать
+				</button>
+			) as HTMLElement,
 		);
+	}
+
+	getData(): string {
+		return 'Нажмите "Запустить и Экспортировать" для генерации файла.';
 	}
 
 	private async runAndExport() {
 		const result = await this.simUI.runSimOnce();
 		if (result) {
-			const data = JSON.stringify({
-				request: RaidSimRequest.toJson(result.request),
-				result: RaidSimResult.toJson(result.result),
-			}, null, 2);
+			const data = JSON.stringify(
+				{
+					request: RaidSimRequest.toJson(result.request),
+					result: RaidSimResult.toJson(result.result),
+				},
+				null,
+				2,
+			);
 			downloadString(data, 'wowsims_neural_net.json');
 		}
 	}

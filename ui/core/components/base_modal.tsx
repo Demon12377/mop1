@@ -146,7 +146,7 @@ export class BaseModal extends Component {
 	}
 
 	// Hacks for better looking multi modals
-	private async showBSFn(event: Event) {
+	protected async showBSFn(event: Event) {
 		// Prevent the event from bubbling up to parent modals
 		event.stopImmediatePropagation();
 
@@ -164,20 +164,20 @@ export class BaseModal extends Component {
 		this.onShow(event);
 	}
 
-	private hideBSFn(event: Event) {
+	protected hideBSFn(event: Event) {
 		// Prevent the event from bubbling up to parent modals
 		event.stopImmediatePropagation();
 		this.onHide(event);
 	}
 
-	private hiddenBSFn(event: Event) {
+	protected hiddenBSFn(event: Event) {
 		// Prevent the event from bubbling up to parent modals
 		// Do not use stopImmediatePropagation here. It prevents Bootstrap from removing the modal,
 		// leading to other issues
 		event.stopPropagation();
 	}
 
-	private closeModalOnEscKey(event: KeyboardEvent) {
+	protected closeModalOnEscKey(event: KeyboardEvent) {
 		if (!this.modalConfig.preventClose && event.key == 'Escape') {
 			this.close();
 		}
