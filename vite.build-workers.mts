@@ -40,6 +40,9 @@ const buildWorkers = async () => {
 	}
 	const wasmFile = await fs.readFile(wasmExecutablePath, 'utf8');
 
+	// Ensure output directory exists
+	await fs.mkdir(OUT_DIR, { recursive: true });
+
 	// Copy HiGHS WASM file to output directory
 	const highsWasmSrc = path.resolve(WORKER_BASE_PATH, 'highs.wasm');
 	const highsWasmDest = path.resolve(OUT_DIR, 'highs.wasm');

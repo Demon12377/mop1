@@ -12,39 +12,55 @@ if (!(Test-Path "sim/core/proto")) { New-Item -ItemType Directory -Force -Path "
 
 # Generate TypeScript protos
 Write-Host "Generating TS protos..."
-npx protoc --ts_opt generate_dependencies --ts_out ui/core/proto --proto_path proto proto/api.proto proto/test.proto proto/ui.proto
+npx protoc --ts_opt generate_dependencies --ts_out ui/core/proto --proto_path=. proto/api.proto proto/test.proto proto/ui.proto
 
-# Generate Go protos (requires protoc-gen-go in PATH)
-# If you don't have it, this step might fail.
-# You can download it via: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
+# Generate Go protos
 Write-Host "Generating Go protos..."
+# We try to use system protoc if available, otherwise npx protoc
+$protocCmd = "protoc"
+if (!(Get-Command "protoc" -ErrorAction SilentlyContinue)) {
+    $protocCmd = "npx protoc"
+}
+
 try {
     # Check if protoc-gen-go is available
     if (Get-Command "protoc-gen-go" -ErrorAction SilentlyContinue) {
-        npx protoc -I=./proto --go_out=./sim/core ./proto/api.proto ./proto/test.proto ./proto/ui.proto ./proto/common.proto ./proto/apl.proto ./proto/db.proto ./proto/spell.proto
+        if ($protocCmd -eq "npx protoc") {
+            npx protoc --proto_path=. --go_out=./sim/core proto/api.proto proto/test.proto proto/ui.proto proto/common.proto proto/apl.proto proto/db.proto proto/spell.proto
+        } else {
+            protoc --proto_path=. --go_out=./sim/core proto/api.proto proto/test.proto proto/ui.proto proto/common.proto proto/apl.proto proto/db.proto proto/spell.proto
+        }
     } else {
         Write-Warning "protoc-gen-go not found. Skipping Go proto generation. If .pb.go files are missing, the build will fail."
         Write-Host "You can install it with: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
     }
 } catch {
-    Write-Warning "Failed to generate Go protos. Make sure 'protoc-gen-go' is in your PATH."
+    Write-Warning "Failed to generate Go protos: $($_.Exception.Message)"
 }
 
 Write-Host "`n--- Step 3: Generating ui/core/index.ts ---" -ForegroundColor Cyan
-$files = Get-ChildItem -Path "ui/core" -Filter "*.ts" -Recurse | Where-Object { $_.Name -ne "index.ts" -and $_.FullName -notlike "*\proto\*" }
-$indexContent = $files | ForEach-Object {
-    $relativePath = Resolve-Path $_.FullName -Relative
-    # Resolve-Path -Relative might return path starting with .\
-    $cleanPath = $relativePath -replace "^\.\\", ""
-    # We want path relative to ui/core
-    # If the script is run from root, $cleanPath starts with ui\core\
-    $corePath = $cleanPath -replace "^ui\\core\\", ""
-    $importPath = $corePath -replace "\\", "/" -replace "\.ts$", ""
-    "import ""./$importPath"";"
+$coreDir = Join-Path (Get-Location) "ui/core"
+$files = Get-ChildItem -Path $coreDir -Filter "*.ts" -Recurse | Where-Object {
+    $_.Name -ne "index.ts" -and
+    $_.FullName -notlike "*\proto\*" -and
+    $_.FullName -notlike "*\node_modules\*"
 }
-$indexContent | Out-File -FilePath "ui/core/index.ts" -Encoding utf8 -NoNewline
+
+$importLines = New-Object System.Collections.Generic.List[string]
+foreach ($file in $files) {
+    # Calculate path relative to ui/core
+    $relPath = [System.IO.Path]::GetRelativePath($coreDir, $file.FullName)
+    $importPath = $relPath -replace "\\", "/" -replace "\.ts$", ""
+    $importLines.Add("import ""./$importPath"";")
+}
+
+$indexContent = [string]::Join("`n", $importLines)
+if ($indexContent) { $indexContent += "`n" }
+$indexContent | Set-Content -Path "ui/core/index.ts" -NoNewline
 
 Write-Host "`n--- Step 4: Building UI ---" -ForegroundColor Cyan
+# Ensure dist directory exists for workers
+if (!(Test-Path "dist/mop")) { New-Item -ItemType Directory -Force -Path "dist/mop" }
 npx tsx vite.build-workers.mts
 npx vite build
 
@@ -53,7 +69,9 @@ if (Test-Path "binary_dist") { Remove-Item -Recurse -Force "binary_dist" }
 New-Item -ItemType Directory -Force -Path "binary_dist/mop"
 New-Item -ItemType File -Force -Path "binary_dist/mop/embedded" | Out-Null
 Copy-Item -Path "sim/web/dist.go.tmpl" -Destination "binary_dist/dist.go"
-Copy-Item -Recurse -Path "dist/mop/*" -Destination "binary_dist/mop/"
+if (Test-Path "dist/mop/*") {
+    Copy-Item -Recurse -Path "dist/mop/*" -Destination "binary_dist/mop/"
+}
 
 # Remove large/unnecessary files from embedded distribution
 if (Test-Path "binary_dist/mop/lib.wasm") { Remove-Item "binary_dist/mop/lib.wasm" }
