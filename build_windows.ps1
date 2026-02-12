@@ -1,6 +1,6 @@
 # PowerShell script to build WoW Sim Mists of Pandaria on Windows
 
-$ErrorActionPreference = "Stop"
+$ErrorActionPreference = "Continue" # Don't stop on non-critical errors like missing highs.wasm
 
 Write-Host "--- Step 1: Installing dependencies ---" -ForegroundColor Cyan
 npm install
@@ -12,34 +12,24 @@ if (!(Test-Path "sim/core/proto")) { New-Item -ItemType Directory -Force -Path "
 
 # Generate TypeScript protos
 Write-Host "Generating TS protos..."
-npx protoc --ts_opt generate_dependencies --ts_out ui/core/proto --proto_path=. proto/api.proto proto/test.proto proto/ui.proto
+npx protoc -I. --ts_out ui/core/proto --proto_path=proto proto/api.proto proto/test.proto proto/ui.proto
 
 # Generate Go protos
 Write-Host "Generating Go protos..."
-# We try to use system protoc if available, otherwise npx protoc
-$protocCmd = "protoc"
-if (!(Get-Command "protoc" -ErrorAction SilentlyContinue)) {
-    $protocCmd = "npx protoc"
-}
-
-try {
-    # Check if protoc-gen-go is available
-    if (Get-Command "protoc-gen-go" -ErrorAction SilentlyContinue) {
-        if ($protocCmd -eq "npx protoc") {
-            npx protoc --proto_path=. --go_out=./sim/core proto/api.proto proto/test.proto proto/ui.proto proto/common.proto proto/apl.proto proto/db.proto proto/spell.proto
-        } else {
-            protoc --proto_path=. --go_out=./sim/core proto/api.proto proto/test.proto proto/ui.proto proto/common.proto proto/apl.proto proto/db.proto proto/spell.proto
-        }
-    } else {
-        Write-Warning "protoc-gen-go not found. Skipping Go proto generation. If .pb.go files are missing, the build will fail."
-        Write-Host "You can install it with: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest"
+if (Get-Command "protoc-gen-go" -ErrorAction SilentlyContinue) {
+    try {
+        # Using -I. instead of --proto_path=. to be safer in PS
+        npx protoc -I. --go_out=./sim/core proto/api.proto proto/test.proto proto/ui.proto proto/common.proto proto/apl.proto proto/db.proto proto/spell.proto
+    } catch {
+        Write-Warning "Failed to generate Go protos: $($_.Exception.Message)"
     }
-} catch {
-    Write-Warning "Failed to generate Go protos: $($_.Exception.Message)"
+} else {
+    Write-Warning "protoc-gen-go not found in PATH. Skipping Go proto generation."
+    Write-Host "To fix: go install google.golang.org/protobuf/cmd/protoc-gen-go@latest" -ForegroundColor Yellow
 }
 
 Write-Host "`n--- Step 3: Generating ui/core/index.ts ---" -ForegroundColor Cyan
-$coreDir = Join-Path (Get-Location) "ui/core"
+$coreDir = Resolve-Path "ui/core"
 $files = Get-ChildItem -Path $coreDir -Filter "*.ts" -Recurse | Where-Object {
     $_.Name -ne "index.ts" -and
     $_.FullName -notlike "*\proto\*" -and
@@ -48,18 +38,17 @@ $files = Get-ChildItem -Path $coreDir -Filter "*.ts" -Recurse | Where-Object {
 
 $importLines = New-Object System.Collections.Generic.List[string]
 foreach ($file in $files) {
-    # Calculate path relative to ui/core
-    $relPath = [System.IO.Path]::GetRelativePath($coreDir, $file.FullName)
+    $relPath = [System.IO.Path]::GetRelativePath($coreDir.Path, $file.FullName)
     $importPath = $relPath -replace "\\", "/" -replace "\.ts$", ""
     $importLines.Add("import ""./$importPath"";")
 }
 
-$indexContent = [string]::Join("`n", $importLines)
-if ($indexContent) { $indexContent += "`n" }
-$indexContent | Set-Content -Path "ui/core/index.ts" -NoNewline
+$indexContent = [string]::Join("`r`n", $importLines)
+if ($indexContent) { $indexContent += "`r`n" }
+$indexContent | Set-Content -Path "ui/core/index.ts" -NoNewline -Encoding utf8
 
 Write-Host "`n--- Step 4: Building UI ---" -ForegroundColor Cyan
-# Ensure dist directory exists for workers
+# Ensure dist directory exists
 if (!(Test-Path "dist/mop")) { New-Item -ItemType Directory -Force -Path "dist/mop" }
 npx tsx vite.build-workers.mts
 npx vite build
@@ -80,7 +69,10 @@ if (Test-Path "binary_dist/mop/assets/database/db.bin") { Remove-Item "binary_di
 Write-Host "`n--- Step 6: Building Go executable ---" -ForegroundColor Cyan
 $env:GOOS = "windows"
 $env:GOARCH = "amd64"
-go build -o wowsimmop.exe ./sim/web/main.go
-
-Write-Host "`n--- Done! ---" -ForegroundColor Green
-Write-Host "Executable created: wowsimmop.exe"
+if (Test-Path "sim/core/proto/api.pb.go") {
+    go build -o wowsimmop.exe ./sim/web/main.go
+    Write-Host "`n--- SUCCESS! ---" -ForegroundColor Green
+    Write-Host "Executable created: wowsimmop.exe"
+} else {
+    Write-Error "Go proto files are missing. Step 2 failed or was skipped. Cannot build .exe"
+}

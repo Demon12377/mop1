@@ -47,10 +47,11 @@ const buildWorkers = async () => {
 	const highsWasmSrc = path.resolve(WORKER_BASE_PATH, 'highs.wasm');
 	const highsWasmDest = path.resolve(OUT_DIR, 'highs.wasm');
 	try {
+		await fs.access(highsWasmSrc);
 		await fs.copyFile(highsWasmSrc, highsWasmDest);
 		console.log('Copied highs.wasm to output directory');
 	} catch (err) {
-		console.error('Failed to copy highs.wasm:', err);
+		console.warn('Warning: highs.wasm not found in ui/worker/ or could not be copied. This is expected if downloading source as ZIP. Some features like Reforge Optimizer will not work.', err);
 	}
 
 	Object.entries(workers).forEach(async ([name, sourcePath]) => {

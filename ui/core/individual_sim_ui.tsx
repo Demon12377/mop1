@@ -10,10 +10,10 @@ import {
 	IndividualCLIExporter,
 	IndividualJsonExporter,
 	IndividualLinkExporter,
+	IndividualNeuralNetworkExporter,
 	IndividualPawnEPExporter,
 	IndividualWowheadGearPlannerExporter,
 } from './components/individual_sim_ui/exporters';
-import { IndividualNeuralNetworkExporter } from './components/individual_sim_ui/exporters/individual_neural_network_exporter';
 import { GearTab } from './components/individual_sim_ui/gear_tab';
 import {
 	// Individual60UImporter,

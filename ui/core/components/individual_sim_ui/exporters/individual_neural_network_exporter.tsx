@@ -24,6 +24,8 @@ export class IndividualNeuralNetworkExporter<SpecType extends Spec> extends Indi
 		`;
 		this.body.prepend(description);
 
+		(this.textElem as HTMLTextAreaElement).style.display = 'none';
+
 		const exportBtnRef = ref<HTMLButtonElement>();
 		this.footer!.appendChild(
 			(
