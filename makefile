@@ -1,4 +1,5 @@
 OUT_DIR := dist/mop
+export PATH := $(PATH):$(shell go env GOPATH)/bin
 TS_CORE_SRC := $(shell find ui/core -name '*.ts' -type f)
 ASSETS_INPUT := $(shell find assets/ -type f)
 ASSETS := $(patsubst assets/%,$(OUT_DIR)/assets/%,$(ASSETS_INPUT))
@@ -223,8 +224,8 @@ release: wowsimmop wowsimmop-windows.exe
 	zip wowsimcli-arm64-darwin.zip wowsimcli-arm64-darwin
 	zip wowsimcli-windows.exe.zip wowsimcli-windows.exe
 
-sim/core/proto/api.pb.go: proto/*.proto
-	protoc -I=./proto --go_out=./sim/core ./proto/*.proto
+sim/core/proto/api.pb.go: proto/*.proto node_modules
+	npx protoc -I=./proto --go_out=./sim/core ./proto/*.proto
 
 # Only useful for building the lib on a host platform that matches the target platform
 .PHONY: locallib
@@ -289,6 +290,7 @@ setup:
 	cp pre-commit .git/hooks
 	chmod +x .git/hooks/pre-commit
 	! command -v air && curl -sSfL https://raw.githubusercontent.com/cosmtrek/air/master/install.sh | sh -s -- -b $(shell go env GOPATH)/bin || true
+	go install google.golang.org/protobuf/cmd/protoc-gen-go@latest
 
 # Host a local server, for dev testing
 .PHONY: host
