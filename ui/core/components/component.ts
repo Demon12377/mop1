@@ -1,8 +1,8 @@
 export abstract class Component {
 	protected customRootElement?(): HTMLElement;
 
-	private disposeCallbacks: Array<() => void> = [];
-	private disposed = false;
+	protected disposeCallbacks: Array<() => void> = [];
+	protected disposed = false;
 
 	readonly rootElem: HTMLElement;
 

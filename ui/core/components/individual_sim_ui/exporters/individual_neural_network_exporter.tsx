@@ -3,11 +3,12 @@ import { ref } from 'tsx-vanilla';
 import { RaidSimRequest, RaidSimResult } from '../../../proto/api';
 import { Spec } from '../../../proto/common';
 import { downloadString } from '../../../utils';
+import type { IndividualSimUI } from '../../../individual_sim_ui';
 import { IndividualExporter } from './individual_exporter';
 
 export class IndividualNeuralNetworkExporter<SpecType extends Spec> extends IndividualExporter<SpecType> {
-	constructor(parent: HTMLElement, simUI: any) {
-		super(parent, simUI, { title: 'Export for Neural Network' });
+	constructor(parent: HTMLElement, simUI: IndividualSimUI<SpecType>) {
+		super(parent, simUI, { title: 'Export for Neural Network', allowDownload: true });
 
 		const description = document.createElement('div');
 		description.innerHTML = `

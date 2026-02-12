@@ -1,5 +1,5 @@
 import { SimSettingCategories } from '../../../constants/sim_settings';
-import { IndividualSimUI } from '../../../individual_sim_ui';
+import type { IndividualSimUI } from '../../../individual_sim_ui';
 import { Spec } from '../../../proto/common';
 import { EventID } from '../../../typed_event';
 import { getEnumValues } from '../../../utils';

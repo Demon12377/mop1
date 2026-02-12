@@ -16,7 +16,7 @@ export interface ExporterOptions {
 
 export abstract class Exporter extends BaseModal {
 	protected abstract readonly simUI: SimUI;
-	private readonly textElem: Element;
+	protected readonly textElem: Element;
 	protected readonly changedEvent: TypedEvent<void> = new TypedEvent();
 
 	constructor(parent: HTMLElement, options: ExporterOptions) {
