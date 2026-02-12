@@ -443,8 +443,11 @@ func (apl *APLRotation) getNextAction(sim *Simulation) *APLAction {
 		return apl.controllingActions[len(apl.controllingActions)-1].GetNextAction(sim)
 	}
 
-	for _, action := range apl.priorityList {
+	for i, action := range apl.priorityList {
 		if action.IsReady(sim) {
+			if sim.Log != nil {
+				apl.unit.Log(sim, "[APL] Index %d: %s", i, action.impl.String())
+			}
 			return action
 		}
 	}
